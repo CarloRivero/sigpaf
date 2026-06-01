@@ -1,0 +1,41 @@
+{
+  "name": "SIGPAF – CRE R.L.",
+  "short_name": "SIGPAF",
+  "description": "Sistema Integral de Gestión del Programa Apoyo a la Familia – CRE R.L.",
+  "start_url": "/sigpaf/sigpaf_registro.html",
+  "scope": "/sigpaf/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#003D22",
+  "theme_color": "#00703C",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Registrarme a un curso",
+      "short_name": "Registro",
+      "url": "/sigpaf/sigpaf_registro.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Portal Profesora",
+      "short_name": "Profesora",
+      "url": "/sigpaf/sigpaf_profesoranuevo.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

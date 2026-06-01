@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00703C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIGPAF">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#00703C">
 <title>SIGPAF – Inscripción al curso</title>
@@ -365,7 +372,9 @@ window.addEventListener('load', function(){
       messagingSenderId:"783555160890",
       appId:"1:783555160890:web:79bae67c10986f11a8fe03"
     });
-  }catch(e){}
+    DB = firebase.firestore();
+    console.log('Firebase OK - Firestore inicializado');
+  }catch(e){ console.error('Firebase error:', e); }
   initApp();
 });
 
@@ -546,7 +555,14 @@ async function buscarCI(){
     }
   }catch(e){
     ocultarLoader();
-    setMsgCI('Error de conexión: '+e.message,'error');
+    console.error('Error buscarCI:', e.code, e.message);
+    if(e.code === 'permission-denied'){
+      setMsgCI('Error de permisos. Contacta al administrador.','error');
+    } else if(e.message && e.message.includes('network')){
+      setMsgCI('Sin conexion a internet. Verifica tu red.','error');
+    } else {
+      setMsgCI('Error: '+e.message,'error');
+    }
   }
 }
 
@@ -886,6 +902,17 @@ function toast(msg,tipo){
   el.className='toast'+(tipo==='ok'?' ok':'');
   el.classList.add('show');
   setTimeout(function(){el.classList.remove('show');},3000);
+}
+</script>
+
+<script>
+// Registrar Service Worker para PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js', {scope:'/sigpaf/'})
+      .then(function(reg){ console.log('SW registrado:', reg.scope); })
+      .catch(function(err){ console.log('SW error:', err); });
+  });
 }
 </script>
 </body>
