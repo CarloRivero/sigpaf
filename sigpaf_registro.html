@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00703C">
+<title>SIGPAF – Inscripción al curso</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<!-- Firebase Compat -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --g:#00703C; --gd:#005A2E; --gl:#E8F5EE; --gm:#B7DFC8;
+  --am:#F59E0B; --aml:#FEF3C7;
+  --re:#EF4444; --rel:#FEE2E2;
+  --in:#6366F1; --inl:#EDE9FE;
+  --bg:#F4F6F8; --white:#fff;
+  --border:rgba(0,0,0,.08); --border2:rgba(0,0,0,.14);
+  --text:#111827; --text2:#4B5563; --text3:#9CA3AF;
+  --radius:16px; --radius-sm:10px;
+  --font:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;-webkit-text-size-adjust:100%;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,#003D22,#00703C);color:#fff;padding:20px 18px 28px;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;bottom:-20px;left:0;right:0;height:40px;background:var(--bg);border-radius:20px 20px 0 0;}
+.header-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.header-icon{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;}
+.header-brand{font-size:13px;font-weight:600;opacity:.9;}
+.header-brand small{display:block;font-size:11px;opacity:.7;font-weight:400;}
+.curso-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:30px;padding:6px 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;}
+
+/* ── CONTENT ── */
+.content{padding:16px;padding-bottom:40px;}
+
+/* ── SCREENS ── */
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* ── STEP INDICATOR ── */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:20px;background:var(--white);border:1px solid var(--border);border-radius:30px;padding:6px 8px;}
+.step-dot{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;}
+.step-dot::after{content:'';position:absolute;left:50%;top:14px;width:100%;height:2px;background:var(--border);z-index:0;}
+.step-dot:last-child::after{display:none;}
+.dot-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--border);background:var(--white);color:var(--text3);position:relative;z-index:1;transition:all .3s;}
+.dot-circle.done{background:var(--g);border-color:var(--g);color:#fff;}
+.dot-circle.active{background:var(--white);border-color:var(--g);color:var(--g);}
+.dot-label{font-size:10px;color:var(--text3);font-weight:500;white-space:nowrap;}
+.dot-label.active{color:var(--g);font-weight:600;}
+.dot-label.done{color:var(--g);}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.card-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.card-sub{font-size:13px;color:var(--text3);margin-bottom:18px;line-height:1.5;}
+
+/* ── CI INPUT ── */
+.ci-wrap{position:relative;}
+.ci-input{width:100%;padding:18px 60px 18px 18px;border:2px solid var(--border2);border-radius:var(--radius-sm);font-size:22px;font-weight:700;font-family:var(--font);color:var(--text);outline:none;text-align:center;letter-spacing:.1em;transition:border-color .2s;-webkit-appearance:none;}
+.ci-input:focus{border-color:var(--g);box-shadow:0 0 0 4px rgba(0,112,60,.1);}
+.ci-input.error{border-color:var(--re);box-shadow:0 0 0 4px rgba(239,68,68,.1);}
+.ci-input.found{border-color:var(--g);}
+.ci-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px;display:none;}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;width:100%;}
+.btn-primary{background:var(--g);color:#fff;}
+.btn-primary:hover{background:var(--gd);}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{background:var(--white);color:var(--text);border:1.5px solid var(--border2);}
+.btn-secondary:hover{background:var(--bg);}
+.btn-danger{background:var(--re);color:#fff;}
+.btn-sm{padding:10px 16px;font-size:13px;border-radius:8px;}
+
+/* ── ALUMNA CARD (encontrada) ── */
+.alumna-card{background:var(--gl);border:2px solid var(--gm);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.alumna-avatar{width:52px;height:52px;background:var(--g);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0;}
+.alumna-name{font-size:17px;font-weight:700;color:var(--text);}
+.alumna-ci{font-size:13px;color:var(--text3);}
+.historial-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--white);border-radius:8px;margin-bottom:5px;font-size:12px;}
+.historial-nombre{color:var(--text);font-weight:500;}
+.historial-mes{color:var(--text3);}
+
+/* ── NUEVA ALUMNA FORM ── */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.form-label .req{color:var(--re);}
+.form-input{width:100%;padding:13px 14px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:15px;font-family:var(--font);color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;background:var(--white);}
+.form-input:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(0,112,60,.1);}
+.form-input.prefilled{background:var(--gl);border-color:var(--gm);color:var(--gd);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+
+/* ── BADGE ── */
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-green{background:#D1FAE5;color:#065F46;}
+.badge-amber{background:var(--aml);color:#92400E;}
+
+/* ── ÉXITO ── */
+.success-screen{text-align:center;padding:20px 10px;}
+.success-icon{width:80px;height:80px;background:var(--gl);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--g);font-size:36px;margin:0 auto 20px;}
+.success-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;}
+.success-sub{font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:24px;}
+.success-card{background:var(--gl);border:1.5px solid var(--gm);border-radius:var(--radius);padding:16px 18px;text-align:left;margin-bottom:16px;}
+
+/* ── CURSO INFO BOX ── */
+.curso-info-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;}
+.cib-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);padding:4px 0;}
+.cib-row i{font-size:16px;color:var(--g);width:18px;flex-shrink:0;}
+
+/* ── ALERTA ── */
+.alerta{display:flex;gap:10px;align-items:flex-start;padding:13px 14px;border-radius:var(--radius-sm);font-size:13px;line-height:1.5;margin-bottom:14px;}
+.alerta i{font-size:18px;flex-shrink:0;margin-top:1px;}
+.alerta-warn{background:var(--aml);color:#92400E;}
+.alerta-err{background:var(--rel);color:#991B1B;}
+.alerta-ok{background:var(--gl);color:#005A2E;}
+
+/* ── LOADER ── */
+.loader-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:100;}
+.loader-overlay.show{display:flex;}
+.loader-spin{width:48px;height:48px;border:4px solid var(--gm);border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
+.loader-msg{font-size:14px;color:var(--text2);font-weight:500;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:#fff;padding:12px 22px;border-radius:30px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.ok{background:var(--g);}
+
+/* ── DUPLICADO ── */
+.dup-card{background:var(--aml);border:2px solid #FDE68A;border-radius:var(--radius);padding:18px;margin-bottom:14px;text-align:center;}
+.dup-icon{font-size:40px;color:var(--am);margin-bottom:8px;}
+.dup-title{font-size:16px;font-weight:700;color:#92400E;margin-bottom:4px;}
+.dup-sub{font-size:13px;color:#92400E;line-height:1.5;}
+
+/* ── DIVIDER ── */
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text3);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-spin"></div>
+  <div class="loader-msg" id="loader-msg">Buscando...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <div class="header-icon">S</div>
+    <div>
+      <div class="header-brand">SIGPAF · CRE R.L.</div>
+      <small class="header-brand">Programa Apoyo a la Familia</small>
+    </div>
+  </div>
+  <div class="curso-chip" id="curso-chip">
+    <i class="ti ti-calendar-event"></i>
+    <span id="chip-texto">Cargando curso...</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ── STEPS ── -->
+  <div class="steps" id="steps-bar">
+    <div class="step-dot">
+      <div class="dot-circle active" id="dot-1"><i class="ti ti-id-badge"></i></div>
+      <div class="dot-label active" id="lbl-1">Identificación</div>
+    </div>
+    <div class="step-dot">
+      <div class="dot-circle" id="dot-2"><i class="ti ti-user"></i></div>
+      <div class="dot-label" id="lbl-2">Mis datos</div>
+    </div>
+    <div class="step-dot">
+      <div class="dot-circle" id="dot-3"><i class="ti ti-check"></i></div>
+      <div class="dot-label" id="lbl-3">Confirmación</div>
+    </div>
+  </div>
+
+  <!-- ════════════ PASO 1: INGRESAR CI ════════════ -->
+  <div class="screen active" id="screen-ci">
+    <div class="card">
+      <div class="card-title">¿Cuál es tu carnet de identidad?</div>
+      <div class="card-sub">Ingresa tu CI para verificar si ya tienes historial en el programa</div>
+
+      <div class="ci-wrap" style="margin-bottom:14px;">
+        <input class="ci-input" id="ci-input" type="tel" inputmode="numeric" pattern="[0-9]*"
+          placeholder="0000000" maxlength="12" oninput="onCIInput(this)" onkeydown="if(event.key==='Enter')buscarCI()">
+        <button class="ci-clear" id="ci-clear" onclick="limpiarCI()"><i class="ti ti-x"></i></button>
+      </div>
+
+      <div id="ci-msg" style="min-height:16px;font-size:13px;margin-bottom:14px;"></div>
+
+      <button class="btn btn-primary" id="btn-buscar" onclick="buscarCI()" disabled>
+        <i class="ti ti-search"></i> Buscar mi historial
+      </button>
+    </div>
+
+    <!-- Info del curso -->
+    <div id="curso-info-box-ci"></div>
+  </div>
+
+  <!-- ════════════ PASO 2A: ALUMNA ENCONTRADA ════════════ -->
+  <div class="screen" id="screen-encontrada">
+    <div class="alerta alerta-ok">
+      <i class="ti ti-circle-check"></i>
+      <div><strong>¡Te encontramos en el sistema!</strong><br>Verifica que tus datos sean correctos y confirma tu inscripción.</div>
+    </div>
+
+    <div class="alumna-card" id="alumna-card-content"></div>
+
+    <!-- Historial -->
+    <div class="card" id="historial-card" style="display:none;">
+      <div class="card-title" style="font-size:14px;margin-bottom:10px;">
+        <i class="ti ti-history" style="color:var(--g);"></i> Tu historial de cursos
+      </div>
+      <div id="historial-lista"></div>
+    </div>
+
+    <!-- Duplicado -->
+    <div id="duplicado-box" style="display:none;">
+      <div class="dup-card">
+        <div class="dup-icon"><i class="ti ti-alert-triangle"></i></div>
+        <div class="dup-title">Ya estás inscrita</div>
+        <div class="dup-sub">Tu CI ya está registrada en este curso. No es necesario inscribirse nuevamente.</div>
+      </div>
+      <button class="btn btn-secondary" onclick="reiniciar()">
+        <i class="ti ti-home"></i> Volver al inicio
+      </button>
+    </div>
+
+    <!-- Cupo lleno -->
+    <div id="cupo-lleno-box" style="display:none;">
+      <div class="alerta alerta-err">
+        <i class="ti ti-users-minus"></i>
+        <div><strong>Cupo completo</strong><br>Este curso ya no tiene lugares disponibles.</div>
+      </div>
+      <button class="btn btn-secondary" onclick="reiniciar()"><i class="ti ti-home"></i> Volver</button>
+    </div>
+
+    <div id="confirmar-box">
+      <div id="curso-info-box-enc"></div>
+      <button class="btn btn-primary" id="btn-confirmar" onclick="confirmarInscripcion()">
+        <i class="ti ti-user-check"></i> Confirmar inscripción
+      </button>
+      <div style="height:10px;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="volverCI()">
+        <i class="ti ti-arrow-left"></i> Usar otro CI
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════ PASO 2B: NUEVA ALUMNA ════════════ -->
+  <div class="screen" id="screen-nueva">
+    <div class="alerta alerta-warn">
+      <i class="ti ti-user-plus"></i>
+      <div><strong>CI no encontrado</strong><br>Completa tus datos para registrarte por primera vez en el programa.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tus datos personales</div>
+      <div class="card-sub">Los campos con <span style="color:var(--re);">*</span> son obligatorios</div>
+
+      <div class="form-group">
+        <label class="form-label">Carnet de identidad <span class="req">*</span></label>
+        <input class="form-input prefilled" id="nf-ci" type="tel" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre completo <span class="req">*</span></label>
+        <input class="form-input" id="nf-nombre" type="text" placeholder="Nombre y apellidos" autocomplete="name">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Teléfono <span class="req">*</span></label>
+          <input class="form-input" id="nf-tel" type="tel" placeholder="7X XXX XXX" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de nacimiento</label>
+          <input class="form-input" id="nf-nac" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Distrito <span class="req">*</span></label>
+        <select class="form-input form-select" id="nf-distrito">
+          <option value="">Selecciona tu distrito...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sección</label>
+        <select class="form-input form-select" id="nf-seccion">
+          <option value="">Selecciona sección...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Barrio / Comunidad</label>
+        <input class="form-input" id="nf-barrio" type="text" placeholder="Nombre de tu barrio">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dirección</label>
+        <input class="form-input" id="nf-dir" type="text" placeholder="Calle, número...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observaciones</label>
+        <textarea class="form-input" id="nf-obs" rows="2" placeholder="Información adicional..."></textarea>
+      </div>
+    </div>
+
+    <div id="curso-info-box-nueva"></div>
+
+    <div id="nueva-err-box" style="display:none;"></div>
+
+    <button class="btn btn-primary" id="btn-registrar" onclick="registrarNuevaAlumna()">
+      <i class="ti ti-user-plus"></i> Registrarme e inscribirme
+    </button>
+    <div style="height:10px;"></div>
+    <button class="btn btn-secondary btn-sm" onclick="volverCI()">
+      <i class="ti ti-arrow-left"></i> Usar otro CI
+    </button>
+  </div>
+
+  <!-- ════════════ PASO 3: ÉXITO ════════════ -->
+  <div class="screen" id="screen-exito">
+    <div class="success-screen">
+      <div class="success-icon"><i class="ti ti-circle-check"></i></div>
+      <div class="success-title" id="exito-titulo">¡Inscripción exitosa!</div>
+      <div class="success-sub" id="exito-sub">Quedaste registrada en el curso.</div>
+
+      <div class="success-card" id="exito-detalle"></div>
+
+      <div class="alerta alerta-ok" style="text-align:left;">
+        <i class="ti ti-info-circle"></i>
+        <div>Guarda una captura de pantalla como comprobante de tu inscripción.</div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="reiniciar()" style="margin-top:10px;">
+        <i class="ti ti-home"></i> Volver al inicio
+      </button>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ── Firebase ──
+window.addEventListener('load', function(){
+  try{
+    firebase.initializeApp({
+      apiKey:"AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
+      authDomain:"sigpaf-cre.firebaseapp.com",
+      projectId:"sigpaf-cre",
+      storageBucket:"sigpaf-cre.firebasestorage.app",
+      messagingSenderId:"783555160890",
+      appId:"1:783555160890:web:79bae67c10986f11a8fe03"
+    });
+  }catch(e){}
+  initApp();
+});
+
+var DB;
+var CURSO = null;      // datos del curso actual
+var ALUMNA = null;     // alumna encontrada en historial
+var CODIGO_CURSO = ''; // código extraído de la URL
+var DISTRITOS_DATA = {};
+
+// ── LEER CÓDIGO DEL CURSO DESDE LA URL ──
+// URL esperada: /registro/CRE-MANU1-MAY0TxR
+// o ?curso=CRE-MANU1-MAY0TxR para pruebas locales
+function getCodigoCurso(){
+  // 1. Intentar desde el path
+  var path = window.location.pathname;
+  var match = path.match(/\/registro\/([^\/\?]+)/);
+  if(match) return decodeURIComponent(match[1]);
+  // 2. Intentar desde query string (?curso=...)
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('curso')) return params.get('curso');
+  // 3. Para pruebas: usar el hash (#CODIGO)
+  if(window.location.hash) return window.location.hash.replace('#','');
+  return null;
+}
+
+async function initApp(){
+  DB = firebase.firestore();
+  CODIGO_CURSO = getCodigoCurso();
+
+  // Cargar distritos
+  cargarDistritos();
+
+  if(!CODIGO_CURSO){
+    // Sin código: mostrar selector manual (modo prueba)
+    document.getElementById('chip-texto').textContent = 'Modo prueba – sin curso';
+    mostrarCursoInfoBox('ci','PRUEBA','Selecciona un curso desde el panel de administración','—','—');
+    return;
+  }
+
+  document.getElementById('chip-texto').textContent = 'Código: ' + CODIGO_CURSO;
+  cargarCursoPorCodigo(CODIGO_CURSO);
+}
+
+// ── CARGAR CURSO DESDE FIRESTORE ──
+async function cargarCursoPorCodigo(codigo){
+  mostrarLoader('Cargando curso...');
+  try{
+    // Buscar en catalogo_cursos por campo codigo o id
+    var snap = await DB.collection('catalogo_cursos')
+      .where('codigo_curso','==', codigo)
+      .limit(1).get();
+
+    if(snap.empty){
+      // intentar por código generado (buscar en todos y filtrar)
+      snap = await DB.collection('catalogo_cursos').limit(200).get();
+      var found = snap.docs.find(function(d){
+        return generarCodigo(Object.assign({id:d.id},d.data())) === codigo;
+      });
+      if(found){
+        CURSO = Object.assign({id:found.id}, found.data());
+      }
+    } else {
+      CURSO = Object.assign({id:snap.docs[0].id}, snap.docs[0].data());
+    }
+
+    if(!CURSO){
+      // intentar colección courses
+      var snap2 = await DB.collection('courses').limit(200).get();
+      var found2 = snap2.docs.find(function(d){
+        return generarCodigo(Object.assign({id:d.id},d.data())) === codigo;
+      });
+      if(found2) CURSO = Object.assign({id:found2.id}, found2.data());
+    }
+
+    ocultarLoader();
+
+    if(!CURSO){
+      document.getElementById('chip-texto').textContent = 'Curso no encontrado';
+      mostrarCursoInfoBox('ci',codigo,'No se encontró el curso. Verifica el código QR.','—','—');
+      return;
+    }
+
+    actualizarHeader();
+    mostrarCursoInfoBox('ci',
+      CURSO.nombre_curso||CURSO.nombre||'Curso',
+      CURSO.profesora||CURSO.profesora_nombre||'—',
+      CURSO.distrito_nombre||(CURSO.distrito_num?'Distrito '+CURSO.distrito_num:CURSO.distrito||'—'),
+      CURSO.fecha_inicio||'—'
+    );
+  }catch(e){
+    ocultarLoader();
+    document.getElementById('chip-texto').textContent = 'Error al cargar';
+    console.error(e);
+  }
+}
+
+function actualizarHeader(){
+  if(!CURSO) return;
+  var nombre = CURSO.nombre_curso||CURSO.nombre||'Curso';
+  document.getElementById('chip-texto').textContent = nombre.slice(0,30);
+  document.title = 'SIGPAF – ' + nombre;
+}
+
+// ── CARGAR DISTRITOS ──
+async function cargarDistritos(){
+  try{
+    var snap = await DB.collection('distritos').orderBy('distrito_num').get();
+    var sel  = document.getElementById('nf-distrito');
+    snap.docs.forEach(function(d){
+      var dt = d.data();
+      DISTRITOS_DATA[d.id] = dt;
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = dt.nombre_completo || dt.nombre || 'Distrito '+dt.distrito_num;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function(){ cargarSecciones(this.value); });
+  }catch(e){ console.warn('No se pudieron cargar distritos:', e.message); }
+}
+
+function cargarSecciones(distritoId){
+  var sel = document.getElementById('nf-seccion');
+  sel.innerHTML = '<option value="">Selecciona sección...</option>';
+  var dt = DISTRITOS_DATA[distritoId];
+  if(!dt||!dt.secciones) return;
+  dt.secciones.forEach(function(s){
+    var opt = document.createElement('option');
+    opt.value = s.seccion_num;
+    opt.textContent = s.seccion_nombre || 'Sección '+s.seccion_num;
+    sel.appendChild(opt);
+  });
+}
+
+// ── PASO 1: CI ──
+function onCIInput(input){
+  var val = input.value.replace(/\D/g,'');
+  input.value = val;
+  document.getElementById('ci-clear').style.display = val ? 'block' : 'none';
+  document.getElementById('btn-buscar').disabled = val.length < 4;
+  document.getElementById('ci-msg').textContent = '';
+  input.classList.remove('error','found');
+}
+
+function limpiarCI(){
+  var inp = document.getElementById('ci-input');
+  inp.value = '';
+  inp.classList.remove('error','found');
+  document.getElementById('ci-clear').style.display = 'none';
+  document.getElementById('btn-buscar').disabled = true;
+  document.getElementById('ci-msg').textContent = '';
+  inp.focus();
+}
+
+async function buscarCI(){
+  var ci = document.getElementById('ci-input').value.trim();
+  if(ci.length < 4){
+    setMsgCI('El CI debe tener al menos 4 dígitos','error');
+    return;
+  }
+  mostrarLoader('Buscando en el sistema...');
+  try{
+    var alumna = null;
+    // Buscar por document ID = CI
+    var byId = await DB.collection('alumnas').doc(ci).get();
+    if(byId.exists) alumna = Object.assign({id:byId.id}, byId.data());
+    // Si no, buscar por campo ci
+    if(!alumna){
+      var qr = await DB.collection('alumnas').where('ci','==',ci).limit(1).get();
+      if(!qr.empty) alumna = Object.assign({id:qr.docs[0].id}, qr.docs[0].data());
+    }
+    ocultarLoader();
+    if(alumna){
+      ALUMNA = alumna;
+      mostrarAlumnaEncontrada(alumna, ci);
+    } else {
+      ALUMNA = null;
+      mostrarNuevaAlumna(ci);
+    }
+  }catch(e){
+    ocultarLoader();
+    setMsgCI('Error de conexión: '+e.message,'error');
+  }
+}
+
+function setMsgCI(msg, tipo){
+  var el = document.getElementById('ci-msg');
+  el.innerHTML = '<span style="color:'+(tipo==='error'?'var(--re)':'var(--g)')+';">'+msg+'</span>';
+  var inp = document.getElementById('ci-input');
+  inp.classList.toggle('error', tipo==='error');
+  inp.classList.toggle('found', tipo==='ok');
+}
+
+// ── PASO 2A: ALUMNA ENCONTRADA ──
+async function mostrarAlumnaEncontrada(alumna, ci){
+  setStep(2);
+  showScreen('encontrada');
+
+  var nombre    = alumna.nombre||alumna.nombre_completo||'Sin nombre';
+  var iniciales = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+  var dist      = alumna.distrito_nombre||(alumna.distrito_num?'Distrito '+alumna.distrito_num:'—');
+  var historial = alumna.historial_cursos||[];
+
+  // Card alumna
+  document.getElementById('alumna-card-content').innerHTML =
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">'
+    + '<div class="alumna-avatar">'+iniciales+'</div>'
+    + '<div><div class="alumna-name">'+nombre+'</div>'
+    + '<div class="alumna-ci">CI: '+ci+(dist&&dist!=='—'?' · '+dist:'')+'</div></div>'
+    + '</div>'
+    + (alumna.telefono?'<div style="font-size:13px;color:var(--text2);"><i class="ti ti-phone" style="color:var(--g);font-size:14px;"></i> '+alumna.telefono+'</div>':'');
+
+  // Historial
+  if(historial.length){
+    document.getElementById('historial-card').style.display = 'block';
+    document.getElementById('historial-lista').innerHTML = historial.slice(0,5).map(function(h){
+      return '<div class="historial-item">'
+        + '<div><div class="historial-nombre">'+(h.nombre_curso||h.nombre||'Curso')+'</div>'
+        + '<div class="historial-mes" style="font-size:11px;">'+(h.mes||h.fecha||'')+'</div></div>'
+        + '<span class="badge badge-green">'+( h.estado||'aprobado')+'</span></div>';
+    }).join('') + (historial.length>5?'<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px;">+'+( historial.length-5)+' cursos más</div>':'');
+  }
+
+  // Verificar duplicado y cupo
+  var cursoid   = CURSO ? CURSO.id : '';
+  var codigocurso = CURSO ? (CURSO.codigo_curso||generarCodigo(CURSO)) : CODIGO_CURSO;
+  var cupo      = parseInt(CURSO?(CURSO.cupo_maximo||CURSO.cupo||30):30);
+  var inscritas = parseInt(CURSO?(CURSO.alumnas_count||CURSO.cupo_actual||0):0);
+
+  // Verificar si ya está inscrita
+  var yaInscrita = false;
+  if(cursoid){
+    try{
+      var regSnap = await DB.collection('registros')
+        .where('ci_alumna','==',ci)
+        .where('codigo_curso','==',codigocurso)
+        .limit(1).get();
+      yaInscrita = !regSnap.empty;
+    }catch(e){}
+    // también verificar en historial_cursos
+    if(!yaInscrita && historial.length){
+      yaInscrita = historial.some(function(h){
+        return (h.nombre_curso||'').toLowerCase() === (CURSO?(CURSO.nombre_curso||CURSO.nombre||'').toLowerCase():'');
+      });
+    }
+  }
+
+  var cupolleno = inscritas >= cupo && cupo > 0;
+
+  if(yaInscrita){
+    document.getElementById('duplicado-box').style.display = 'block';
+    document.getElementById('confirmar-box').style.display = 'none';
+  } else if(cupolleno){
+    document.getElementById('cupo-lleno-box').style.display = 'block';
+    document.getElementById('confirmar-box').style.display = 'none';
+  } else {
+    document.getElementById('duplicado-box').style.display  = 'none';
+    document.getElementById('cupo-lleno-box').style.display = 'none';
+    document.getElementById('confirmar-box').style.display  = 'block';
+    if(CURSO) mostrarCursoInfoBox('enc',
+      CURSO.nombre_curso||CURSO.nombre,
+      CURSO.profesora||CURSO.profesora_nombre||'—',
+      CURSO.distrito_nombre||(CURSO.distrito_num?'Distrito '+CURSO.distrito_num:CURSO.distrito||'—'),
+      CURSO.fecha_inicio||'—'
+    );
+  }
+}
+
+// ── CONFIRMAR INSCRIPCIÓN (alumna encontrada) ──
+async function confirmarInscripcion(){
+  if(!ALUMNA){ toast('Error: no hay alumna seleccionada',''); return; }
+  var ci   = ALUMNA.ci||ALUMNA.id;
+  var nombre = ALUMNA.nombre||ALUMNA.nombre_completo||'—';
+  var codigocurso = CURSO?(CURSO.codigo_curso||generarCodigo(CURSO)):CODIGO_CURSO;
+  var nombreCurso = CURSO?(CURSO.nombre_curso||CURSO.nombre||'Curso'):'Curso';
+
+  mostrarLoader('Inscribiendo...');
+  try{
+    var registro = {
+      ci_alumna:        ci,
+      nombre_alumna:    nombre,
+      codigo_curso:     codigocurso,
+      nombre_curso:     nombreCurso,
+      curso_id:         CURSO?CURSO.id:'',
+      profesora:        CURSO?(CURSO.profesora||CURSO.profesora_nombre||''):'',
+      distrito:         CURSO?(CURSO.distrito_nombre||''):'',
+      fecha_registro:   new Date().toISOString(),
+      estado:           'inscrita',
+      origen_registro:  'QR',
+      es_nueva:         false,
+    };
+    await DB.collection('registros').add(registro);
+    // Actualizar contador del curso
+    if(CURSO&&CURSO.id){
+      try{
+        await DB.collection('catalogo_cursos').doc(CURSO.id).update({
+          alumnas_count: firebase.firestore.FieldValue.increment(1)
+        });
+      }catch(e){}
+    }
+    ocultarLoader();
+    mostrarExito(nombre, ci, codigocurso, nombreCurso, false);
+  }catch(e){
+    ocultarLoader();
+    toast('Error al inscribir: '+e.message,'');
+  }
+}
+
+// ── PASO 2B: NUEVA ALUMNA ──
+function mostrarNuevaAlumna(ci){
+  setStep(2);
+  showScreen('nueva');
+  document.getElementById('nf-ci').value = ci;
+  if(CURSO) mostrarCursoInfoBox('nueva',
+    CURSO.nombre_curso||CURSO.nombre,
+    CURSO.profesora||CURSO.profesora_nombre||'—',
+    CURSO.distrito_nombre||(CURSO.distrito_num?'Distrito '+CURSO.distrito_num:CURSO.distrito||'—'),
+    CURSO.fecha_inicio||'—'
+  );
+}
+
+// ── REGISTRAR NUEVA ALUMNA ──
+async function registrarNuevaAlumna(){
+  var ci     = document.getElementById('nf-ci').value.trim();
+  var nombre = document.getElementById('nf-nombre').value.trim();
+  var tel    = document.getElementById('nf-tel').value.trim();
+  var nac    = document.getElementById('nf-nac').value;
+  var distSel= document.getElementById('nf-distrito');
+  var distId = distSel.value;
+  var distNombre = distSel.options[distSel.selectedIndex]?.text||'';
+  var seccNum= document.getElementById('nf-seccion').value;
+  var barrio = document.getElementById('nf-barrio').value.trim();
+  var dir    = document.getElementById('nf-dir').value.trim();
+  var obs    = document.getElementById('nf-obs').value.trim();
+
+  // Validaciones
+  var errBox = document.getElementById('nueva-err-box');
+  errBox.style.display = 'none';
+  var errores = [];
+  if(!nombre) errores.push('Nombre completo es obligatorio');
+  if(!tel)    errores.push('Teléfono es obligatorio');
+  if(!distId) errores.push('Selecciona tu distrito');
+
+  if(errores.length){
+    errBox.style.display = 'block';
+    errBox.innerHTML = '<div class="alerta alerta-err"><i class="ti ti-alert-circle"></i><div>'
+      + errores.join('<br>') + '</div></div>';
+    errBox.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  var codigocurso = CURSO?(CURSO.codigo_curso||generarCodigo(CURSO)):CODIGO_CURSO;
+  var nombreCurso = CURSO?(CURSO.nombre_curso||CURSO.nombre||'Curso'):'Curso';
+
+  mostrarLoader('Registrando...');
+  try{
+    // Verificar duplicado
+    var dupSnap = await DB.collection('registros')
+      .where('ci_alumna','==',ci)
+      .where('codigo_curso','==',codigocurso)
+      .limit(1).get();
+    if(!dupSnap.empty){
+      ocultarLoader();
+      document.getElementById('nueva-err-box').style.display = 'block';
+      document.getElementById('nueva-err-box').innerHTML = '<div class="alerta alerta-warn"><i class="ti ti-alert-triangle"></i><div><strong>Ya estás inscrita</strong><br>Tu CI ya fue registrado en este curso.</div></div>';
+      return;
+    }
+
+    // Guardar alumna en colección alumnas
+    var alumnaData = {
+      ci: ci, nombre: nombre, fecha_nacimiento: nac, telefono: tel,
+      barrio: barrio, direccion: dir, observaciones: obs,
+      distrito_id: distId, distrito_nombre: distNombre,
+      seccion_num: seccNum ? parseInt(seccNum) : 0,
+      origen: 'SIGPAF_QR',
+      creado_en: new Date().toISOString(),
+      historial_cursos: [{
+        nombre_curso: nombreCurso,
+        codigo_curso: codigocurso,
+        mes: new Date().toLocaleString('es-BO',{month:'long',year:'numeric'}),
+        estado: 'inscrita',
+        fecha_inscripcion: new Date().toISOString()
+      }]
+    };
+    await DB.collection('alumnas').doc(ci).set(alumnaData, {merge:true});
+
+    // Registrar inscripción
+    await DB.collection('registros').add({
+      ci_alumna: ci, nombre_alumna: nombre,
+      codigo_curso: codigocurso, nombre_curso: nombreCurso,
+      curso_id: CURSO?CURSO.id:'',
+      profesora: CURSO?(CURSO.profesora||CURSO.profesora_nombre||''):'',
+      distrito: distNombre,
+      telefono: tel,
+      fecha_registro: new Date().toISOString(),
+      estado: 'inscrita', origen_registro: 'QR', es_nueva: true,
+    });
+
+    // Incrementar contador del curso
+    if(CURSO&&CURSO.id){
+      try{
+        await DB.collection('catalogo_cursos').doc(CURSO.id).update({
+          alumnas_count: firebase.firestore.FieldValue.increment(1)
+        });
+      }catch(e){}
+    }
+
+    ocultarLoader();
+    mostrarExito(nombre, ci, codigocurso, nombreCurso, true);
+  }catch(e){
+    ocultarLoader();
+    document.getElementById('nueva-err-box').style.display = 'block';
+    document.getElementById('nueva-err-box').innerHTML = '<div class="alerta alerta-err"><i class="ti ti-alert-circle"></i><div>Error: '+e.message+'</div></div>';
+  }
+}
+
+// ── ÉXITO ──
+function mostrarExito(nombre, ci, codigoCurso, nombreCurso, esNueva){
+  setStep(3);
+  showScreen('exito');
+  document.getElementById('exito-titulo').textContent = esNueva ? '¡Registro exitoso!' : '¡Inscripción confirmada!';
+  document.getElementById('exito-sub').textContent = esNueva
+    ? 'Te registramos en el programa y quedaste inscrita en el curso.'
+    : 'Tu inscripción al curso quedó confirmada.';
+  var fecha = new Date().toLocaleString('es-BO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('exito-detalle').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:8px;">'
+    + '<div style="font-size:14px;font-weight:700;color:var(--g);margin-bottom:4px;">'+nombreCurso+'</div>'
+    + row('ti-user',       nombre)
+    + row('ti-id-badge',   'CI: '+ci)
+    + row('ti-qrcode',     'Código: '+codigoCurso)
+    + row('ti-calendar',   fecha)
+    + (esNueva?row('ti-star','Primera inscripción en el programa'):'')
+    + '</div>';
+  window.scrollTo(0,0);
+}
+
+function row(icon, text){
+  return '<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);">'
+    + '<i class="ti '+icon+'" style="color:var(--g);font-size:15px;flex-shrink:0;"></i>'
+    + '<span>'+text+'</span></div>';
+}
+
+// ── CURSO INFO BOX ──
+function mostrarCursoInfoBox(target, nombre, profesora, distrito, fechaInicio){
+  var html = '<div class="curso-info-box">'
+    + '<div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Curso al que te inscribirás</div>'
+    + '<div style="font-size:15px;font-weight:700;margin-bottom:10px;">'+nombre+'</div>'
+    + '<div class="cib-row"><i class="ti ti-user-star"></i><span>'+profesora+'</span></div>'
+    + '<div class="cib-row"><i class="ti ti-map-pin"></i><span>'+distrito+'</span></div>'
+    + (fechaInicio&&fechaInicio!=='—'?'<div class="cib-row"><i class="ti ti-calendar"></i><span>Inicio: '+fechaInicio+'</span></div>':'')
+    + '</div>';
+  var ids = {'ci':'curso-info-box-ci','enc':'curso-info-box-enc','nueva':'curso-info-box-nueva'};
+  var el = document.getElementById(ids[target]);
+  if(el) el.innerHTML = html;
+}
+
+// ── GENERADOR DE CÓDIGO (igual al módulo QR) ──
+function generarCodigo(curso){
+  var base  = curso.nombre_curso||curso.nombre||'CURSO';
+  var dist  = curso.distrito_num||curso.distrito||'0';
+  var mes   = (curso.mes||'').replace(/\s/g,'').slice(0,3).toUpperCase();
+  var id    = (curso.id||'').slice(-4).toUpperCase();
+  var clean = base.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase();
+  return 'CRE-'+clean+dist+'-'+mes+id;
+}
+
+// ── NAVEGACIÓN ──
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var el = document.getElementById('screen-'+name);
+  if(el) el.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function setStep(n){
+  for(var i=1;i<=3;i++){
+    var d = document.getElementById('dot-'+i);
+    var l = document.getElementById('lbl-'+i);
+    if(!d||!l) continue;
+    d.classList.remove('active','done');
+    l.classList.remove('active','done');
+    if(i<n){ d.classList.add('done'); l.classList.add('done'); }
+    else if(i===n){ d.classList.add('active'); l.classList.add('active'); }
+  }
+}
+
+function volverCI(){
+  ALUMNA = null;
+  setStep(1);
+  showScreen('ci');
+  document.getElementById('historial-card').style.display = 'none';
+  document.getElementById('duplicado-box').style.display  = 'none';
+  document.getElementById('cupo-lleno-box').style.display = 'none';
+  document.getElementById('confirmar-box').style.display  = 'block';
+}
+
+function reiniciar(){
+  ALUMNA = null;
+  setStep(1);
+  showScreen('ci');
+  limpiarCI();
+  document.getElementById('historial-card').style.display = 'none';
+  document.getElementById('duplicado-box').style.display  = 'none';
+  document.getElementById('cupo-lleno-box').style.display = 'none';
+  document.getElementById('confirmar-box').style.display  = 'block';
+  document.getElementById('nueva-err-box').style.display  = 'none';
+}
+
+function mostrarLoader(msg){
+  document.getElementById('loader-msg').textContent = msg||'Cargando...';
+  document.getElementById('loader').classList.add('show');
+}
+function ocultarLoader(){ document.getElementById('loader').classList.remove('show'); }
+
+function toast(msg,tipo){
+  var el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast'+(tipo==='ok'?' ok':'');
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},3000);
+}
+</script>
+</body>
+</html>
