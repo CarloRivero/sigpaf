@@ -1,1 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00703C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SIGPAF Profesora">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGPAF – Portal Profesora</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --g:#00703C;--gd:#005A2E;--gl:#E8F5EE;--gm:#B7DFC8;
+  --am:#F59E0B;--aml:#FEF3C7;--amd:#92400E;
+  --re:#EF4444;--rel:#FEE2E2;
+  --in:#6366F1;--inl:#EDE9FE;
+  --te:#0D9488;--tel:#CCFBF1;
+  --bg:#F4F6F8;--white:#fff;
+  --border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.14);
+  --text:#111827;--text2:#4B5563;--text3:#9CA3AF;
+  --radius:12px;--radius-sm:8px;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#003D22,#00703C);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.hicon{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+.htitle{font-size:14px;font-weight:700;}
+.hsub{font-size:11px;opacity:.75;margin-top:1px;}
+.hright{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.hav{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+
+/* LAYOUT */
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px;}
+
+/* AUTH */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#003D22,#005A2E,#00703C);padding:20px;}
+.auth-card{background:var(--white);border-radius:16px;padding:32px 28px;width:100%;max-width:360px;}
+.auth-icon{width:52px;height:52px;background:var(--g);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800;margin:0 auto 12px;}
+.auth-title{text-align:center;font-size:18px;font-weight:700;margin-bottom:4px;}
+.auth-sub{text-align:center;font-size:12px;color:var(--text3);margin-bottom:24px;}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;}
+.fi{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text);outline:none;}
+.fi:focus{border-color:var(--g);}
+.fg{margin-bottom:13px;}
+.auth-err{color:var(--re);font-size:12px;min-height:16px;margin-bottom:8px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;white-space:nowrap;}
+.btn i{font-size:16px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-g{background:var(--g);color:#fff;width:100%;justify-content:center;}
+.btn-g:hover:not(:disabled){background:var(--gd);}
+.btn-am{background:var(--am);color:#fff;}
+.btn-te{background:var(--te);color:#fff;}
+.btn-gray{background:var(--white);border:1px solid var(--border2);color:var(--text2);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-full{width:100%;justify-content:center;}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;}
+.card-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.card-sub{font-size:12px;color:var(--text3);margin-bottom:12px;}
+
+/* CURSO CARD */
+.curso-hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:14px;}
+.curso-hero-nombre{font-size:18px;font-weight:700;margin-bottom:6px;}
+.curso-hero-meta{font-size:12px;opacity:.85;display:flex;flex-wrap:wrap;gap:12px;}
+.curso-hero-meta span{display:flex;align-items:center;gap:4px;}
+.hero-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.hbadge{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+
+/* ALUMNAS LIST */
+.alumna-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.alumna-row:last-child{border-bottom:none;}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0;}
+.av-sm{width:32px;height:32px;font-size:11px;}
+.alumna-nombre{font-size:13px;font-weight:600;color:var(--text);}
+.alumna-ci{font-size:11px;color:var(--text3);}
+
+/* ASISTENCIA */
+.att-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);margin-bottom:5px;}
+.att-row.presente{background:#F0FDF4;}
+.att-row.ausente{background:#FEF2F2;}
+.att-row.justificada{background:#FFFBEB;}
+.att-btns{display:flex;gap:4px;margin-left:auto;}
+.att-btn{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;}
+.att-btn.pres{background:#D1FAE5;color:#065F46;}
+.att-btn.pres.active{background:var(--g);color:#fff;}
+.att-btn.aus{background:#FEE2E2;color:#991B1B;}
+.att-btn.aus.active{background:var(--re);color:#fff;}
+.att-btn.just{background:#FEF3C7;color:#92400E;}
+.att-btn.just.active{background:var(--am);color:#fff;}
+
+/* QR */
+.qr-box{background:var(--gl);border-radius:var(--radius);padding:16px;text-align:center;}
+.qr-canvas{display:inline-block;background:#fff;border-radius:8px;padding:8px;margin-bottom:10px;}
+.qr-codigo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--g);margin-bottom:4px;}
+.qr-link{font-size:10.5px;color:var(--gd);word-break:break-all;opacity:.8;margin-bottom:12px;}
+.qr-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.badge-g{background:#D1FAE5;color:#065F46;}
+.badge-a{background:var(--aml);color:var(--amd);}
+.badge-r{background:var(--rel);color:#991B1B;}
+.badge-gray{background:#F3F4F6;color:#374151;}
+.badge-te{background:var(--tel);color:#0F766E;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:30px;padding:5px;margin-bottom:16px;}
+.tab{flex:1;text-align:center;padding:8px 4px;border-radius:25px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text3);transition:all .15s;}
+.tab.active{background:var(--g);color:#fff;}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.kpi-sm{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
+.kpi-val{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px;}
+.kpi-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;}
+
+/* SELECTOR CURSO */
+.curso-sel-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--white);border:1.5px solid var(--border2);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.curso-sel-card:hover,.curso-sel-card.sel{border-color:var(--g);background:var(--gl);}
+.curso-sel-icon{width:36px;height:36px;border-radius:8px;background:var(--gl);display:flex;align-items:center;justify-content:center;color:var(--g);font-size:16px;flex-shrink:0;}
+.curso-sel-name{font-size:13px;font-weight:600;color:var(--text);}
+.curso-sel-meta{font-size:11px;color:var(--text3);}
+
+/* STATS BAR */
+.stats-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--gl);border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--text);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:200;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--g);}
+.toast.warn{background:var(--am);}
+
+/* SCREEN */
+.screen{display:none;}
+.screen.active{display:block;}
+.empty{text-align:center;padding:32px 16px;color:var(--text3);}
+.empty i{font-size:36px;margin-bottom:8px;display:block;}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr;}
+  .att-btns{flex-direction:column;gap:3px;}
+  .att-btn{font-size:10px;padding:4px 8px;}
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="page-login" class="auth-page">
+  <div class="auth-card">
+    <div class="auth-icon">P</div>
+    <div class="auth-title">Portal Profesora</div>
+    <div class="auth-sub">SIGPAF · CRE R.L. · Programa Apoyo a la Familia</div>
+    <div class="fg">
+      <label class="fl">Número de CI</label>
+      <input class="fi" id="ci-login" type="number" placeholder="Ej: 5123456" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+    <button class="btn btn-g" id="btn-login" onclick="doLogin()">
+      <i class="ti ti-login"></i> Ingresar
+    </button>
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text3);">
+      Acceso exclusivo para profesoras registradas en el sistema
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="page-app" style="display:none;">
+  <div class="header">
+    <div class="hicon">P</div>
+    <div>
+      <div class="htitle" id="h-nombre">Portal Profesora</div>
+      <div class="hsub">SIGPAF · CRE R.L.</div>
+    </div>
+    <div class="hright">
+      <div class="hav" id="h-av">--</div>
+      <button class="hbtn" onclick="doLogout()"><i class="ti ti-logout" style="font-size:15px;"></i></button>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- SELECTOR DE CURSO (si tiene múltiples) -->
+    <div id="screen-selector" class="screen active">
+      <div class="card">
+        <div class="card-title"><i class="ti ti-calendar-event" style="color:var(--g);"></i> Mis cursos activos</div>
+        <div class="card-sub">Selecciona el curso que vas a gestionar</div>
+        <div id="lista-cursos-prof"></div>
+      </div>
+    </div>
+
+    <!-- PANEL DEL CURSO -->
+    <div id="screen-curso" class="screen">
+      <!-- Hero del curso -->
+      <div class="curso-hero" id="curso-hero">
+        <div class="curso-hero-nombre" id="hero-nombre">Cargando...</div>
+        <div class="curso-hero-meta">
+          <span><i class="ti ti-map-pin"></i> <span id="hero-distrito">—</span></span>
+          <span><i class="ti ti-calendar"></i> <span id="hero-fechas">—</span></span>
+          <span><i class="ti ti-users"></i> <span id="hero-cupo">0/30</span></span>
+        </div>
+        <div class="hero-badges">
+          <span class="hbadge" id="hero-estado">—</span>
+          <span class="hbadge" id="hero-codigo" style="font-family:monospace;">—</span>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-sm"><div class="kpi-val" style="color:var(--g);" id="kpi-inscritas">0</div><div class="kpi-lbl">Inscritas</div></div>
+        <div class="kpi-sm"><div class="kpi-val" style="color:var(--in);" id="kpi-presentes">0</div><div class="kpi-lbl">Presentes hoy</div></div>
+        <div class="kpi-sm"><div class="kpi-val" style="color:var(--am);" id="kpi-ausentes">0</div><div class="kpi-lbl">Ausentes hoy</div></div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <div class="tab active" id="tab-alumnas" onclick="setTab('alumnas')"><i class="ti ti-users"></i> Alumnas</div>
+        <div class="tab" id="tab-asistencia" onclick="setTab('asistencia')"><i class="ti ti-checkbox"></i> Asistencia</div>
+        <div class="tab" id="tab-qr" onclick="setTab('qr')"><i class="ti ti-qrcode"></i> QR</div>
+      </div>
+
+      <!-- TAB: ALUMNAS -->
+      <div id="panel-alumnas" class="screen active">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;justify-content:space-between;">
+            <span><i class="ti ti-users" style="color:var(--g);"></i> Lista de alumnas inscritas</span>
+            <button class="btn btn-sm btn-te" onclick="exportarListado()"><i class="ti ti-download"></i> Excel</button>
+          </div>
+          <div id="lista-alumnas"><div class="empty"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;color:var(--g);"></i>Cargando...</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: ASISTENCIA -->
+      <div id="panel-asistencia" class="screen">
+        <div class="stats-bar">
+          <span style="color:var(--g);font-weight:700;"><i class="ti ti-check"></i> Presentes: <span id="cnt-p">0</span></span>
+          <span style="color:var(--re);font-weight:700;"><i class="ti ti-x"></i> Ausentes: <span id="cnt-a">0</span></span>
+          <span style="color:var(--am);font-weight:700;">~ Justif.: <span id="cnt-j">0</span></span>
+        </div>
+        <div id="lista-asistencia"><div class="empty"><i class="ti ti-users"></i>Sin alumnas cargadas</div></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-g" style="flex:1;" onclick="guardarAsistencia()"><i class="ti ti-device-floppy"></i> Guardar asistencia</button>
+          <button class="btn btn-gray btn-sm" onclick="marcarTodas('presente')">Todas presentes</button>
+        </div>
+      </div>
+
+      <!-- TAB: QR -->
+      <div id="panel-qr" class="screen">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px;"><i class="ti ti-qrcode" style="color:var(--g);"></i> Código QR del curso</div>
+          <div class="card-sub">Muestra o comparte este QR para que las alumnas se inscriban</div>
+          <div class="qr-box">
+            <div class="qr-canvas" id="qr-canvas"></div>
+            <div class="qr-codigo" id="qr-codigo">—</div>
+            <div class="qr-link" id="qr-link">—</div>
+            <div class="qr-btns">
+              <button class="btn btn-g btn-sm" onclick="compartirWA()"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+              <button class="btn btn-am btn-sm" onclick="descargarQR()"><i class="ti ti-download"></i> Descargar</button>
+              <button class="btn btn-gray btn-sm" onclick="copiarLink()"><i class="ti ti-copy"></i> Copiar link</button>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:10px 12px;background:var(--inl);border-radius:8px;font-size:12px;color:#3730A3;">
+            <i class="ti ti-info-circle"></i> Las alumnas escanean este QR con su celular, ingresan su CI y quedan inscritas automáticamente al curso.
+          </div>
+        </div>
+
+        <!-- Historial de sesiones -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-history" style="color:var(--text3);"></i> Sesiones de asistencia registradas</div>
+          <div id="historial-sesiones"><div class="empty" style="padding:16px;">Sin sesiones registradas aún</div></div>
+        </div>
+      </div>
+
+      <!-- Volver -->
+      <div style="text-align:center;margin-top:8px;" id="btn-volver-wrap">
+        <button class="btn btn-gray btn-sm" onclick="volverSelector()"><i class="ti ti-arrow-left"></i> Ver mis cursos</button>
+      </div>
+    </div>
+
+  </div><!-- /wrap -->
+</div><!-- /page-app -->
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
+  authDomain:"sigpaf-cre.firebaseapp.com",
+  projectId:"sigpaf-cre",
+  storageBucket:"sigpaf-cre.firebasestorage.app",
+  messagingSenderId:"783555160890",
+  appId:"1:783555160890:web:79bae67c10986f11a8fe03"
+});
+var DB = firebase.firestore();
+
+// ── ESTADO ──
+var PROF = null;      // datos de la profesora
+var CURSOS = [];      // cursos de la profesora
+var CURSO_SEL = null; // curso seleccionado
+var ALUMNAS = [];     // alumnas inscritas al curso
+var ATT = {};         // estado asistencia { ci: 'presente'|'ausente'|'justificada' }
+var COLORS = ['#00703C','#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6','#0D9488','#EC4899'];
+
+// ── LOGIN por CI de profesora ──
+function doLogin(){
+  var ci = (document.getElementById('ci-login').value||'').trim();
+  var err = document.getElementById('auth-err');
+  err.textContent = '';
+  if(!ci || ci.length < 4){ err.textContent = 'Ingresa tu número de CI.'; return; }
+  setBtnLogin(true);
+
+  // Buscar profesora por CI en Firestore
+  Promise.all([
+    DB.collection('profesoras').doc(ci).get(),
+    DB.collection('profesoras').where('ci','==',ci).limit(1).get()
+  ]).then(function(results){
+    var prof = null;
+    if(results[0].exists){
+      prof = Object.assign({id:results[0].id}, results[0].data());
+    } else if(!results[1].empty){
+      prof = Object.assign({id:results[1].docs[0].id}, results[1].docs[0].data());
+    }
+    if(!prof){
+      err.textContent = 'CI no registrado. Contacta al administrador.';
+      setBtnLogin(false);
+      return;
+    }
+    PROF = prof;
+    iniciarApp();
+  }).catch(function(e){
+    err.textContent = 'Error de conexión: '+e.message;
+    setBtnLogin(false);
+  });
+}
+
+function setBtnLogin(v){
+  var b = document.getElementById('btn-login');
+  b.disabled = v;
+  b.innerHTML = v
+    ? '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Verificando...'
+    : '<i class="ti ti-login"></i> Ingresar';
+}
+
+function doLogout(){
+  PROF=null; CURSOS=[]; CURSO_SEL=null; ALUMNAS=[]; ATT={};
+  document.getElementById('page-login').style.display='flex';
+  document.getElementById('page-app').style.display='none';
+  document.getElementById('ci-login').value='';
+  setBtnLogin(false);
+}
+
+// ── INICIAR APP ──
+function iniciarApp(){
+  var nombre = PROF.nombre||PROF.nombre_completo||'Profesora';
+  var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+  document.getElementById('h-nombre').textContent = nombre;
+  document.getElementById('h-av').textContent = ini;
+  document.getElementById('page-login').style.display='none';
+  document.getElementById('page-app').style.display='block';
+
+  // Buscar cursos de esta profesora
+  // Generar variantes del nombre para busqueda flexible
+  var nombre_upper = nombre.toUpperCase();
+  var nombre_lower = nombre.toLowerCase();
+  var nombre_title = nombre.split(' ').map(function(w){
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+
+  // Buscar por todas las variantes posibles
+  Promise.all([
+    DB.collection('catalogo_cursos').where('profesora','==',nombre).get(),
+    DB.collection('catalogo_cursos').where('profesora','==',nombre_upper).get(),
+    DB.collection('catalogo_cursos').where('profesora','==',nombre_lower).get(),
+    DB.collection('catalogo_cursos').where('profesora','==',nombre_title).get(),
+    DB.collection('catalogo_cursos').where('profesora_ci','==',PROF.id).get(),
+    DB.collection('catalogo_cursos').where('profesora_id','==',PROF.id).get()
+  ]).then(function(results){
+    var todos = {};
+    results.forEach(function(snap){
+      snap.docs.forEach(function(d){
+        todos[d.id] = Object.assign({id:d.id}, d.data());
+      });
+    });
+
+    // Si aun no encontro, buscar todos los cursos y filtrar por nombre similar
+    if(Object.keys(todos).length === 0){
+      return DB.collection('catalogo_cursos').get().then(function(snap){
+        snap.docs.forEach(function(d){
+          var data = d.data();
+          var prof_fb = (data.profesora||'').toUpperCase().trim();
+          var prof_ci = (data.profesora_ci||'').trim();
+          // Comparar ignorando mayusculas y espacios extra
+          var nombre_norm = nombre_upper.trim();
+          // Tambien comparar por apellido principal (primera palabra)
+          var apellido_prof = nombre_upper.split(' ')[0];
+          var apellido_fb   = prof_fb.split(' ')[0];
+          if(prof_fb === nombre_norm ||
+             prof_ci === PROF.id ||
+             (apellido_prof && apellido_fb && prof_fb.includes(apellido_prof))){
+            todos[d.id] = Object.assign({id:d.id}, data);
+          }
+        });
+        return todos;
+      });
+    }
+    return todos;
+  }).then(function(todos){
+    CURSOS = Object.values(todos);
+
+    if(!CURSOS.length){
+      // Mostrar mensaje con instruccion al admin
+      document.getElementById('lista-cursos-prof').innerHTML =
+        '<div class="empty"><i class="ti ti-calendar-off"></i>'
+        +'Sin cursos asignados.<br>'
+        +'<small style="color:var(--text3);">El administrador debe asignar cursos con el nombre:<br>'
+        +'<strong style="font-family:monospace;color:var(--g);">'+nombre+'</strong></small></div>';
+      return;
+    }
+    if(CURSOS.length === 1){
+      seleccionarCurso(CURSOS[0]);
+    } else {
+      renderSelectorCursos();
+    }
+  }).catch(function(e){
+    showToast('Error cargando cursos: '+e.message,'warn');
+  });
+}
+
+// ── SELECTOR DE CURSOS ──
+function renderSelectorCursos(){
+  setScreen('selector');
+  var el = document.getElementById('lista-cursos-prof');
+  el.innerHTML = CURSOS.map(function(c,i){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var dist = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:'—');
+    var est = normEstado(c.estado);
+    var badgeCls = est==='enEjecucion'?'badge-g':est==='aprobado'?'badge-g':'badge-gray';
+    return '<div class="curso-sel-card" onclick="seleccionarCurso(CURSOS['+i+'])">'
+      +'<div class="curso-sel-icon"><i class="ti ti-calendar-event"></i></div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div class="curso-sel-name">'+nombre+'</div>'
+      +'<div class="curso-sel-meta">'+dist+' · '+(c.fecha_inicio||'—')+' a '+(c.fecha_fin||'—')+'</div></div>'
+      +'<span class="badge '+badgeCls+'">'+ESTADO_LABEL[est]+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+// ── SELECCIONAR CURSO ──
+function seleccionarCurso(c){
+  CURSO_SEL = c;
+  ATT = {};
+
+  var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+  var dist   = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:'—');
+  var estado = normEstado(c.estado);
+  var codigo = generarCodigo(c);
+  var link   = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+
+  // Llenar hero
+  document.getElementById('hero-nombre').textContent = nombre;
+  document.getElementById('hero-distrito').textContent = dist;
+  document.getElementById('hero-fechas').textContent = (c.fecha_inicio||'—')+' · '+(c.fecha_fin||'—');
+  document.getElementById('hero-estado').textContent = ESTADO_LABEL[estado]||estado;
+  document.getElementById('hero-codigo').textContent = codigo;
+
+  // QR
+  document.getElementById('qr-codigo').textContent = codigo;
+  document.getElementById('qr-link').textContent = link;
+  var qrEl = document.getElementById('qr-canvas');
+  qrEl.innerHTML = '';
+  try{
+    new QRCode(qrEl,{text:link,width:160,height:160,colorDark:'#00703C',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+  }catch(e){ qrEl.textContent = codigo; }
+
+  // Cargar alumnas inscritas
+  DB.collection('registros').where('curso_id','==',c.id).get()
+    .then(function(snap){
+      ALUMNAS = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      ALUMNAS.forEach(function(a){ ATT[a.ci_alumna] = ATT[a.ci_alumna]||'presente'; });
+
+      var inscritas = ALUMNAS.length;
+      var cupo = parseInt(c.cupo_maximo||c.cupo||30);
+      document.getElementById('hero-cupo').textContent = inscritas+'/'+cupo;
+      document.getElementById('kpi-inscritas').textContent = inscritas;
+      renderAlumnas();
+      renderAsistencia();
+      cargarHistorialSesiones();
+    }).catch(function(e){ showToast('Error cargando alumnas: '+e.message,'warn'); });
+
+  setScreen('curso');
+  setTab('alumnas');
+}
+
+// ── RENDER ALUMNAS ──
+function renderAlumnas(){
+  var el = document.getElementById('lista-alumnas');
+  if(!ALUMNAS.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-user-off"></i>Sin alumnas inscritas aún.<br><small>Comparte el QR para que se inscriban.</small></div>';
+    return;
+  }
+  el.innerHTML = ALUMNAS.map(function(a,i){
+    var nombre = a.nombre_alumna||'—';
+    var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var orig = a.origen_registro||a.origen||'—';
+    var fecha = (a.fecha_registro||'').slice(0,10);
+    return '<div class="alumna-row">'
+      +'<div class="av av-sm" style="background:'+COLORS[i%COLORS.length]+';">'+ini+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div class="alumna-nombre">'+nombre+'</div>'
+      +'<div class="alumna-ci">CI '+( a.ci_alumna||'—')+(fecha?' · '+fecha:'')+'</div></div>'
+      +'<span class="badge '+(orig==='QR'||orig==='SIGPAF_QR'?'badge-te':'badge-gray')+'">'+( orig==='QR'||orig==='SIGPAF_QR'?'QR':'Admin')+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+// ── RENDER ASISTENCIA ──
+function renderAsistencia(){
+  var el = document.getElementById('lista-asistencia');
+  var p=0,a=0,j=0;
+  if(!ALUMNAS.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-users"></i>Sin alumnas inscritas</div>';
+    actualizarContadores(0,0,0); return;
+  }
+  el.innerHTML = ALUMNAS.map(function(alm,i){
+    var s = ATT[alm.ci_alumna]||'presente';
+    if(s==='presente') p++; else if(s==='ausente') a++; else j++;
+    var nombre = alm.nombre_alumna||'—';
+    var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    return '<div class="att-row '+s+'">'
+      +'<div class="av av-sm" style="background:'+COLORS[i%COLORS.length]+';">'+ini+'</div>'
+      +'<div style="flex:1;font-size:13px;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+nombre+'</div>'
+      +'<div class="att-btns">'
+      +'<button class="att-btn pres '+(s==='presente'?'active':'')+'" onclick="setAtt(\''+alm.ci_alumna+'\',\'presente\')">✓</button>'
+      +'<button class="att-btn aus '+(s==='ausente'?'active':'')+'" onclick="setAtt(\''+alm.ci_alumna+'\',\'ausente\')">✗</button>'
+      +'<button class="att-btn just '+(s==='justificada'?'active':'')+'" onclick="setAtt(\''+alm.ci_alumna+'\',\'justificada\')">~</button>'
+      +'</div></div>';
+  }).join('');
+  actualizarContadores(p,a,j);
+}
+
+function setAtt(ci, estado){
+  ATT[ci] = estado;
+  renderAsistencia();
+}
+
+function marcarTodas(estado){
+  ALUMNAS.forEach(function(a){ ATT[a.ci_alumna] = estado; });
+  renderAsistencia();
+  showToast('Todas marcadas como '+estado,'ok');
+}
+
+function actualizarContadores(p,a,j){
+  document.getElementById('cnt-p').textContent = p;
+  document.getElementById('cnt-a').textContent = a;
+  document.getElementById('cnt-j').textContent = j;
+  document.getElementById('kpi-presentes').textContent = p;
+  document.getElementById('kpi-ausentes').textContent = a;
+}
+
+// ── GUARDAR ASISTENCIA ──
+function guardarAsistencia(){
+  if(!CURSO_SEL){ showToast('Sin curso seleccionado','warn'); return; }
+  if(!ALUMNAS.length){ showToast('Sin alumnas para registrar','warn'); return; }
+
+  var sesion = {
+    curso_id:   CURSO_SEL.id,
+    nombre_curso: CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—',
+    profesora:  PROF.nombre||'—',
+    profesora_ci: PROF.id||'—',
+    fecha:      new Date().toISOString().split('T')[0],
+    hora:       new Date().toLocaleTimeString('es-BO'),
+    registros:  ALUMNAS.map(function(a){
+      return {ci:a.ci_alumna, nombre:a.nombre_alumna, estado:ATT[a.ci_alumna]||'presente'};
+    }),
+    total:      ALUMNAS.length,
+    presentes:  ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='presente'; }).length,
+    ausentes:   ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='ausente'; }).length,
+    timestamp:  new Date().toISOString()
+  };
+
+  DB.collection('asistencia').add(sesion)
+    .then(function(){
+      showToast('Asistencia guardada correctamente','ok');
+      cargarHistorialSesiones();
+    })
+    .catch(function(e){ showToast('Error: '+e.message,'warn'); });
+}
+
+// ── HISTORIAL SESIONES ──
+function cargarHistorialSesiones(){
+  if(!CURSO_SEL) return;
+  DB.collection('asistencia').where('curso_id','==',CURSO_SEL.id)
+    .orderBy('timestamp','desc').limit(10).get()
+    .then(function(snap){
+      var el = document.getElementById('historial-sesiones');
+      if(snap.empty){
+        el.innerHTML = '<div class="empty" style="padding:12px;">Sin sesiones registradas aún</div>';
+        return;
+      }
+      el.innerHTML = snap.docs.map(function(d){
+        var s = d.data();
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:8px;margin-bottom:5px;font-size:12.5px;">'
+          +'<div><div style="font-weight:600;">'+(s.fecha||'—')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);">'+(s.hora||'')+'</div></div>'
+          +'<div style="display:flex;gap:6px;">'
+          +'<span class="badge badge-g">'+( s.presentes||0)+' pres.</span>'
+          +'<span class="badge badge-r">'+( s.ausentes||0)+' aus.</span>'
+          +'<span style="font-size:11px;color:var(--text3);">'+( s.total||0)+' total</span>'
+          +'</div></div>';
+      }).join('');
+    }).catch(function(){});
+}
+
+// ── EXPORTAR LISTADO EXCEL ──
+function exportarListado(){
+  if(!ALUMNAS.length){ showToast('Sin alumnas para exportar','warn'); return; }
+  if(typeof XLSX==='undefined'){ showToast('Cargando librería...','warn'); return; }
+  var nombre_curso = CURSO_SEL?(CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'Curso'):'Curso';
+  var data = ALUMNAS.map(function(a){
+    return {
+      'CI': a.ci_alumna||'',
+      'Nombre': a.nombre_alumna||'',
+      'Fecha inscripción': (a.fecha_registro||'').slice(0,10),
+      'Origen': a.origen_registro||a.origen||'—',
+      'Estado': a.estado||'inscrita',
+      'Asistencia hoy': ATT[a.ci_alumna]||'presente'
+    };
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:12},{wch:35},{wch:16},{wch:10},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Alumnas');
+  XLSX.writeFile(wb, 'Alumnas_'+nombre_curso.replace(/\s/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast('Excel generado','ok');
+}
+
+// ── QR ACCIONES ──
+function compartirWA(){
+  if(!CURSO_SEL) return;
+  var codigo = generarCodigo(CURSO_SEL);
+  var link   = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var dist   = CURSO_SEL.distrito_nombre||(CURSO_SEL.distrito_num?'Distrito '+CURSO_SEL.distrito_num:'—');
+  var nombre = CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—';
+  var msg    = 'Hola! Te invito a inscribirte al curso:\n\n*'+nombre+'*\nDistrito: '+dist+'\n\nEscanea el QR o ingresa aqui:\n'+link+'\n\n_Programa Apoyo a la Familia - CRE R.L._';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function descargarQR(){
+  var canvas = document.querySelector('#qr-canvas canvas');
+  if(!canvas){ showToast('QR no disponible','warn'); return; }
+  var codigo  = CURSO_SEL?generarCodigo(CURSO_SEL):'QR';
+  var nombre  = CURSO_SEL?(CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'Curso'):'Curso';
+  var out = document.createElement('canvas');
+  out.width=400; out.height=480;
+  var ctx = out.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,400,480);
+  ctx.fillStyle='#00703C'; ctx.fillRect(0,0,400,70);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('SIGPAF - CRE R.L.',200,28);
+  ctx.font='12px sans-serif';
+  ctx.fillText('Programa Apoyo a la Familia',200,50);
+  ctx.drawImage(canvas,100,85,200,200);
+  ctx.fillStyle='#111827';
+  ctx.font='bold 13px monospace'; ctx.fillText(codigo,200,318);
+  ctx.font='bold 13px sans-serif'; ctx.fillText(nombre.slice(0,38),200,340);
+  ctx.font='12px sans-serif'; ctx.fillStyle='#4B5563';
+  ctx.fillText('Escanea para inscribirte',200,364);
+  ctx.fillText(PROF?PROF.nombre:'',200,385);
+  var a=document.createElement('a');
+  a.download='QR_'+nombre.replace(/\s/g,'_')+'_'+codigo+'.png';
+  a.href=out.toDataURL('image/png'); a.click();
+  showToast('QR descargado','ok');
+}
+
+function copiarLink(){
+  if(!CURSO_SEL) return;
+  var link='https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+generarCodigo(CURSO_SEL);
+  navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado','ok'); });
+}
+
+// ── HELPERS ──
+var ESTADO_LABEL = {
+  registradoGU:'Registrado GU', enviadoFundacion:'Enviado Fundación',
+  enEjecucion:'En ejecución', finalizado:'Finalizado',
+  observado:'Observado', aprobado:'Aprobado'
+};
+
+function normEstado(raw){
+  if(!raw) return 'registradoGU';
+  var r=raw.toLowerCase().replace(/\s/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(r.includes('ejecucion')||r==='activo') return 'enEjecucion';
+  if(r.includes('fundacion')) return 'enviadoFundacion';
+  if(r.includes('aprobado')) return 'aprobado';
+  if(r.includes('observado')) return 'observado';
+  if(r.includes('finalizado')) return 'finalizado';
+  return 'registradoGU';
+}
+
+function generarCodigo(c){
+  var base=(c.nombre_curso||c.nombre||'CURSO').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase();
+  var dist=c.distrito_num||c.distrito||'0';
+  var mes=(c.mes||'').replace(/\s/g,'').slice(0,3).toUpperCase();
+  var id=(c.id||'').slice(-4).toUpperCase();
+  return 'CRE-'+base+dist+'-'+mes+id;
+}
+
+function setScreen(name){
+  document.getElementById('screen-selector').classList.remove('active');
+  document.getElementById('screen-curso').classList.remove('active');
+  document.getElementById('screen-'+name).classList.add('active');
+  var wrap = document.getElementById('btn-volver-wrap');
+  if(wrap) wrap.style.display = name==='curso' && CURSOS.length>1 ? 'block':'none';
+}
+
+function volverSelector(){
+  CURSO_SEL=null; ATT={};
+  setScreen('selector');
+}
+
+function setTab(name){
+  ['alumnas','asistencia','qr'].forEach(function(t){
+    document.getElementById('tab-'+t).classList.remove('active');
+    document.getElementById('panel-'+t).classList.remove('active');
+  });
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function showToast(msg,tipo){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(tipo?' '+tipo:'');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+</script>
+
+<script>
+// Registrar Service Worker para PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js', {scope:'/sigpaf/'})
+      .then(function(reg){ console.log('SW registrado:', reg.scope); })
+      .catch(function(err){ console.log('SW error:', err); });
+  });
+}
+</script>
+</body>
+</html>
 
