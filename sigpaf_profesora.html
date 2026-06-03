@@ -359,6 +359,12 @@ function setBtnLogin(v){
     : '<i class="ti ti-login"></i> Ingresar';
 }
 
+function reintentarBusqueda(){
+  document.getElementById('lista-cursos-prof').innerHTML =
+    '<div style="text-align:center;padding:20px;"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:24px;color:var(--g);"></i></div>';
+  iniciarApp();
+}
+
 function doLogout(){
   PROF=null; CURSOS=[]; CURSO_SEL=null; ALUMNAS=[]; ATT={};
   document.getElementById('page-login').style.display='flex';
@@ -376,62 +382,62 @@ function iniciarApp(){
   document.getElementById('page-login').style.display='none';
   document.getElementById('page-app').style.display='block';
 
-  // Buscar cursos de esta profesora
-  // Generar variantes del nombre para busqueda flexible
-  var nombre_upper = nombre.toUpperCase();
-  var nombre_lower = nombre.toLowerCase();
-  var nombre_title = nombre.split(' ').map(function(w){
-    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
-  }).join(' ');
+  // Buscar cursos: cargar todos y filtrar en cliente para maxima flexibilidad
+  var nombre_upper = nombre.toUpperCase().trim();
+  // Limpiar acentos para comparacion
+  function normStr(s){
+    return (s||'').toUpperCase().trim()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/\s+/g,' ');
+  }
+  var nombre_norm = normStr(nombre);
+  // Palabras clave del nombre (apellidos)
+  var palabras = nombre_norm.split(' ').filter(function(w){ return w.length > 2; });
 
-  // Buscar por todas las variantes posibles
-  Promise.all([
-    DB.collection('catalogo_cursos').where('profesora','==',nombre).get(),
-    DB.collection('catalogo_cursos').where('profesora','==',nombre_upper).get(),
-    DB.collection('catalogo_cursos').where('profesora','==',nombre_lower).get(),
-    DB.collection('catalogo_cursos').where('profesora','==',nombre_title).get(),
-    DB.collection('catalogo_cursos').where('profesora_ci','==',PROF.id).get(),
-    DB.collection('catalogo_cursos').where('profesora_id','==',PROF.id).get()
-  ]).then(function(results){
+  DB.collection('catalogo_cursos').get().then(function(snap){
     var todos = {};
-    results.forEach(function(snap){
-      snap.docs.forEach(function(d){
-        todos[d.id] = Object.assign({id:d.id}, d.data());
-      });
+    snap.docs.forEach(function(d){
+      var data = d.data();
+      var prof_fb   = normStr(data.profesora);
+      var prof_ci   = (data.profesora_ci||'').replace(/\s/g,'').toUpperCase();
+      var mi_ci     = (PROF.id||PROF.ci||'').replace(/\s/g,'').toUpperCase();
+      var mi_ci_num = mi_ci.replace(/[^0-9]/g,''); // solo numeros
+
+      // Coincidencia exacta (ignorando acentos y mayusculas)
+      var match_nombre = prof_fb === nombre_norm;
+
+      // Coincidencia por CI (con o sin S.C., L.P., etc.)
+      var prof_ci_num = prof_ci.replace(/[^0-9]/g,'');
+      var match_ci = mi_ci_num.length > 4 && prof_ci_num === mi_ci_num;
+
+      // Coincidencia parcial: al menos 1 palabra larga (apellido) coincide
+      var match_parcial = false;
+      if(!match_nombre){
+        var coincidencias = palabras.filter(function(p){ return prof_fb.includes(p); });
+        // Con 1 palabra larga (>= 6 chars) o 2 palabras cortas es suficiente
+        var long_match = coincidencias.filter(function(p){ return p.length >= 6; });
+        match_parcial = long_match.length >= 1 || coincidencias.length >= 2;
+      }
+
+      if(match_nombre || match_ci || match_parcial){
+        todos[d.id] = Object.assign({id:d.id}, data);
+      }
     });
 
-    // Si aun no encontro, buscar todos los cursos y filtrar por nombre similar
-    if(Object.keys(todos).length === 0){
-      return DB.collection('catalogo_cursos').get().then(function(snap){
-        snap.docs.forEach(function(d){
-          var data = d.data();
-          var prof_fb = (data.profesora||'').toUpperCase().trim();
-          var prof_ci = (data.profesora_ci||'').trim();
-          // Comparar ignorando mayusculas y espacios extra
-          var nombre_norm = nombre_upper.trim();
-          // Tambien comparar por apellido principal (primera palabra)
-          var apellido_prof = nombre_upper.split(' ')[0];
-          var apellido_fb   = prof_fb.split(' ')[0];
-          if(prof_fb === nombre_norm ||
-             prof_ci === PROF.id ||
-             (apellido_prof && apellido_fb && prof_fb.includes(apellido_prof))){
-            todos[d.id] = Object.assign({id:d.id}, data);
-          }
-        });
-        return todos;
-      });
-    }
-    return todos;
-  }).then(function(todos){
     CURSOS = Object.values(todos);
 
     if(!CURSOS.length){
-      // Mostrar mensaje con instruccion al admin
       document.getElementById('lista-cursos-prof').innerHTML =
-        '<div class="empty"><i class="ti ti-calendar-off"></i>'
-        +'Sin cursos asignados.<br>'
-        +'<small style="color:var(--text3);">El administrador debe asignar cursos con el nombre:<br>'
-        +'<strong style="font-family:monospace;color:var(--g);">'+nombre+'</strong></small></div>';
+        '<div class="empty">'
+        +'<i class="ti ti-calendar-off" style="font-size:32px;color:var(--text3);margin-bottom:8px;display:block;"></i>'
+        +'<div style="font-size:13px;font-weight:600;margin-bottom:6px;">Sin cursos asignados</div>'
+        +'<div style="font-size:12px;color:var(--text3);line-height:1.6;">'
+        +'El administrador debe crear cursos seleccionando tu nombre.<br><br>'
+        +'Tu nombre registrado:<br>'
+        +'<span style="font-family:monospace;background:var(--gl);color:var(--g);padding:3px 8px;border-radius:5px;font-size:12px;">'+nombre+'</span>'
+        +'<br><br>'
+        +'<button onclick="reintentarBusqueda()" style="background:var(--g);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">Reintentar busqueda</button>'
+        +'</div></div>';
       return;
     }
     if(CURSOS.length === 1){
@@ -440,7 +446,9 @@ function iniciarApp(){
       renderSelectorCursos();
     }
   }).catch(function(e){
-    showToast('Error cargando cursos: '+e.message,'warn');
+    showToast('Error: '+e.message,'warn');
+    document.getElementById('lista-cursos-prof').innerHTML =
+      '<div class="empty"><i class="ti ti-wifi-off"></i>Error de conexion.<br><small>Verifica tu internet.</small></div>';
   });
 }
 
@@ -476,10 +484,10 @@ function seleccionarCurso(c){
 
   // Llenar hero
   document.getElementById('hero-nombre').textContent = nombre;
-  document.getElementById('hero-distrito').textContent = dist;
-  document.getElementById('hero-fechas').textContent = (c.fecha_inicio||'—')+' · '+(c.fecha_fin||'—');
+  document.getElementById('hero-distrito').textContent = dist+(c.seccion_num?' · Secc.'+c.seccion_num:'')+(c.compania?' · Cía.'+c.compania:'');
+  document.getElementById('hero-fechas').textContent = (c.fecha_inicio||'—')+' al '+(c.fecha_fin||'—')+(c.horario?' · '+c.horario:'');
   document.getElementById('hero-estado').textContent = ESTADO_LABEL[estado]||estado;
-  document.getElementById('hero-codigo').textContent = codigo;
+  document.getElementById('hero-codigo').textContent = 'Reg: '+codigo+(c.nro_solicitud?' · Sol: '+c.nro_solicitud:'');
 
   // QR
   document.getElementById('qr-codigo').textContent = codigo;
@@ -716,6 +724,11 @@ function normEstado(raw){
 }
 
 function generarCodigo(c){
+  // Usar codigo_registro del SIGECOOP si existe
+  if(c.codigo_registro && String(c.codigo_registro).trim()){
+    return String(c.codigo_registro).trim();
+  }
+  // Fallback: codigo interno
   var base=(c.nombre_curso||c.nombre||'CURSO').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase();
   var dist=c.distrito_num||c.distrito||'0';
   var mes=(c.mes||'').replace(/\s/g,'').slice(0,3).toUpperCase();
@@ -766,4 +779,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
