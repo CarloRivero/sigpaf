@@ -320,6 +320,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <input class="form-input" id="nf-dir" type="text" placeholder="Calle, número...">
       </div>
       <div class="form-group">
+        <label class="form-label">Mes del programa</label>
+        <select class="form-input form-select" id="nf-mes">
+          <option value="">Selecciona el mes...</option>
+          <option>ENERO 2026</option>
+          <option>FEBRERO 2026</option>
+          <option>MARZO 2026</option>
+          <option>ABRIL 2026</option>
+          <option>MAYO 2026</option>
+          <option>JUNIO 2026</option>
+          <option>JULIO 2026</option>
+          <option>AGOSTO 2026</option>
+          <option>SEPTIEMBRE 2026</option>
+          <option>OCTUBRE 2026</option>
+          <option>NOVIEMBRE 2026</option>
+          <option>DICIEMBRE 2026</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Observaciones</label>
         <textarea class="form-input" id="nf-obs" rows="2" placeholder="Información adicional..."></textarea>
       </div>
@@ -422,31 +440,45 @@ async function initApp(){
 async function cargarCursoPorCodigo(codigo){
   mostrarLoader('Cargando curso...');
   try{
-    // Buscar en catalogo_cursos por campo codigo o id
-    var snap = await DB.collection('catalogo_cursos')
-      .where('codigo_curso','==', codigo)
-      .limit(1).get();
+    var codigoStr = String(codigo).trim();
+    CURSO = null;
 
-    if(snap.empty){
-      // intentar por código generado (buscar en todos y filtrar)
-      snap = await DB.collection('catalogo_cursos').limit(200).get();
-      var found = snap.docs.find(function(d){
-        return generarCodigo(Object.assign({id:d.id},d.data())) === codigo;
-      });
-      if(found){
-        CURSO = Object.assign({id:found.id}, found.data());
-      }
-    } else {
-      CURSO = Object.assign({id:snap.docs[0].id}, snap.docs[0].data());
+    // 1. Buscar por codigo_registro (campo del SIGECOOP - principal)
+    var s1 = await DB.collection('catalogo_cursos')
+      .where('codigo_registro','==', codigoStr).limit(1).get();
+    if(!s1.empty) CURSO = Object.assign({id:s1.docs[0].id}, s1.docs[0].data());
+
+    // 2. Buscar por codigo_curso (campo interno)
+    if(!CURSO){
+      var s2 = await DB.collection('catalogo_cursos')
+        .where('codigo_curso','==', codigoStr).limit(1).get();
+      if(!s2.empty) CURSO = Object.assign({id:s2.docs[0].id}, s2.docs[0].data());
     }
 
+    // 3. Buscar por nro_solicitud
     if(!CURSO){
-      // intentar colección courses
-      var snap2 = await DB.collection('courses').limit(200).get();
-      var found2 = snap2.docs.find(function(d){
-        return generarCodigo(Object.assign({id:d.id},d.data())) === codigo;
+      var s3 = await DB.collection('catalogo_cursos')
+        .where('nro_solicitud','==', codigoStr).limit(1).get();
+      if(!s3.empty) CURSO = Object.assign({id:s3.docs[0].id}, s3.docs[0].data());
+    }
+
+    // 4. Buscar por document ID
+    if(!CURSO){
+      var s4 = await DB.collection('catalogo_cursos').doc(codigoStr).get();
+      if(s4.exists) CURSO = Object.assign({id:s4.id}, s4.data());
+    }
+
+    // 5. Cargar todos y filtrar por codigo generado o cualquier campo codigo
+    if(!CURSO){
+      var sAll = await DB.collection('catalogo_cursos').get();
+      var found = sAll.docs.find(function(d){
+        var data = d.data();
+        var cod_reg = String(data.codigo_registro||'').trim();
+        var cod_cur = String(data.codigo_curso||'').trim();
+        var cod_gen = generarCodigo(Object.assign({id:d.id},data));
+        return cod_reg===codigoStr || cod_cur===codigoStr || cod_gen===codigoStr;
       });
-      if(found2) CURSO = Object.assign({id:found2.id}, found2.data());
+      if(found) CURSO = Object.assign({id:found.id}, found.data());
     }
 
     ocultarLoader();
@@ -715,6 +747,7 @@ async function registrarNuevaAlumna(){
   var barrio = document.getElementById('nf-barrio').value.trim();
   var dir    = document.getElementById('nf-dir').value.trim();
   var obs    = document.getElementById('nf-obs').value.trim();
+  var mes_sel = (document.getElementById('nf-mes')||{value:''}).value||'';
 
   // Validaciones
   var errBox = document.getElementById('nueva-err-box');
@@ -832,6 +865,9 @@ function mostrarCursoInfoBox(target, nombre, profesora, distrito, fechaInicio){
     + '<div class="cib-row"><i class="ti ti-user-star"></i><span>'+profesora+'</span></div>'
     + '<div class="cib-row"><i class="ti ti-map-pin"></i><span>'+distrito+'</span></div>'
     + (fechaInicio&&fechaInicio!=='—'?'<div class="cib-row"><i class="ti ti-calendar"></i><span>Inicio: '+fechaInicio+'</span></div>':'')
+    + (CURSO&&CURSO.mes?'<div class="cib-row"><i class="ti ti-calendar-month"></i><span>'+CURSO.mes+'</span></div>':'')
+    + (CURSO&&CURSO.horario?'<div class="cib-row"><i class="ti ti-clock"></i><span>'+CURSO.horario+'</span></div>':'')
+    + (CURSO&&CURSO.lugar?'<div class="cib-row"><i class="ti ti-home"></i><span>'+CURSO.lugar+'</span></div>':'')
     + '</div>';
   var ids = {'ci':'curso-info-box-ci','enc':'curso-info-box-enc','nueva':'curso-info-box-nueva'};
   var el = document.getElementById(ids[target]);
