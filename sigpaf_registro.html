@@ -689,16 +689,36 @@ async function confirmarInscripcion(){
   var codigocurso = CURSO?(CURSO.codigo_curso||generarCodigo(CURSO)):CODIGO_CURSO;
   var nombreCurso = CURSO?(CURSO.nombre_curso||CURSO.nombre||'Curso'):'Curso';
 
+  // Verificar si ya está inscrita en este curso
+  mostrarLoader('Verificando inscripción...');
+  try{
+    var yaInscrita = await DB.collection('registros')
+      .where('ci_alumna','==', ci)
+      .where('curso_id','==', CURSO?CURSO.id:'')
+      .limit(1).get();
+    if(!yaInscrita.empty){
+      ocultarLoader();
+      setMsgCI('<i class="ti ti-check" style="color:var(--g);"></i> Ya estás inscrita a este curso. ¡No es necesario registrarte de nuevo!','ok');
+      return;
+    }
+  }catch(e){ /* si falla la verificacion, continuar */ }
+
   mostrarLoader('Inscribiendo...');
   try{
     var registro = {
       ci_alumna:        ci,
       nombre_alumna:    nombre,
       codigo_curso:     codigocurso,
+      codigo_registro:  CURSO?(CURSO.codigo_registro||codigocurso):'',
       nombre_curso:     nombreCurso,
       curso_id:         CURSO?CURSO.id:'',
       profesora:        CURSO?(CURSO.profesora||CURSO.profesora_nombre||''):'',
-      distrito:         CURSO?(CURSO.distrito_nombre||''):'',
+      distrito:         CURSO?(CURSO.distrito_nombre||(CURSO.distrito_num?'Distrito '+CURSO.distrito_num:'')):'',
+      distrito_num:     CURSO?(CURSO.distrito_num||0):0,
+      seccion_num:      CURSO?(CURSO.seccion_num||0):0,
+      mes:              CURSO?(CURSO.mes||''):'',
+      lugar:            CURSO?(CURSO.lugar||''):'',
+      horario:          CURSO?(CURSO.horario||''):'',
       fecha_registro:   new Date().toISOString(),
       estado:           'inscrita',
       origen_registro:  'QR',
@@ -839,9 +859,19 @@ function mostrarExito(nombre, ci, codigoCurso, nombreCurso, esNueva){
     ? 'Te registramos en el programa y quedaste inscrita en el curso.'
     : 'Tu inscripción al curso quedó confirmada.';
   var fecha = new Date().toLocaleString('es-BO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var prof   = CURSO?(CURSO.profesora||''):'';
+  var dist   = CURSO?(CURSO.distrito_nombre||(CURSO.distrito_num?'Distrito '+CURSO.distrito_num:'')):'';
+  var mes    = CURSO?(CURSO.mes||''):'';
+  var lugar  = CURSO?(CURSO.lugar||''):'';
+  var horario= CURSO?(CURSO.horario||''):'';
   document.getElementById('exito-detalle').innerHTML =
     '<div style="display:flex;flex-direction:column;gap:8px;">'
-    + '<div style="font-size:14px;font-weight:700;color:var(--g);margin-bottom:4px;">'+nombreCurso+'</div>'
+    + '<div style="font-size:15px;font-weight:700;color:var(--g);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:8px;">'+nombreCurso+'</div>'
+    + (prof?row('ti-user-star',   prof):'')
+    + (dist?row('ti-map-pin',     dist):'')
+    + (mes?row('ti-calendar-month', mes):'')
+    + (lugar?row('ti-home',       lugar):'')
+    + (horario?row('ti-clock',    horario):'')
     + row('ti-user',       nombre)
     + row('ti-id-badge',   'CI: '+ci)
     + row('ti-qrcode',     'Código: '+codigoCurso)

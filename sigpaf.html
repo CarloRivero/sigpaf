@@ -1,0 +1,3428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGPAF · CRE R.L.</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root{
+  /* Brand */
+  --g:#00703C; --gd:#005A2E; --gl:#E8F5EE; --gm:#B7DFC8;
+  --g10:rgba(0,112,60,.10); --g20:rgba(0,112,60,.20);
+
+  /* Sidebar */
+  --sb-bg:#0F1C14; --sb-w:240px;
+  --sb-text:rgba(255,255,255,.65);
+  --sb-text-active:#fff;
+  --sb-accent:#00703C;
+  --sb-hover:rgba(255,255,255,.06);
+  --sb-active:rgba(0,112,60,.25);
+
+  /* Surface */
+  --bg:#F0F4F1; --card:#fff;
+  --border:rgba(0,0,0,.07); --border2:rgba(0,0,0,.12);
+
+  /* Text */
+  --tx:#0F1C14; --tx2:#4A5568; --tx3:#9AA5A0;
+
+  /* Accents */
+  --am:#F59E0B; --aml:#FEF3C7; --amd:#78350F;
+  --re:#EF4444; --rel:#FEE2E2;
+  --te:#0D9488; --tel:#CCFBF1;
+  --in:#6366F1; --inl:#EDE9FE;
+
+  /* Layout */
+  --radius:12px; --radius-sm:8px; --radius-xs:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,.10),0 8px 32px rgba(0,0,0,.08);
+  --font:'Outfit',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+
+/* ═══ LAYOUT ═══ */
+.app{display:flex;min-height:100vh;}
+.sidebar{width:var(--sb-w);min-width:var(--sb-w);background:var(--sb-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .2s ease;}
+.main{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ═══ SIDEBAR ═══ */
+.sb-header{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.06);}
+.sb-brand{display:flex;align-items:center;gap:11px;}
+.sb-logo{width:38px;height:38px;background:var(--g);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.5px;flex-shrink:0;}
+.sb-name{font-size:13.5px;font-weight:700;color:#fff;line-height:1.2;}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px;}
+
+.sb-nav{flex:1;padding:10px 10px;overflow-y:auto;}
+.sb-nav::-webkit-scrollbar{width:3px;}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+.sb-section{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.1em;padding:14px 8px 5px;}
+
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--sb-text);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px;position:relative;}
+.sb-item i{font-size:17px;width:20px;flex-shrink:0;transition:color .15s;}
+.sb-item:hover{background:var(--sb-hover);color:var(--sb-text-active);}
+.sb-item.active{background:var(--sb-active);color:var(--sb-text-active);font-weight:600;}
+.sb-item.active i{color:var(--g);}
+.sb-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--g);border-radius:0 2px 2px 0;}
+.sb-badge{margin-left:auto;background:var(--re);color:#fff;font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center;}
+.sb-badge.amber{background:var(--am);}
+
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;}
+.sb-av{width:30px;height:30px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;}
+.sb-uname{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+.sb-urole{font-size:10px;color:rgba(255,255,255,.35);}
+.sb-logout{color:rgba(255,255,255,.3);cursor:pointer;font-size:17px;transition:color .15s;flex-shrink:0;}
+.sb-logout:hover{color:var(--re);}
+
+/* ═══ TOPBAR ═══ */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.page-title{font-size:16px;font-weight:700;color:var(--tx);}
+.page-crumb{font-size:11px;color:var(--tx3);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+
+/* ═══ CONTENT ═══ */
+.content{padding:22px 24px;flex:1;}
+.screen{display:none;animation:fadeUp .2s ease;}
+.screen.active{display:block;}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--card);color:var(--tx2);transition:all .15s;font-family:var(--font);white-space:nowrap;line-height:1;}
+.btn i{font-size:15px;}
+.btn:hover{background:var(--bg);border-color:rgba(0,0,0,.2);}
+.btn:active{transform:scale(.98);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{background:var(--g);border-color:var(--g);color:#fff;}
+.btn-primary:hover{background:var(--gd);border-color:var(--gd);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-icon{padding:8px;border-radius:var(--radius-sm);}
+.btn-wa{background:#25D366;border-color:#25D366;color:#fff;}
+.btn-wa:hover{background:#1fba59;}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--tx2);}
+.btn-ghost:hover{background:var(--bg);}
+.btn-danger{background:var(--re);border-color:var(--re);color:#fff;}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);}
+.card-title{font-size:14px;font-weight:700;color:var(--tx);display:flex;align-items:center;gap:8px;}
+.card-sub{font-size:12px;color:var(--tx3);margin-top:3px;margin-bottom:14px;}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+
+/* ═══ KPI GRID ═══ */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow .15s;}
+.kpi:hover{box-shadow:var(--shadow-md);}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--g));border-radius:var(--radius) var(--radius) 0 0;}
+.kpi-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px;background:var(--kpi-bg,var(--gl));}
+.kpi-val{font-size:28px;font-weight:800;color:var(--tx);line-height:1;margin-bottom:3px;letter-spacing:-1px;}
+.kpi-lbl{font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;}
+.kpi-delta{font-size:11px;color:var(--tx3);margin-top:6px;display:flex;align-items:center;gap:4px;}
+
+/* ═══ BADGES ═══ */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.badge-g{background:#D1FAE5;color:#065F46;}
+.badge-am{background:var(--aml);color:var(--amd);}
+.badge-re{background:var(--rel);color:#991B1B;}
+.badge-gray{background:#F3F4F6;color:#374151;}
+.badge-te{background:var(--tel);color:#0F766E;}
+.badge-in{background:var(--inl);color:#4C1D95;}
+
+/* ═══ FORMS ═══ */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:5px;}
+.form-control{width:100%;padding:9px 13px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--tx);background:var(--card);font-family:var(--font);transition:all .15s;outline:none;}
+.form-control:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--g10);}
+.form-control::placeholder{color:var(--tx3);}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.col-span-2{grid-column:span 2;}
+
+/* ═══ TABLE ═══ */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{border-bottom:1px solid var(--border);background:#FAFBFA;}
+th{padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--tx);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr{transition:background .1s;}
+tbody tr:hover{background:#F7FAF8;cursor:pointer;}
+.td-bold{font-weight:600;}
+.td-mono{font-family:var(--mono);font-size:11.5px;color:var(--g);font-weight:600;}
+
+/* ═══ FILTERS BAR ═══ */
+.filters-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-select{padding:8px 12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12.5px;color:var(--tx);background:var(--card);cursor:pointer;font-family:var(--font);outline:none;transition:border-color .15s;}
+.filter-select:focus{border-color:var(--g);}
+.search-wrap{position:relative;}
+.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:15px;pointer-events:none;}
+.search-input{padding:8px 12px 8px 34px;width:220px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:12.5px;font-family:var(--font);outline:none;color:var(--tx);background:var(--card);transition:all .15s;}
+.search-input:focus{border-color:var(--g);width:260px;}
+
+/* ═══ COURSE CARDS ═══ */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.course-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.course-card:hover{border-color:var(--g);box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.course-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--g));opacity:0;transition:opacity .15s;}
+.course-card:hover::before{opacity:1;}
+.cc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.cc-name{font-size:13.5px;font-weight:700;color:var(--tx);line-height:1.3;}
+.cc-prof{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:5px;margin-top:4px;}
+.cc-meta{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--tx3);margin-top:8px;flex-wrap:wrap;}
+.cc-meta span{display:flex;align-items:center;gap:4px;}
+.cc-code{font-family:var(--mono);font-size:10.5px;color:var(--g);font-weight:600;background:var(--gl);padding:3px 7px;border-radius:4px;}
+.cc-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+
+/* ═══ MODAL ═══ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:0;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:scaleIn .18s ease;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-body{padding:20px 24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--card);position:sticky;bottom:0;}
+.modal-close{cursor:pointer;color:var(--tx3);font-size:20px;padding:4px;border-radius:6px;transition:all .15s;}
+.modal-close:hover{color:var(--re);background:var(--rel);}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:24px;right:24px;z-index:400;background:var(--tx);color:#fff;padding:11px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;transform:translateY(80px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:var(--g);}
+.toast.error{background:var(--re);}
+.toast.warn{background:var(--am);color:var(--tx);}
+
+/* ═══ ATTENDANCE ═══ */
+.att-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);margin-bottom:4px;transition:background .1s;}
+.att-row.presente{background:#F0FDF4;}
+.att-row.ausente{background:#FEF2F2;}
+.att-row.justificada{background:#FFFBEB;}
+.att-btns{display:flex;gap:4px;margin-left:auto;}
+.att-btn{padding:5px 10px;border-radius:var(--radius-xs);font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);}
+.att-btn.pres{background:#D1FAE5;color:#065F46;}
+.att-btn.pres.active,.att-btn.pres:hover{background:var(--g);color:#fff;}
+.att-btn.aus{background:#FEE2E2;color:#991B1B;}
+.att-btn.aus.active,.att-btn.aus:hover{background:var(--re);color:#fff;}
+.att-btn.just{background:#FEF3C7;color:var(--amd);}
+.att-btn.just.active,.att-btn.just:hover{background:var(--am);color:#fff;}
+
+/* ═══ AVATAR ═══ */
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0;}
+.av-sm{width:30px;height:30px;font-size:11px;}
+.av-md{width:38px;height:38px;font-size:14px;}
+.av-lg{width:48px;height:48px;font-size:17px;}
+
+/* ═══ DETAIL PANEL ═══ */
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.kv-box{background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;}
+.kv-label{font-size:10px;color:var(--tx3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.kv-value{font-size:13px;color:var(--tx);font-weight:500;}
+
+/* ═══ QR BOX ═══ */
+.qr-panel{background:linear-gradient(135deg,var(--g),var(--gd));border-radius:var(--radius);padding:18px;display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.qr-canvas{background:#fff;border-radius:8px;padding:6px;flex-shrink:0;}
+.qr-info{flex:1;min-width:0;}
+.qr-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.qr-code{font-family:var(--mono);font-size:15px;font-weight:600;color:#fff;margin-bottom:4px;}
+.qr-link{font-size:10.5px;color:rgba(255,255,255,.6);word-break:break-all;}
+.qr-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.qr-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-xs);font-size:11.5px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;}
+.qr-btn-wa{background:#25D366;color:#fff;}
+.qr-btn-wa:hover{background:#1fba59;}
+.qr-btn-dl{background:rgba(255,255,255,.2);color:#fff;}
+.qr-btn-dl:hover{background:rgba(255,255,255,.3);}
+.qr-btn-cp{background:rgba(255,255,255,.15);color:#fff;}
+.qr-btn-cp:hover{background:rgba(255,255,255,.25);}
+
+/* ═══ PROF LINK PANEL ═══ */
+.prof-link-panel{background:var(--inl);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;}
+.prof-link-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--in);margin-bottom:8px;}
+.prof-link-url{font-family:var(--mono);font-size:11px;color:var(--in);background:rgba(99,102,241,.1);padding:6px 10px;border-radius:var(--radius-xs);margin-bottom:8px;word-break:break-all;}
+.prof-link-actions{display:flex;gap:6px;}
+.prof-link-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-xs);font-size:11.5px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);}
+.prof-link-btn-wa{background:#25D366;color:#fff;}
+.prof-link-btn-cp{background:rgba(99,102,241,.15);color:var(--in);}
+
+/* ═══ IMPORT WIZARD ═══ */
+.imp-steps{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:18px;gap:0;}
+.imp-step{display:flex;align-items:center;gap:8px;flex:1;}
+.imp-step-num{width:26px;height:26px;border-radius:50%;background:#E5E7EB;color:var(--tx3);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.imp-step-num.active{background:var(--g);color:#fff;}
+.imp-step-num.done{background:var(--te);color:#fff;}
+.imp-step-lbl{font-size:12px;font-weight:600;color:var(--tx3);transition:color .2s;}
+.imp-step-lbl.active,.imp-step-lbl.done{color:var(--g);}
+.imp-sep{width:24px;height:2px;background:#E5E7EB;margin:0 4px;flex-shrink:0;transition:background .2s;}
+.imp-sep.done{background:var(--te);}
+
+.upload-zone{border:2.5px dashed var(--gm);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .18s;background:var(--gl);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--g);background:#D1FAE5;}
+.upload-zone-icon{font-size:42px;color:var(--g);margin-bottom:10px;}
+.upload-zone-title{font-size:14px;font-weight:700;color:var(--g);margin-bottom:5px;}
+.upload-zone-sub{font-size:12px;color:var(--tx3);}
+
+.imp-log{background:#0D1117;border-radius:var(--radius-sm);padding:14px;max-height:200px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;color:#58A6FF;}
+.imp-log-ok{color:#3FB950;}
+.imp-log-warn{color:#D29922;}
+.imp-log-err{color:#F85149;}
+
+/* ═══ PROGRESS ═══ */
+.prog-wrap{background:#E5E7EB;border-radius:20px;height:8px;overflow:hidden;}
+.prog-fill{height:8px;border-radius:20px;background:linear-gradient(90deg,var(--g),var(--te));transition:width .3s ease;}
+
+/* ═══ CI SEARCH ═══ */
+.ci-found-card{border:2px solid var(--g);border-radius:var(--radius);padding:16px;background:var(--card);animation:fadeUp .2s ease;margin-top:12px;}
+.ci-new-card{border:2px solid var(--am);border-radius:var(--radius);padding:16px;background:var(--card);animation:fadeUp .2s ease;margin-top:12px;}
+
+/* ═══ REPORT CHARTS ═══ */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+.chart-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.chart-sub{font-size:11.5px;color:var(--tx3);margin-bottom:14px;}
+.chart-canvas{position:relative;height:200px;}
+
+/* ═══ HAMBURGER ═══ */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--tx);font-size:22px;}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;}
+
+/* ═══ EMPTY STATE ═══ */
+.empty-state{text-align:center;padding:48px 20px;color:var(--tx3);display:flex;flex-direction:column;align-items:center;gap:10px;}
+.empty-state i{font-size:40px;opacity:.5;}
+.empty-state-title{font-size:14px;font-weight:600;color:var(--tx2);}
+.empty-state-sub{font-size:12.5px;}
+
+/* ═══ NOTIF ═══ */
+.notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:background .1s;}
+.notif-item:hover{background:var(--bg);}
+.notif-item.unread{border-left:3px solid var(--g);}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:6px;}
+
+/* ═══ STATS ROW ═══ */
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:5px;}
+.stat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* ═══ LOADER ═══ */
+#global-loader{position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px);}
+.loader-spin{width:38px;height:38px;border:3px solid var(--gm);border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;gap:2px;background:#F0F4F1;border-radius:30px;padding:4px;margin-bottom:16px;width:fit-content;}
+.tab-item{padding:7px 16px;border-radius:25px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--tx3);transition:all .15s;}
+.tab-item.active{background:var(--card);color:var(--g);box-shadow:var(--shadow);}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1024px){.chart-grid{grid-template-columns:1fr;}}
+@media(max-width:900px){.kv-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){
+  .sidebar{transform:translateX(calc(-1*var(--sb-w)));}
+  .sidebar.open{transform:translateX(0);}
+  .sb-overlay.open{display:block;}
+  .main{margin-left:0;}
+  .hamburger{display:flex;}
+  .content{padding:16px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .form-grid-2,.form-grid-3{grid-template-columns:1fr;}
+  .col-span-2{grid-column:span 1;}
+  .course-grid{grid-template-columns:1fr;}
+  .chart-grid{grid-template-columns:1fr;}
+  .filters-bar{gap:6px;}
+  .search-input{width:100%;}
+  .search-input:focus{width:100%;}
+}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr;}}
+</style>
+
+<!-- Firebase Compat -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- GLOBAL LOADER -->
+<div id="global-loader">
+  <div class="loader-spin"></div>
+  <span style="font-size:13px;color:var(--tx2);font-weight:500;">Cargando datos desde Firebase...</span>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="app-login" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#0A1209 0%,#0F1C14 40%,#1A3020 100%);padding:24px;position:relative;overflow:hidden;">
+  <!-- Background decoration -->
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(0,112,60,.15) 0%,transparent 60%),radial-gradient(ellipse at 70% 20%,rgba(0,112,60,.08) 0%,transparent 50%);pointer-events:none;"></div>
+
+  <div style="background:rgba(255,255,255,.97);border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,.4);position:relative;">
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:60px;height:60px;background:linear-gradient(135deg,var(--g),var(--gd));border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;margin:0 auto 14px;box-shadow:0 8px 24px rgba(0,112,60,.35);">S</div>
+      <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;">SIGPAF</div>
+      <div style="font-size:12px;color:var(--tx3);margin-top:4px;">Sistema de Gestión · Programa Apoyo a la Familia</div>
+      <div style="font-size:11px;color:var(--tx3);">CRE R.L. · Gerencia de Asistencia al Consumidor</div>
+    </div>
+
+    <!-- SDK Status -->
+    <div id="sdk-status" style="background:var(--gl);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--gd);text-align:center;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span id="sdk-dot" style="width:7px;height:7px;border-radius:50%;background:var(--tx3);display:inline-block;animation:pulse 1.5s infinite;"></span>
+      <span id="sdk-msg">Verificando conexión...</span>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:20px;"></div>
+
+    <div class="form-group">
+      <label class="form-label">Correo institucional</label>
+      <input class="form-control" type="email" id="login-email" placeholder="usuario@cre.com.bo" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="form-group" style="margin-bottom:8px;">
+      <label class="form-label">Contraseña</label>
+      <div style="position:relative;">
+        <input class="form-control" type="password" id="login-pass" placeholder="••••••••" style="padding-right:40px;">
+        <i class="ti ti-eye" id="toggle-pass" onclick="togglePass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--tx3);font-size:17px;transition:color .15s;"></i>
+      </div>
+    </div>
+
+    <div id="login-error" style="color:var(--re);font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+
+    <button id="login-btn" onclick="window.doLogin()" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;border-radius:var(--radius-sm);">
+      <i class="ti ti-login"></i> Ingresar al sistema
+    </button>
+
+    <div style="text-align:center;margin-top:16px;font-size:11.5px;color:var(--tx3);">
+      <i class="ti ti-shield-check" style="color:var(--g);"></i> Acceso autenticado vía Firebase Auth
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app-main" class="app" style="display:none;">
+  <div class="sb-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <div class="sb-brand">
+        <div class="sb-logo">S</div>
+        <div>
+          <div class="sb-name">SIGPAF</div>
+          <div class="sb-sub">CRE R.L. · GU</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-item active" data-screen="dashboard" onclick="navTo('dashboard',this)">
+        <i class="ti ti-layout-dashboard"></i> Dashboard
+      </div>
+
+      <div class="sb-section">Gestión</div>
+      <div class="sb-item" data-screen="cursos" onclick="navTo('cursos',this)">
+        <i class="ti ti-calendar-event"></i> Programación de cursos
+        <span class="sb-badge amber" id="badge-obs" style="display:none;"></span>
+      </div>
+      <div class="sb-item" data-screen="importar" onclick="navTo('importar',this)">
+        <i class="ti ti-file-upload"></i> Importar del SIGECOOP
+      </div>
+      <div class="sb-item" data-screen="alumnas" onclick="navTo('alumnas',this)">
+        <i class="ti ti-users"></i> Registro de alumnas
+      </div>
+      <div class="sb-item" data-screen="asistencia" onclick="navTo('asistencia',this)">
+        <i class="ti ti-checkbox"></i> Control de asistencia
+      </div>
+      <div class="sb-item" data-screen="profesoras" onclick="navTo('profesoras',this)">
+        <i class="ti ti-user-star"></i> Profesoras
+      </div>
+
+      <div class="sb-section">Análisis</div>
+      <div class="sb-item" data-screen="reportes" onclick="navTo('reportes',this)">
+        <i class="ti ti-chart-bar"></i> Reportes y exportación
+      </div>
+
+      <div class="sb-section">Sistema</div>
+      <div class="sb-item" data-screen="notificaciones" onclick="navTo('notificaciones',this)">
+        <i class="ti ti-bell"></i> Notificaciones
+        <span class="sb-badge" id="badge-notif" style="display:none;"></span>
+      </div>
+      <div class="sb-item" data-screen="configuracion" onclick="navTo('configuracion',this)">
+        <i class="ti ti-settings"></i> Configuración
+      </div>
+    </nav>
+
+    <div class="sb-footer">
+      <div class="sb-av" id="sidebar-uav">--</div>
+      <div style="flex:1;min-width:0;">
+        <div class="sb-uname" id="sidebar-uname">Cargando...</div>
+        <div class="sb-urole">Administrador</div>
+      </div>
+      <i class="ti ti-logout sb-logout" onclick="window.doLogout()" title="Cerrar sesión"></i>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+        <div>
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div class="page-crumb" id="page-crumb">CRE R.L. · SIGPAF</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-icon btn-ghost" onclick="window.recargarDatos()" title="Recargar datos">
+          <i class="ti ti-refresh"></i>
+        </button>
+        <button class="btn btn-icon btn-ghost" onclick="navTo('notificaciones',null)" style="position:relative;">
+          <i class="ti ti-bell"></i>
+          <span id="notif-dot" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--re);border-radius:50%;border:1.5px solid #fff;display:none;"></span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoCurso()">
+          <i class="ti ti-plus"></i> Nuevo curso
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ═══ DASHBOARD ═══ -->
+      <div class="screen active" id="screen-dashboard">
+        <div class="kpi-grid">
+          <div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);">
+            <div class="kpi-icon"><i class="ti ti-calendar-event" style="color:var(--g);"></i></div>
+            <div class="kpi-val" id="kpi-activos">—</div>
+            <div class="kpi-lbl">Cursos activos</div>
+            <div class="kpi-delta"><i class="ti ti-database" style="font-size:12px;"></i> Desde Firebase</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--in);--kpi-bg:var(--inl);">
+            <div class="kpi-icon"><i class="ti ti-users" style="color:var(--in);"></i></div>
+            <div class="kpi-val" id="kpi-alumnas">—</div>
+            <div class="kpi-lbl">Alumnas registradas</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--te);--kpi-bg:var(--tel);">
+            <div class="kpi-icon"><i class="ti ti-check" style="color:var(--te);"></i></div>
+            <div class="kpi-val" id="kpi-aprobados">—</div>
+            <div class="kpi-lbl">Cursos aprobados</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--re);--kpi-bg:var(--rel);">
+            <div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:var(--re);"></i></div>
+            <div class="kpi-val" id="kpi-observados">—</div>
+            <div class="kpi-lbl">Observados</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--am);--kpi-bg:var(--aml);">
+            <div class="kpi-icon"><i class="ti ti-send" style="color:var(--am);"></i></div>
+            <div class="kpi-val" id="kpi-enviados">—</div>
+            <div class="kpi-lbl">Enviados Fundación</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);">
+            <div class="kpi-icon"><i class="ti ti-user-star" style="color:var(--g);"></i></div>
+            <div class="kpi-val" id="kpi-profesoras">—</div>
+            <div class="kpi-lbl">Profesoras activas</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-calendar-event" style="color:var(--g);"></i> Últimos cursos</div>
+              <button class="btn btn-sm btn-ghost" onclick="navTo('cursos',null)">Ver todos <i class="ti ti-arrow-right"></i></button>
+            </div>
+            <div id="dashboard-courses"><div class="empty-state"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;opacity:1;font-size:28px;"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:14px;"><i class="ti ti-chart-donut" style="color:var(--in);"></i> Estado de cursos</div>
+            <div id="dashboard-states"><div class="empty-state" style="padding:20px;">Cargando...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ CURSOS ═══ -->
+      <div class="screen" id="screen-cursos">
+        <div class="filters-bar">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input class="search-input" placeholder="Buscar curso, profesora o código..." id="curso-search" oninput="window.filterCursos()">
+          </div>
+          <select class="filter-select" id="filtro-distrito" onchange="window.filterCursos()">
+            <option value="">Todos los distritos</option>
+            <option value="1">Distrito 1</option><option value="2">Distrito 2</option>
+            <option value="3">Distrito 3</option><option value="4">Distrito 4</option>
+            <option value="5">Distrito 5</option><option value="6">Distrito 6</option>
+            <option value="7">Distrito 7</option><option value="8">Distrito 8</option>
+            <option value="9">Distrito 9</option><option value="10">Distrito 10</option>
+            <option value="11">Distrito 11</option><option value="12">Distrito 12</option>
+            <option value="13">Distrito 13</option><option value="14">Distrito 14</option>
+            <option value="15">Distrito 15</option><option value="16">Distrito 16</option>
+            <option value="17">Distrito 17</option><option value="18">Distrito 18</option>
+            <option value="19">Distrito 19</option><option value="20">Distrito 20</option>
+            <option value="21">Distrito 21</option><option value="22">Distrito 22</option>
+            <option value="23">Distrito 23</option><option value="24">Distrito 24</option>
+            <option value="25">Distrito 25</option><option value="26">Distrito 26</option>
+          </select>
+          <select class="filter-select" id="filtro-estado" onchange="window.filterCursos()">
+            <option value="">Todos los estados</option>
+            <option value="registradoGU">Registrado GU</option>
+            <option value="enviadoFundacion">Enviado Fundación</option>
+            <option value="enEjecucion">En ejecución</option>
+            <option value="finalizado">Finalizado</option>
+            <option value="observado">Observado</option>
+            <option value="aprobado">Aprobado</option>
+          </select>
+          <select class="filter-select" id="filtro-profesora" onchange="window.filterCursos()">
+            <option value="">Todas las profesoras</option>
+          </select>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn" onclick="navTo('importar',null)"><i class="ti ti-file-upload"></i> Importar Excel</button>
+            <button class="btn btn-primary" onclick="abrirModalNuevoCurso()"><i class="ti ti-plus"></i> Nuevo curso</button>
+          </div>
+        </div>
+        <div id="cursos-list"><div class="empty-state"><div class="loader-spin" style="width:28px;height:28px;border-width:2px;"></div></div></div>
+      </div>
+
+      <!-- ═══ ALUMNAS ═══ -->
+      <div class="screen" id="screen-alumnas">
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;">
+          <div>
+            <div class="card" style="margin-bottom:14px;">
+              <div class="card-title" style="margin-bottom:4px;"><i class="ti ti-search" style="color:var(--g);"></i> Búsqueda por CI</div>
+              <div class="card-sub">Busca en el historial SIGECOOP y Firestore</div>
+              <div style="position:relative;">
+                <input class="form-control" id="ci-input" placeholder="Ej: 7854321" style="padding-right:52px;" onkeydown="if(event.key==='Enter')window.buscarCI()">
+                <button onclick="window.buscarCI()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--g);color:#fff;border:none;border-radius:var(--radius-xs);padding:6px 11px;cursor:pointer;font-size:15px;display:flex;align-items:center;">
+                  <i class="ti ti-search"></i>
+                </button>
+              </div>
+              <div style="margin-top:8px;font-size:12px;min-height:18px;" id="ci-status"></div>
+            </div>
+            <div id="ci-resultado"></div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-chart-bar" style="color:var(--in);"></i> Estadísticas</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+                  <div style="font-size:24px;font-weight:800;color:var(--g);" id="kpi-total-alumnas">—</div>
+                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">Total</div>
+                </div>
+                <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+                  <div style="font-size:24px;font-weight:800;color:var(--in);" id="kpi-sigecoop">—</div>
+                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">SIGECOOP</div>
+                </div>
+                <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;text-align:center;grid-column:span 2;">
+                  <div style="font-size:24px;font-weight:800;color:var(--am);" id="kpi-sigpaf-new">—</div>
+                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">Nuevas en SIGPAF</div>
+                </div>
+              </div>
+              <div class="card-title" style="margin-bottom:10px;font-size:13px;">Recientes</div>
+              <div id="alumnas-recientes"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ASISTENCIA ═══ -->
+      <div class="screen" id="screen-asistencia">
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+          <div>
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header">
+                <div>
+                  <div class="card-title"><i class="ti ti-checkbox" style="color:var(--g);"></i> Control de asistencia</div>
+                  <div class="card-sub" style="margin-bottom:0;">Selecciona el curso y registra la asistencia del día</div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="window.guardarAsistencia()"><i class="ti ti-device-floppy"></i> Guardar</button>
+              </div>
+              <div style="margin:14px 0;">
+                <label class="form-label">Curso</label>
+                <select class="form-control" id="att-curso-sel"><option value="">Cargando cursos...</option></select>
+              </div>
+              <div id="attendance-list"><div class="empty-state">Selecciona un curso para ver sus alumnas</div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);">
+                <span style="color:var(--g);font-weight:700;font-size:13px;"><i class="ti ti-check"></i> Presentes: <span id="cnt-p">0</span></span>
+                <span style="color:var(--re);font-weight:700;font-size:13px;"><i class="ti ti-x"></i> Ausentes: <span id="cnt-a">0</span></span>
+                <span style="color:var(--am);font-weight:700;font-size:13px;">~ Justif.: <span id="cnt-j">0</span></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-alert-triangle" style="color:var(--re);"></i> Alumnas ausentes</div>
+              <div id="risk-list"><div class="empty-state" style="padding:14px;">Sin datos</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PROFESORAS ═══ -->
+      <div class="screen" id="screen-profesoras">
+        <div class="filters-bar">
+          <div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" placeholder="Buscar profesora..."></div>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openModal('modal-nueva-profesora')"><i class="ti ti-plus"></i> Registrar profesora</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Profesora</th><th>Especialidad</th><th>Cursos activos</th><th>Historial</th><th>Estado</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="profesoras-table"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tx3);">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ REPORTES ═══ -->
+      <div class="screen" id="screen-reportes">
+        <div class="kpi-grid" style="margin-bottom:18px;">
+          <div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);"><div class="kpi-icon"><i class="ti ti-users" style="color:var(--g);"></i></div><div class="kpi-val" id="kpi-rep-alumnas">—</div><div class="kpi-lbl">Total alumnas</div></div>
+          <div class="kpi" style="--kpi-color:var(--in);--kpi-bg:var(--inl);"><div class="kpi-icon"><i class="ti ti-calendar-event" style="color:var(--in);"></i></div><div class="kpi-val" id="kpi-rep-cursos">—</div><div class="kpi-lbl">Cursos registrados</div></div>
+          <div class="kpi" style="--kpi-color:var(--te);--kpi-bg:var(--tel);"><div class="kpi-icon"><i class="ti ti-chart-pie" style="color:var(--te);"></i></div><div class="kpi-val" id="kpi-rep-tasa">—</div><div class="kpi-lbl">Tasa aprobación</div></div>
+          <div class="kpi" style="--kpi-color:var(--am);--kpi-bg:var(--aml);"><div class="kpi-icon"><i class="ti ti-user-star" style="color:var(--am);"></i></div><div class="kpi-val" id="kpi-rep-prof">—</div><div class="kpi-lbl">Profesoras activas</div></div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="chart-grid" style="margin-bottom:18px;">
+          <div class="chart-box"><div class="chart-title"><i class="ti ti-chart-bar" style="color:var(--g);"></i> Cursos por distrito</div><div class="chart-sub">Distribución en los 26 distritos</div><div class="chart-canvas"><canvas id="chart-distritos"></canvas></div></div>
+          <div class="chart-box"><div class="chart-title"><i class="ti ti-chart-donut" style="color:var(--in);"></i> Estado de cursos</div><div class="chart-sub">Distribución por estado</div><div class="chart-canvas"><canvas id="chart-estados"></canvas></div><div id="chart-estados-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:11px;"></div></div>
+          <div class="chart-box"><div class="chart-title"><i class="ti ti-chart-line" style="color:var(--te);"></i> Inscripciones por mes</div><div class="chart-sub">Alumnas registradas vía QR</div><div class="chart-canvas"><canvas id="chart-meses"></canvas></div></div>
+          <div class="chart-box"><div class="chart-title"><i class="ti ti-chart-bar" style="color:var(--am);"></i> Top profesoras</div><div class="chart-sub">Por número de cursos asignados</div><div class="chart-canvas"><canvas id="chart-profesoras"></canvas></div></div>
+        </div>
+
+        <!-- EXPORTADOR -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title"><i class="ti ti-file-spreadsheet" style="color:var(--g);"></i> Exportar datos a Excel</div>
+              <div class="card-sub" style="margin-bottom:0;">Filtra y descarga datos reales de Firestore</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-size:12px;color:var(--tx3);" id="exp-total-label">0 registros</span>
+              <button class="btn btn-primary btn-sm" onclick="window.exportarExcelFiltrado()"><i class="ti ti-download"></i> Excel</button>
+            </div>
+          </div>
+
+          <!-- Tipo -->
+          <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+            <button class="btn btn-sm" id="etipo-alumnas" onclick="window.setExportTipo('alumnas')" style="border-color:var(--g);background:var(--gl);color:var(--g);"><i class="ti ti-users"></i> Alumnas SIGECOOP</button>
+            <button class="btn btn-sm" id="etipo-registros" onclick="window.setExportTipo('registros')"><i class="ti ti-qrcode"></i> Inscripciones QR</button>
+            <button class="btn btn-sm" id="etipo-cursos" onclick="window.setExportTipo('cursos')"><i class="ti ti-calendar-event"></i> Cursos del mes</button>
+          </div>
+
+          <!-- Filtros -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px;">
+            <div><label class="form-label">Distrito</label><select class="form-control" id="ef-distrito" onchange="window.aplicarExportFiltros()"><option value="">Todos</option></select></div>
+            <div id="ef-curso-wrap"><label class="form-label">Curso</label><select class="form-control" id="ef-curso" onchange="window.aplicarExportFiltros()"><option value="">Todos</option></select></div>
+            <div><label class="form-label">Profesora</label><select class="form-control" id="ef-profesora" onchange="window.aplicarExportFiltros()"><option value="">Todas</option></select></div>
+            <div><label class="form-label">Mes</label><select class="form-control" id="ef-mes" onchange="window.aplicarExportFiltros()"><option value="">Todos</option><option>ENERO 2026</option><option>FEBRERO 2026</option><option>MARZO 2026</option><option>ABRIL 2026</option><option>MAYO 2026</option><option>JUNIO 2026</option><option>JULIO 2026</option><option>AGOSTO 2026</option><option>SEPTIEMBRE 2026</option><option>OCTUBRE 2026</option><option>NOVIEMBRE 2026</option><option>DICIEMBRE 2026</option></select></div>
+            <div><label class="form-label">Origen</label><select class="form-control" id="ef-origen" onchange="window.aplicarExportFiltros()"><option value="">Todos</option><option value="SIGECOOP">SIGECOOP</option><option value="SIGPAF">SIGPAF</option><option value="SIGPAF_QR">Vía QR</option></select></div>
+            <div><label class="form-label">Buscar</label><input class="form-control" id="ef-buscar" placeholder="CI o nombre..." oninput="window.aplicarExportFiltros()"></div>
+          </div>
+
+          <div id="exp-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:16px;"></div>
+
+          <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);max-height:280px;overflow-y:auto;margin-bottom:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead id="exp-thead" style="position:sticky;top:0;background:#F9FAFB;"></thead>
+              <tbody id="exp-tbody"></tbody>
+            </table>
+          </div>
+          <div style="font-size:11px;color:var(--tx3);margin-bottom:10px;" id="exp-preview-note"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="window.exportarExcelFiltrado()"><i class="ti ti-file-spreadsheet"></i> Excel (.xlsx)</button>
+            <button class="btn btn-sm" onclick="window.exportarCSVFiltrado()"><i class="ti ti-file-text"></i> CSV</button>
+            <button class="btn btn-sm" onclick="window.copiarTablaPortapapeles()"><i class="ti ti-copy"></i> Copiar tabla</button>
+            <button class="btn btn-sm btn-ghost" style="margin-left:auto;" onclick="window.limpiarExportFiltros()"><i class="ti ti-x"></i> Limpiar</button>
+          </div>
+        </div>
+
+        <!-- Estado Firebase -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-trending-up" style="color:var(--g);"></i> Cursos más dictados</div>
+            <div id="top-cursos-list"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-database" style="color:var(--te);"></i> Colecciones Firebase</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--g);"></i> catalogo_cursos</span><span class="badge badge-g" id="fb-cursos-count">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--in);"></i> alumnas</span><span class="badge badge-in" id="fb-alumnas-count">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--am);"></i> profesoras</span><span class="badge badge-am" id="fb-prof-count">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--te);"></i> registros QR</span><span class="badge badge-te">Activo</span></div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px;" onclick="window.recargarDatos()"><i class="ti ti-refresh"></i> Recargar Firebase</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ IMPORTAR ═══ -->
+      <div class="screen" id="screen-importar">
+        <!-- Wizard Steps -->
+        <div class="imp-steps card" style="padding:14px 20px;margin-bottom:16px;">
+          <div class="imp-step"><div class="imp-step-num active" id="imp-snum-1">1</div><span class="imp-step-lbl active" id="imp-slbl-1">Seleccionar archivo</span></div>
+          <div class="imp-sep" id="imp-ssep-1"></div>
+          <div class="imp-step"><div class="imp-step-num" id="imp-snum-2">2</div><span class="imp-step-lbl" id="imp-slbl-2">Vista previa</span></div>
+          <div class="imp-sep" id="imp-ssep-2"></div>
+          <div class="imp-step"><div class="imp-step-num" id="imp-snum-3">3</div><span class="imp-step-lbl" id="imp-slbl-3">Importando</span></div>
+          <div class="imp-sep" id="imp-ssep-3"></div>
+          <div class="imp-step"><div class="imp-step-num" id="imp-snum-4">4</div><span class="imp-step-lbl" id="imp-slbl-4">Resultado</span></div>
+        </div>
+
+        <div id="imp-screen-1">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:4px;"><i class="ti ti-file-spreadsheet" style="color:var(--g);"></i> Archivo de programación del SIGECOOP</div>
+            <div class="card-sub">Sube el Excel exportado del SIGECOOP con la programación del mes (NOMBRE_CURSO, CODIGO_REGISTRO, PROFESOR, etc.)</div>
+            <div class="upload-zone" id="imp-upload-zone" onclick="document.getElementById('imp-file-input').click()"
+                 ondragover="event.preventDefault();this.classList.add('drag')"
+                 ondragleave="this.classList.remove('drag')"
+                 ondrop="impOnDrop(event)">
+              <div class="upload-zone-icon"><i class="ti ti-cloud-upload"></i></div>
+              <div class="upload-zone-title">Arrastra el Excel aquí o haz clic para buscar</div>
+              <div class="upload-zone-sub">PROGRAMACION_CURSOS_MAYO.xlsx · Acepta .xlsx y .xls</div>
+            </div>
+            <input type="file" id="imp-file-input" accept=".xlsx,.xls" style="display:none" onchange="impOnFileSelected(this.files[0])">
+            <div id="imp-file-info" style="display:none;margin-top:12px;padding:12px 14px;background:var(--gl);border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px;">
+              <i class="ti ti-file-check" style="color:var(--g);font-size:22px;"></i>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;" id="imp-file-name">—</div><div style="font-size:11px;color:var(--tx3);" id="imp-file-size">—</div></div>
+              <span class="badge badge-g">Listo</span>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-settings" style="color:var(--tx3);"></i> Modo de importación</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="display:flex;align-items:flex-start;gap:12px;padding:12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s;">
+                <input type="radio" name="imp-mode" value="agregar" checked style="margin-top:2px;accent-color:var(--g);">
+                <div><div style="font-size:13px;font-weight:600;">Solo agregar cursos nuevos</div><div style="font-size:12px;color:var(--tx3);">Agrega los cursos que no existan. Compara por CODIGO_REGISTRO.</div></div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:12px;padding:12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s;">
+                <input type="radio" name="imp-mode" value="reemplazar" style="margin-top:2px;accent-color:var(--am);">
+                <div><div style="font-size:13px;font-weight:600;">Actualizar cursos existentes</div><div style="font-size:12px;color:var(--tx3);">Actualiza datos si el curso ya existe. No borra inscripciones.</div></div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:12px;padding:12px;border:1.5px solid var(--rel);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .15s;">
+                <input type="radio" name="imp-mode" value="borrar" style="margin-top:2px;accent-color:var(--re);">
+                <div><div style="font-size:13px;font-weight:600;color:var(--re);">Borrar todo e importar desde cero</div><div style="font-size:12px;color:var(--tx3);">Elimina TODOS los cursos actuales y reimporta desde el Excel. Las inscripciones NO se borran.</div></div>
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn btn-primary" id="imp-btn-preview" disabled onclick="impGenerarPreview()"><i class="ti ti-eye"></i> Ver vista previa</button>
+          </div>
+        </div>
+
+        <div id="imp-screen-2" style="display:none;">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-table" style="color:var(--g);"></i> Cursos detectados</div>
+              <span style="font-size:12px;color:var(--tx3);" id="imp-preview-sub">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;" id="imp-preview-stats"></div>
+            <div id="imp-preview-alert" style="margin-bottom:12px;"></div>
+            <div class="table-wrap" style="max-height:340px;overflow-y:auto;">
+              <table>
+                <thead><tr><th>#</th><th>Cód. SIGECOOP</th><th>Nombre del curso</th><th>Profesora</th><th>Dist.</th><th>Mes</th><th>Inicio / Fin</th><th>Horario</th><th>Estado</th></tr></thead>
+                <tbody id="imp-preview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn" onclick="impVolverPaso1()"><i class="ti ti-arrow-left"></i> Volver</button>
+            <button class="btn btn-primary" onclick="impIniciarImportacion()"><i class="ti ti-upload"></i> Confirmar e importar</button>
+          </div>
+        </div>
+
+        <div id="imp-screen-3" style="display:none;">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:4px;"><i class="ti ti-loader-2" style="color:var(--g);animation:spin 1s linear infinite;"></i> <span id="imp-titulo">Importando cursos...</span></div>
+            <div style="font-size:12px;color:var(--tx3);margin-bottom:14px;">Por favor espera. No navegues a otra sección.</div>
+            <div style="margin-bottom:12px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span id="imp-prog-label">Procesando...</span><span id="imp-prog-pct" style="font-weight:700;color:var(--g);">0%</span></div>
+              <div class="prog-wrap"><div class="prog-fill" id="imp-prog-fill" style="width:0%;"></div></div>
+              <div style="font-size:11px;color:var(--tx3);margin-top:4px;" id="imp-prog-detail">—</div>
+            </div>
+            <div class="imp-log" id="imp-log-box"></div>
+          </div>
+        </div>
+
+        <div id="imp-screen-4" style="display:none;">
+          <div class="card">
+            <div id="imp-result-header"></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;" id="imp-result-stats"></div>
+            <div id="imp-result-errores" style="margin-top:12px;"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="impReiniciar()"><i class="ti ti-refresh"></i> Nueva importación</button>
+              <button class="btn" onclick="navTo('cursos',null);window.recargarDatos()"><i class="ti ti-calendar-event"></i> Ver cursos importados</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ NOTIFICACIONES ═══ -->
+      <div class="screen" id="screen-notificaciones">
+        <div style="max-width:600px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:600;color:var(--tx);">Notificaciones del sistema</div>
+            <button class="btn btn-sm btn-ghost" onclick="showToast('Marcadas como leídas ✓','success');document.getElementById('badge-notif').style.display='none';">Marcar leídas</button>
+          </div>
+          <div id="notifs-list"><div class="empty-state">Cargando...</div></div>
+        </div>
+      </div>
+
+      <!-- ═══ CONFIGURACIÓN ═══ -->
+      <div class="screen" id="screen-configuracion">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="card">
+              <div class="card-title" style="margin-bottom:14px;">Perfil de usuario</div>
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+                <div class="av av-lg" id="conf-av" style="background:var(--g);">--</div>
+                <div><div style="font-size:15px;font-weight:700;" id="conf-nombre">—</div><div style="font-size:12px;color:var(--tx3);" id="conf-email">—</div></div>
+              </div>
+              <div style="padding:10px 12px;background:var(--gl);border-radius:var(--radius-sm);font-size:12px;color:var(--g);font-weight:600;"><i class="ti ti-shield-check"></i> Firebase sigpaf-cre · Plan Blaze</div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:14px;">Parámetros del sistema</div>
+              <div class="form-group"><label class="form-label">Año activo</label><select class="form-control"><option>2026</option><option>2025</option></select></div>
+              <div class="form-group"><label class="form-label">% mínimo asistencia</label><input class="form-control" value="70" type="number"></div>
+              <div class="form-group"><label class="form-label">Cupo máximo por defecto</label><input class="form-control" value="30" type="number"></div>
+              <button class="btn btn-primary btn-sm" onclick="showToast('Configuración guardada ✓','success')"><i class="ti ti-check"></i> Guardar</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:14px;">Colecciones en Firestore</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--g);"></i> catalogo_cursos</span><span class="badge badge-g" id="fb-cursos-count2">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--in);"></i> alumnas</span><span class="badge badge-in" id="fb-alumnas-count2">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--am);"></i> profesoras</span><span class="badge badge-am" id="fb-prof-count2">—</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--te);"></i> registros QR</span><span class="badge badge-te">Activo</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);"><span style="font-size:12.5px;"><i class="ti ti-database" style="color:var(--re);"></i> asistencia</span><span class="badge badge-g" style="background:#D1FAE5;color:#065F46;">Activo</span></div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px;" onclick="window.recargarDatos()"><i class="ti ti-refresh"></i> Recargar datos</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app-main -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Modal: Nuevo curso -->
+<div class="modal-overlay" id="modal-nuevo-curso">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-calendar-plus" style="color:var(--g);"></i> Registrar nuevo curso</div>
+      <i class="ti ti-x modal-close" onclick="closeModal('modal-nuevo-curso')"></i>
+    </div>
+    <div class="modal-body">
+      <div class="form-group col-span-2">
+        <label class="form-label">Nombre del curso *</label>
+        <select class="form-control" id="nc-nombre" onchange="window.onSelectCursoNombre(this)">
+          <option value="">Selecciona del catálogo...</option>
+        </select>
+        <input class="form-control" id="nc-nombre-manual" placeholder="O escribe un nombre nuevo..." style="margin-top:6px;font-size:12px;">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Distrito *</label>
+          <select class="form-control" id="nc-distrito">
+            <option value="">Selecciona...</option>
+            <option value="1">Distrito 1 – Santa Cruz</option><option value="2">Distrito 2</option><option value="3">Distrito 3</option><option value="4">Distrito 4</option><option value="5">Distrito 5</option><option value="6">Distrito 6</option><option value="7">Distrito 7</option><option value="8">Distrito 8</option><option value="9">Distrito 9</option><option value="10">Distrito 10</option><option value="11">Distrito 11</option><option value="12">Distrito 12 – La Guardia</option><option value="13">Distrito 13 – Warnes</option><option value="14">Distrito 14 – Montero</option><option value="15">Distrito 15 – Portachuelo</option><option value="16">Distrito 16 – Yapacaní</option><option value="17">Distrito 17 – Mairana</option><option value="18">Distrito 18 – Vallegrande</option><option value="19">Distrito 19 – Comarapa</option><option value="20">Distrito 20 – Camiri</option><option value="21">Distrito 21 – Cotoca</option><option value="22">Distrito 22 – San José</option><option value="23">Distrito 23 – Puerto Suárez</option><option value="24">Distrito 24 – Guarayos</option><option value="25">Distrito 25 – San Javier</option><option value="26">Distrito 26 – San Ignacio</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-control" id="nc-tipo"><option>Presencial</option><option>Virtual</option><option>Mixto</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha inicio</label>
+          <input class="form-control" id="nc-inicio" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha fin</label>
+          <input class="form-control" id="nc-fin" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sesiones</label>
+          <input class="form-control" id="nc-sesiones" type="number" value="12">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cupo máximo</label>
+          <input class="form-control" id="nc-cupo" type="number" value="30">
+        </div>
+        <div class="form-group col-span-2">
+          <label class="form-label">Profesora asignada</label>
+          <select class="form-control" id="nc-profesora"><option value="">Selecciona una profesora...</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Código SIGECOOP</label>
+          <input class="form-control" id="nc-codigo-sig" placeholder="Ej: 8228">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mes del programa</label>
+          <select class="form-control" id="nc-mes"><option value="">Selecciona mes...</option><option>ENERO 2026</option><option>FEBRERO 2026</option><option>MARZO 2026</option><option>ABRIL 2026</option><option>MAYO 2026</option><option>JUNIO 2026</option><option>JULIO 2026</option><option>AGOSTO 2026</option><option>SEPTIEMBRE 2026</option><option>OCTUBRE 2026</option><option>NOVIEMBRE 2026</option><option>DICIEMBRE 2026</option></select>
+        </div>
+        <div class="form-group col-span-2">
+          <label class="form-label">Ubicación / Lugar</label>
+          <input class="form-control" id="nc-ubicacion" placeholder="Av., Calle, Barrio, Institución...">
+        </div>
+        <div class="form-group col-span-2">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" id="nc-obs" rows="2" placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-nuevo-curso')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-curso" onclick="window.guardarNuevoCurso()"><i class="ti ti-check"></i> Registrar en Firebase</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva profesora -->
+<div class="modal-overlay" id="modal-nueva-profesora">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-user-plus" style="color:var(--g);"></i> Registrar profesora</div>
+      <i class="ti ti-x modal-close" onclick="closeModal('modal-nueva-profesora')"></i>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label class="form-label">Nombre(s) *</label><input class="form-control" id="np-nombre" placeholder="Nombre"></div>
+        <div class="form-group"><label class="form-label">Apellidos *</label><input class="form-control" id="np-apellido" placeholder="Apellidos"></div>
+        <div class="form-group"><label class="form-label">CI</label><input class="form-control" id="np-ci" placeholder="Número de CI"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="np-tel" placeholder="7X XXX XXX"></div>
+        <div class="form-group col-span-2"><label class="form-label">Especialidad(es)</label><input class="form-control" id="np-esp" placeholder="Manualidades, Cocina, Costura..."></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-nueva-profesora')">Cancelar</button>
+      <button class="btn btn-primary" onclick="window.guardarNuevaProfesora()"><i class="ti ti-check"></i> Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle curso -->
+<div class="modal-overlay" id="modal-detalle-curso">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-detalle-titulo">Detalle del curso</div>
+      <i class="ti ti-x modal-close" onclick="closeModal('modal-detalle-curso')"></i>
+    </div>
+    <div class="modal-body" id="modal-detalle-content"></div>
+  </div>
+</div>
+
+
+<script>
+
+
+// ══════════════════════════════════════════════════════
+//  COMPARTIR ENLACE A PROFESORA
+// ══════════════════════════════════════════════════════
+window.compartirEnlaceProf = function(profCi, profNombre, cursoNombre){
+  var base = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+  // El link del portal de profesora (la prof ingresa con su CI)
+  var msg = '👩‍🏫 *Portal SIGPAF - CRE R.L.*\n\n'
+    + 'Estimada *'+profNombre+'*,\n\n'
+    + 'Ingresa a tu portal docente para ver tu curso, lista de alumnas y código QR:\n\n'
+    + '🔗 '+base+'\n\n'
+    + '📋 Tu número de CI: *'+profCi+'*\n\n'
+    + '_Programa Apoyo a la Familia · CRE R.L._';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+};
+
+window.copiarEnlaceProf = function(profCi){
+  var base = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+  navigator.clipboard.writeText(base).then(function(){
+    showToast('Link del portal copiado','success');
+  });
+};
+
+window.compartirQRCursoWA = function(codigo, nombre, prof, dist){
+  var link = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var msg = '📚 *Inscripción al curso - CRE R.L.*\n\n'
+    + '*'+nombre+'*\n'
+    + '👩‍🏫 Profesora: '+prof+'\n'
+    + '📍 '+dist+'\n\n'
+    + 'Escanea el QR o ingresa aquí para inscribirte:\n'
+    + '🔗 '+link+'\n\n'
+    + '_Programa Apoyo a la Familia · CRE R.L._';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+};
+
+
+// ══════════════════════════════════════════════════════
+//  FIREBASE INIT
+// ══════════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:            "AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
+  authDomain:        "sigpaf-cre.firebaseapp.com",
+  projectId:         "sigpaf-cre",
+  storageBucket:     "sigpaf-cre.firebasestorage.app",
+  messagingSenderId: "783555160890",
+  appId:             "1:783555160890:web:79bae67c10986f11a8fe03"
+});
+
+var DB   = firebase.firestore();
+var AUTH = firebase.auth();
+
+// Colecciones reales en Firestore
+var COL = {
+  cursos:     'catalogo_cursos',
+  alumnas:    'alumnas',
+  profesoras: 'profesoras',
+  distritos:  'distritos',
+  registros:  'registros',
+  asistencia: 'asistencia',
+  users:      'users'
+};
+
+// Estado global
+var G = {
+  user:      null,
+  cursos:    [],
+  alumnas:   [],
+  profesoras:[],
+  distritos: [],
+  registros: []
+};
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function wait(ms){ return new Promise(function(r){setTimeout(r,ms);}); }
+
+function showToast(msg, type){
+  var t   = document.getElementById('toast');
+  var msg_el = document.getElementById('toast-msg');
+  if(!t||!msg_el) return;
+  msg_el.textContent = msg;
+  t.className = 'toast'+(type?' '+type:'');
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); }, 3400);
+}
+
+function showLoading(v){
+  var el = document.getElementById('global-loader');
+  if(el) el.style.display = v ? 'flex' : 'none';
+}
+
+function openModal(id){  var el=document.getElementById(id); if(el) el.classList.add('open'); }
+function closeModal(id){ var el=document.getElementById(id); if(el) el.classList.remove('open'); }
+
+document.addEventListener('click', function(e){
+  if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+});
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+function navTo(screen, el){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var target = document.getElementById('screen-'+screen);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  else document.querySelectorAll('.nav-item').forEach(function(n){
+    if(n.dataset.screen===screen) n.classList.add('active');
+  });
+  var titles = {
+    dashboard:'Dashboard', cursos:'Programación de cursos',
+    importar:'Importar Programación del SIGECOOP',
+    alumnas:'Registro de alumnas', asistencia:'Control de asistencia',
+    profesoras:'Profesoras', reportes:'Reportes institucionales',
+    notificaciones:'Notificaciones', configuracion:'Configuración'
+  };
+  var pt = document.getElementById('page-title');
+  if(pt) pt.textContent = titles[screen]||screen;
+  closeSidebar();
+  // Actualizar pantalla específica al navegar
+  if(screen==='reportes') actualizarReportes();
+  if(screen==='configuracion') actualizarConfiguracion();
+}
+
+// ══════════════════════════════════════════════════════
+//  ESTADO / BADGE
+// ══════════════════════════════════════════════════════
+var ESTADO_MAP = {
+  registradoGU:     {label:'Registrado GU',    cls:'badge-in'},
+  enviadoFundacion: {label:'Enviado Fundación', cls:'badge-am'},
+  enEjecucion:      {label:'En ejecución',      cls:'badge-te'},
+  activo:           {label:'En ejecución',      cls:'badge-te'},
+  finalizado:       {label:'Finalizado',        cls:'badge-gray'},
+  observado:        {label:'Observado',         cls:'badge-re'},
+  aprobado:         {label:'Aprobado',          cls:'badge-g'}
+};
+
+function normEstado(raw){
+  if(!raw) return 'registradoGU';
+  var r = raw.toLowerCase().replace(/\s/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(r.includes('ejecucion')||r==='activo') return 'enEjecucion';
+  if(r.includes('fundacion')) return 'enviadoFundacion';
+  if(r.includes('aprobado'))  return 'aprobado';
+  if(r.includes('observado')) return 'observado';
+  if(r.includes('finalizado')) return 'finalizado';
+  return 'registradoGU';
+}
+
+function getBadge(raw){
+  var key = normEstado(raw);
+  var e = ESTADO_MAP[key]||{label:raw||'—',cls:'badge-gray'};
+  return '<span class="badge '+e.cls+'">'+e.label+'</span>';
+}
+
+function generarCodigo(c){
+  // Si tiene codigo_registro del SIGECOOP, usarlo directamente
+  if(c.codigo_registro && String(c.codigo_registro).trim()){
+    return String(c.codigo_registro).trim();
+  }
+  // Sino generar codigo interno
+  var base  = (c.nombre_curso||c.nombre||'CURSO').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase();
+  var dist  = c.distrito_num||c.distrito||'0';
+  var mes   = (c.mes||'').replace(/\s/g,'').slice(0,3).toUpperCase();
+  var id    = (c.id||'').slice(-4).toUpperCase();
+  return 'CRE-'+base+dist+'-'+mes+id;
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════
+// Verificar Firebase SDK al cargar
+window.addEventListener('load', function(){
+  var dot = document.getElementById('sdk-dot');
+  var msg = document.getElementById('sdk-msg');
+  if(typeof firebase === 'undefined'){
+    if(dot){ dot.style.background='#EF4444'; }
+    if(msg){ msg.textContent='❌ Firebase no disponible · Verifica conexión a internet'; }
+    if(msg && msg.parentElement){ msg.parentElement.style.background='#FEE2E2'; msg.parentElement.style.color='#991B1B'; }
+  } else {
+    // Inicializar Firestore sin Auth SDK (evita iframe bloqueado en file://)
+    DB = firebase.firestore();
+    if(dot){ dot.style.background='#00703C'; }
+    if(msg){ msg.textContent='✅ Firebase listo · Ingresa tus credenciales'; }
+  }
+});
+
+function setUI(id, val){
+  var el = document.getElementById(id);
+  if(el) el.textContent = val;
+}
+
+window.doLogin = function(){
+  var email = document.getElementById('login-email').value.trim();
+  var pass  = document.getElementById('login-pass').value.trim();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if(!email||!pass){ errEl.textContent='Completa correo y contraseña.'; return; }
+  setLoginLoading(true);
+
+  // Usar Firebase Auth REST API directamente (funciona desde file://)
+  var API_KEY = 'AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM';
+  var url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + API_KEY;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, password: pass, returnSecureToken: true })
+  })
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    if(data.error){
+      var m = {
+        'EMAIL_NOT_FOUND':    'Correo no registrado.',
+        'INVALID_PASSWORD':   'Contraseña incorrecta.',
+        'INVALID_LOGIN_CREDENTIALS': 'Correo o contraseña incorrectos.',
+        'USER_DISABLED':      'Usuario desactivado.',
+        'TOO_MANY_ATTEMPTS_TRY_LATER': 'Demasiados intentos. Espera unos minutos.'
+      };
+      errEl.textContent = m[data.error.message] || data.error.message;
+      setLoginLoading(false);
+      return;
+    }
+    // Login exitoso - guardar token y continuar
+    G.user = { email: data.email, uid: data.localId, token: data.idToken };
+    // Configurar Firestore con el token
+    DB = firebase.firestore();
+    // Mostrar app
+    document.getElementById('app-login').style.display = 'none';
+    document.getElementById('app-main').style.display  = 'flex';
+    var uname = document.getElementById('sidebar-uname');
+    var urole = document.getElementById('sidebar-urole');
+    var uav   = document.getElementById('sidebar-uav');
+    if(uname) uname.textContent = data.email;
+    if(urole) urole.textContent = 'Administrador';
+    if(uav)   uav.textContent   = data.email.slice(0,2).toUpperCase();
+    // Actualizar SDK label
+    var sdkDot = document.getElementById('sdk-dot');
+    var sdkMsg = document.getElementById('sdk-msg');
+    if(sdkDot) sdkDot.style.background='#00703C';
+    if(sdkMsg) sdkMsg.textContent = '✅ Sesión activa · '+data.email;
+    initApp();
+  })
+  .catch(function(e){
+    errEl.textContent = 'Error de conexión: ' + e.message;
+    console.error('Login error:', e);
+    setLoginLoading(false);
+  });
+};
+
+function setLoginLoading(v){
+  var btn = document.getElementById('login-btn');
+  btn.disabled = v;
+  btn.innerHTML = v
+    ? '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Ingresando...'
+    : '<i class="ti ti-login"></i> Ingresar al sistema';
+}
+
+window.doLogout = function(){
+  G.user = null;
+  document.getElementById('app-login').style.display = 'flex';
+  document.getElementById('app-main').style.display  = 'none';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value  = '';
+  setLoginLoading(false);
+};
+
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter'){
+    var lp = document.getElementById('login-pass');
+    if(lp && document.activeElement===lp) window.doLogin();
+  }
+});
+
+// ══════════════════════════════════════════════════════
+//  INIT APP — carga todos los datos de Firebase
+// ══════════════════════════════════════════════════════
+function initApp(){
+  showLoading(true);
+  Promise.all([
+    DB.collection(COL.cursos).get(),
+    DB.collection(COL.alumnas).limit(500).get(),
+    DB.collection(COL.profesoras).get(),
+    DB.collection(COL.distritos).get(),
+    DB.collection(COL.registros).orderBy('fecha_registro','desc').limit(200).get()
+  ]).then(function(results){
+    G.cursos     = snapToArray(results[0]);
+    G.alumnas    = snapToArray(results[1]);
+    G.profesoras = snapToArray(results[2]);
+    G.distritos  = snapToArray(results[3]);
+    G.registros  = snapToArray(results[4]);
+    renderDashboard();
+    renderCursos(G.cursos);
+    poblarFiltroProfesorasCursos();
+    renderAlumnasRecientes();
+    renderProfesoras();
+    renderAttendance();
+    poblarSelectCursos();
+    showLoading(false);
+    showToast('Datos cargados desde Firebase ✓','success');
+  }).catch(function(e){
+    showLoading(false);
+    showToast('Error cargando datos: '+e.message,'error');
+  });
+}
+
+function snapToArray(snap){
+  return snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+}
+
+window.recargarDatos = function(){
+  showLoading(true);
+  initApp();
+  showToast('Recargando desde Firebase...','success');
+};
+
+// ══════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════
+function renderDashboard(){
+  var activos    = G.cursos.filter(function(c){ return normEstado(c.estado)==='enEjecucion'; }).length;
+  var aprobados  = G.cursos.filter(function(c){ return normEstado(c.estado)==='aprobado'; }).length;
+  var observados = G.cursos.filter(function(c){ return normEstado(c.estado)==='observado'; }).length;
+  var enviados   = G.cursos.filter(function(c){ return normEstado(c.estado)==='enviadoFundacion'; }).length;
+  var profActivas= G.profesoras.filter(function(p){ return p.activa!==false; }).length;
+
+  setUI('kpi-activos',    activos||G.cursos.length);
+  setUI('kpi-alumnas',    G.alumnas.length||'—');
+  setUI('kpi-aprobados',  aprobados);
+  setUI('kpi-observados', observados);
+  setUI('kpi-enviados',   enviados);
+  setUI('kpi-profesoras', profActivas||G.profesoras.length);
+
+  // Lista de cursos recientes
+  var cl = document.getElementById('dashboard-courses');
+  if(!cl) return;
+  var top5 = G.cursos.slice(0,5);
+  if(!top5.length){ cl.innerHTML='<div class="empty-state">Sin cursos registrados</div>'; return; }
+  cl.innerHTML = top5.map(function(c){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var prof   = c.profesora||c.profesora_nombre||'—';
+    var dist   = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:c.distrito||'—');
+    return '<div class="course-card" style="margin-bottom:8px;cursor:pointer;" onclick="navTo(\'cursos\',null)">'
+      +'<div class="course-card-icon"><i class="ti ti-calendar-event"></i></div>'
+      +'<div class="course-card-info"><div class="course-card-name">'+nombre+'</div>'
+      +'<div class="course-card-meta">'+dist+' · '+prof+'</div></div>'
+      +'<div class="course-card-right">'+getBadge(c.estado)+'</div></div>';
+  }).join('');
+
+  // Estados
+  var ds = document.getElementById('dashboard-states');
+  if(ds){
+    var conteo = {};
+    G.cursos.forEach(function(c){ var k=normEstado(c.estado); conteo[k]=(conteo[k]||0)+1; });
+    var estados = [
+      {key:'registradoGU',color:'#6366F1',label:'Registrado GU'},
+      {key:'enviadoFundacion',color:'#F59E0B',label:'Enviado Fundación'},
+      {key:'enEjecucion',color:'#10B981',label:'En ejecución'},
+      {key:'observado',color:'#EF4444',label:'Observados'},
+      {key:'aprobado',color:'#00703C',label:'Aprobados'},
+      {key:'finalizado',color:'#6B7280',label:'Finalizados'}
+    ];
+    ds.innerHTML = estados.map(function(e){
+      return '<div class="stat-row"><div style="display:flex;align-items:center;gap:8px;">'
+        +'<div class="stat-dot" style="background:'+e.color+'"></div>'
+        +'<span style="font-size:12.5px;color:var(--tx2);">'+e.label+'</span></div>'
+        +'<span style="font-size:14px;font-weight:700;color:var(--tx);">'+(conteo[e.key]||0)+'</span></div>';
+    }).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  CURSOS
+// ══════════════════════════════════════════════════════
+window.renderCursos = function(list){
+  var el = document.getElementById('cursos-list');
+  if(!el) return;
+  if(!list||!list.length){
+    el.innerHTML='<div class="empty-state"><i class="ti ti-calendar-off"></i><div class="empty-state-title">No se encontraron cursos</div><div class="empty-state-sub">Importa la programaci\u00f3n del mes o crea un nuevo curso</div></div>';
+    return;
+  }
+  var ACCENT = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+  var html = '<div class="course-grid">';
+  list.forEach(function(c,i){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var prof   = c.profesora||c.profesora_nombre||'Sin asignar';
+    var dist   = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:c.distrito||'—');
+    var secc   = c.seccion_num?'Secc. '+c.seccion_num:'';
+    var codigo = generarCodigo(c);
+    var mes    = c.mes||'';
+    var horario= c.horario||'';
+    var accent = ACCENT[i%ACCENT.length];
+    var cid    = c.id;
+    html += '<div class="course-card" style="--card-accent:'+accent+';" onclick="verDetalleCurso(&quot;'+cid+'&quot;)">';
+    html += '<div class="cc-top">';
+    html += '<div style="flex:1;min-width:0;"><div class="cc-name">'+nombre+'</div>';
+    html += '<div class="cc-prof"><i class="ti ti-user-star" style="color:var(--g);font-size:13px;"></i>'+prof+'</div></div>';
+    html += getBadge(c.estado)+'</div>';
+    html += '<div class="cc-meta">';
+    html += '<span><i class="ti ti-map-pin"></i>'+dist+(secc?' · '+secc:'')+'</span>';
+    if(mes) html += '<span><i class="ti ti-calendar-month"></i>'+mes+'</span>';
+    if(horario) html += '<span><i class="ti ti-clock"></i>'+horario+'</span>';
+    html += '</div>';
+    html += '<div class="cc-actions">';
+    html += '<span class="cc-code">'+codigo+'</span>';
+    html += '<div style="margin-left:auto;"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();verDetalleCurso(&quot;'+cid+'&quot;)" title="Ver QR"><i class="ti ti-qrcode"></i></button></div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+};
+
+
+window.filterCursos = function(){
+  var search = (document.getElementById('curso-search').value||'').toLowerCase();
+  var dist   = document.getElementById('filtro-distrito').value;
+  var est    = document.getElementById('filtro-estado').value;
+  var profF  = (document.getElementById('filtro-profesora')||{}).value||'';
+  var filtered = G.cursos.filter(function(c){
+    var nombre  = (c.nombre_curso||c.nombre||'').toLowerCase();
+    var prof    = (c.profesora||c.profesora_nombre||'').toLowerCase();
+    var codigo  = generarCodigo(c).toLowerCase();
+    var cod_sig = (c.codigo_sigecoop||c.codigo||'').toLowerCase();
+    var matchSearch = !search||nombre.includes(search)||prof.includes(search)||
+                      codigo.includes(search)||cod_sig.includes(search);
+    var matchDist = !dist||(c.distrito_num&&String(c.distrito_num)===dist)||
+                    (c.distrito||'')=== dist;
+    var matchEst  = !est||normEstado(c.estado)===est;
+    var matchProf = !profF||prof.includes(profF.toLowerCase());
+    return matchSearch && matchDist && matchEst && matchProf;
+  });
+  renderCursos(filtered);
+};
+window.filterCursosKey = function(e){ if(e.key==='Enter') filterCursos(); };
+
+
+// ── VER INSCRIPCIONES DE UN CURSO ──
+window.verInscripcionesCurso = function(cursoId, nombreCurso){
+  var cont = document.getElementById('modal-detalle-content');
+  var tit  = document.getElementById('modal-detalle-titulo');
+  if(!cont) return;
+  if(tit) tit.textContent = 'Inscripciones: '+nombreCurso;
+  cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div><div style="margin-top:10px;font-size:13px;color:var(--tx3);">Cargando inscripciones...</div></div>';
+  openModal('modal-detalle-curso');
+
+  DB.collection('registros').where('curso_id','==',cursoId).orderBy('fecha_registro','desc').get()
+    .then(function(snap){
+      if(snap.empty){
+        cont.innerHTML = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin inscripciones aún</div><div class="empty-state-sub">Nadie se ha inscrito a este curso via QR</div></div>';
+        return;
+      }
+      var docs = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      var COLORS = ['#00703C','#6366F1','#F59E0B','#0D9488','#EF4444'];
+      cont.innerHTML =
+        '<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--tx3);">'+docs.length+' alumnas inscritas</div>'
+        +'<div style="max-height:400px;overflow-y:auto;">'
+        +docs.map(function(r,i){
+          var nombre = r.nombre_alumna||'—';
+          var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+          var fecha = (r.fecha_registro||'').slice(0,10);
+          var origen = r.es_nueva?'Nueva':'SIGECOOP';
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg);margin-bottom:5px;">'
+            +'<div class="av av-sm" style="background:'+COLORS[i%COLORS.length]+';">'+ini+'</div>'
+            +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+nombre+'</div>'
+            +'<div style="font-size:11px;color:var(--tx3);">CI: '+(r.ci_alumna||'—')+' · '+fecha+'</div></div>'
+            +'<span class="badge '+(r.es_nueva?'badge-am':'badge-g')+'">'+origen+'</span>'
+            +'</div>';
+        }).join('')+'</div>'
+        +'<div style="display:flex;gap:8px;margin-top:14px;">'
+        +'<button class="btn btn-primary btn-sm" onclick="exportarInscripcionesCurso(&quot;'+cursoId+'&quot;,&quot;'+nombreCurso+'&quot;)"><i class="ti ti-download"></i> Exportar Excel</button>'
+        +'<button class="btn btn-sm" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button>'
+        +'</div>';
+    }).catch(function(e){
+      cont.innerHTML = '<div class="empty-state"><i class="ti ti-alert-triangle"></i><div class="empty-state-title">Error al cargar</div><div class="empty-state-sub">'+e.message+'</div></div>';
+    });
+};
+
+window.exportarInscripcionesCurso = function(cursoId, nombreCurso){
+  if(typeof XLSX === 'undefined'){ showToast('Cargando librería...','warn'); return; }
+  DB.collection('registros').where('curso_id','==',cursoId).get().then(function(snap){
+    var rows = snap.docs.map(function(d){
+      var r = d.data();
+      return {'CI': r.ci_alumna||'','Nombre': r.nombre_alumna||'','Fecha': (r.fecha_registro||'').slice(0,10),'Origen': r.origen_registro||'','Es nueva': r.es_nueva?'Sí':'No','Distrito': r.distrito||'','Mes': r.mes||''};
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:12},{wch:35},{wch:12},{wch:10},{wch:10},{wch:20},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,'Inscripciones');
+    XLSX.writeFile(wb,'Inscripciones_'+nombreCurso.replace(/\s/g,'_')+'.xlsx');
+    showToast('Excel exportado ✓','success');
+  });
+};
+
+// ── EDITAR CURSO ──
+window.abrirModalEditarCurso = function(id){
+  var c = G.cursos.find(function(x){ return x.id===id; });
+  if(!c){ showToast('Curso no encontrado','error'); return; }
+
+  // Reusar el modal de nuevo curso llenando los campos
+  abrirModalNuevoCurso();
+  setTimeout(function(){
+    var sel = document.getElementById('nc-nombre');
+    var man = document.getElementById('nc-nombre-manual');
+    var nombre = c.nombre_curso||c.nombre||'';
+
+    // Verificar si el nombre esta en el selector
+    var found = false;
+    if(sel) for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===nombre){ sel.value=nombre; found=true; break; }
+    }
+    if(!found && man) man.value = nombre;
+
+    var fields = {
+      'nc-distrito': c.distrito||c.distrito_num||'',
+      'nc-inicio': c.fecha_inicio||'',
+      'nc-fin': c.fecha_fin||'',
+      'nc-sesiones': c.sesiones_total||12,
+      'nc-cupo': c.cupo_maximo||30,
+      'nc-ubicacion': c.lugar||c.institucion||'',
+      'nc-obs': c.observaciones||'',
+      'nc-codigo-sig': c.codigo_registro||'',
+    };
+    Object.entries(fields).forEach(function(kv){
+      var el = document.getElementById(kv[0]);
+      if(el) el.value = kv[1];
+    });
+
+    // Profesora
+    var selProf = document.getElementById('nc-profesora');
+    if(selProf && c.profesora){
+      for(var i=0;i<selProf.options.length;i++){
+        if(selProf.options[i].value===c.profesora){ selProf.value=c.profesora; break; }
+      }
+    }
+
+    // Mes
+    var selMes = document.getElementById('nc-mes');
+    if(selMes && c.mes) selMes.value = c.mes;
+
+    // Cambiar titulo y boton
+    var tit = document.querySelector('#modal-nuevo-curso .modal-title');
+    if(tit) tit.innerHTML = '<i class="ti ti-edit" style="color:var(--g);"></i> Editar curso';
+    var btn = document.getElementById('btn-guardar-curso');
+    if(btn){
+      btn.innerHTML = '<i class="ti ti-check"></i> Guardar cambios';
+      btn.onclick = function(){ guardarEditarCurso(id); };
+    }
+  }, 150);
+};
+
+window.guardarEditarCurso = function(id){
+  var nombre_sel = (document.getElementById('nc-nombre').value||'').trim();
+  var nombre_man = (document.getElementById('nc-nombre-manual').value||'').trim();
+  var nombre = nombre_man || nombre_sel;
+  if(!nombre){ showToast('El nombre es requerido','error'); return; }
+
+  var prof = (document.getElementById('nc-profesora').value||'').trim();
+  var prof_obj = G.profesoras.find(function(p){ return (p.nombre||p.nombre_completo||'')===prof; });
+
+  DB.collection(COL.cursos).doc(id).update({
+    nombre_curso:    nombre,
+    distrito:        document.getElementById('nc-distrito').value||'',
+    distrito_num:    parseInt(document.getElementById('nc-distrito').value)||0,
+    fecha_inicio:    document.getElementById('nc-inicio').value||'',
+    fecha_fin:       document.getElementById('nc-fin').value||'',
+    sesiones_total:  parseInt(document.getElementById('nc-sesiones').value)||12,
+    cupo_maximo:     parseInt(document.getElementById('nc-cupo').value)||30,
+    profesora:       prof,
+    profesora_ci:    prof_obj?(prof_obj.ci||prof_obj.id||''):'',
+    lugar:           document.getElementById('nc-ubicacion').value||'',
+    observaciones:   document.getElementById('nc-obs').value||'',
+    codigo_registro: document.getElementById('nc-codigo-sig').value||'',
+    mes:             document.getElementById('nc-mes').value||'',
+    actualizado_en:  new Date().toISOString(),
+  }).then(function(){
+    closeModal('modal-nuevo-curso');
+    showToast('Curso actualizado ✓','success');
+    return DB.collection(COL.cursos).get();
+  }).then(function(snap){
+    G.cursos = snapToArray(snap);
+    renderCursos(G.cursos);
+    renderDashboard();
+    poblarFiltroProfesorasCursos();
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+window.verDetalleCurso = function(id){
+  var c = G.cursos.find(function(x){ return x.id===id; });
+  if(!c){ showToast('Curso no encontrado','error'); return; }
+  var nombre    = c.nombre_curso||c.nombre||'Sin nombre';
+  var inscritas = parseInt(c.alumnas_count||c.cupo_actual||0);
+  var cupo      = parseInt(c.cupo_maximo||c.cupo||30);
+  var pct       = cupo>0?Math.round(inscritas/cupo*100):0;
+  var codigo    = generarCodigo(c);
+  var link      = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var dist      = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:c.distrito||'—');
+  var prof      = c.profesora||c.profesora_nombre||'—';
+  var prof_ci   = c.profesora_ci||'';
+  var portal_url = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+
+  var cont = document.getElementById('modal-detalle-content');
+  if(!cont) return;
+
+  var link_qr = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link_prof = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+  document.getElementById('modal-detalle-titulo').textContent = nombre;
+  cont.innerHTML =
+    '<div style="margin-bottom:12px;">'
+    +'<div style="font-size:18px;font-weight:800;color:var(--tx);margin-bottom:6px;">'+nombre+'</div>'
+    +getBadge(c.estado)+'</div>'
+    // KV info
+    +'<div class="kv-grid" style="margin-bottom:14px;">'
+    +kv('Profesora',prof)+kv('Distrito',dist)
+    +kv('Inicio',c.fecha_inicio||'—')+kv('Fin',c.fecha_fin||'—')
+    +kv('Horario',c.horario||'—')+kv('Lugar',c.lugar||'—')
+    +kv('Mes',c.mes||'—')+kv('Cupo',inscritas+' / '+cupo+' alumnas')
+    +'</div>'
+    // Barra progreso
+    +'<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px;"><span style="color:var(--tx3);">Ocupación del curso</span><span style="font-weight:700;">'+pct+'%</span></div>'
+    +'<div class="prog-wrap"><div class="prog-fill" style="width:'+pct+'%;background:'+(pct>=90?'var(--re)':pct>=70?'var(--am)':'var(--g)')+'"></div></div>'
+    +'</div>'
+    // QR Panel
+    +'<div class="qr-panel">'
+    +'<div class="qr-canvas" id="qr-modal-box"></div>'
+    +'<div class="qr-info">'
+    +'<div class="qr-label">Código QR del curso</div>'
+    +'<div class="qr-code">'+codigo+'</div>'
+    +'<div class="qr-link">'+link_qr+'</div>'
+    +'<div class="qr-actions">'
+    +'<button id="btn-qr-wa" class="qr-btn qr-btn-wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>'
+    +'<button id="btn-qr-dl" class="qr-btn qr-btn-dl"><i class="ti ti-download"></i> Descargar</button>'
+    +'<button id="btn-qr-cp" class="qr-btn qr-btn-cp"><i class="ti ti-copy"></i> Copiar link</button>'
+    +'</div></div></div>'
+    // Panel enlace a profesora
+    +'<div class="prof-link-panel">'
+    +'<div class="prof-link-header"><i class="ti ti-share"></i> Enlace del portal para la profesora</div>'
+    +'<div class="prof-link-url">'+link_prof+'</div>'
+    +'<div style="font-size:11.5px;color:var(--in);margin-bottom:8px;">La profesora ingresa con su CI: <strong>'+(prof_ci||'(no registrado)')+'</strong></div>'
+    +'<div class="prof-link-actions">'
+    +'<button id="btn-prof-wa" class="prof-link-btn prof-link-btn-wa"><i class="ti ti-brand-whatsapp"></i> Enviar por WhatsApp</button>'
+    +'<button id="btn-prof-cp" class="prof-link-btn prof-link-btn-cp"><i class="ti ti-copy"></i> Copiar enlace</button>'
+    +'</div></div>'
+    // Footer buttons
+    +'<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">'
+    +'<button id="btn-det-estado" class="btn btn-primary" style="flex:1;justify-content:center;min-width:130px;"><i class="ti ti-refresh"></i> Cambiar estado</button>'
+    +'<button id="btn-det-inscripciones" class="btn" style="flex:1;justify-content:center;min-width:130px;"><i class="ti ti-users"></i> Ver inscripciones</button>'
+    +'<button id="btn-det-editar" class="btn" style="justify-content:center;"><i class="ti ti-edit"></i> Editar</button>'
+    +'<button class="btn btn-ghost" onclick="closeModal(&quot;modal-detalle-curso&quot;)"><i class="ti ti-x"></i></button>'
+    +'</div>';
+
+  openModal('modal-detalle-curso');
+
+  // Generar QR y conectar botones despues de que el DOM exista
+  setTimeout(function(){
+    var qrBox = document.getElementById('qr-modal-box');
+    if(!qrBox) return;
+    qrBox.innerHTML = '';
+    if(typeof QRCode !== 'undefined'){
+      try{
+        new QRCode(qrBox, {
+          text: link,
+          width: 92,
+          height: 92,
+          colorDark: '#00703C',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }catch(e){
+        qrBox.innerHTML = '<div style="font-size:9px;word-break:break-all;color:var(--g);padding:4px;">'+codigo+'</div>';
+      }
+    } else {
+      qrBox.innerHTML = '<div style="font-size:9px;color:var(--g);text-align:center;padding:8px;">QR</div>';
+    }
+    // Conectar botones usando closures (sin parametros inline)
+    var btnWa = document.getElementById('btn-qr-wa');
+    var btnDl = document.getElementById('btn-qr-dl');
+    var btnCp = document.getElementById('btn-qr-cp');
+    var btnProfWa = document.getElementById('btn-prof-wa');
+    var btnProfCp = document.getElementById('btn-prof-cp');
+    var link_qr = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+    var link_prof = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+    if(btnWa) btnWa.onclick = function(){
+      window.compartirQRCursoWA(codigo, nombre, prof, dist);
+    };
+    if(btnDl) btnDl.onclick = function(){ window.descargarQRModal(codigo, nombre); };
+    if(btnCp) btnCp.onclick = function(){
+      navigator.clipboard && navigator.clipboard.writeText(link_qr).then(function(){ showToast('Link del QR copiado', 'success'); });
+    };
+    if(btnProfWa) btnProfWa.onclick = function(){
+      window.compartirEnlaceProf(c.profesora_ci||'', prof, nombre);
+    };
+    if(btnProfCp) btnProfCp.onclick = function(){
+      navigator.clipboard && navigator.clipboard.writeText(link_prof).then(function(){ showToast('Link del portal copiado', 'success'); });
+    };
+    var btnEst = document.getElementById('btn-det-estado');
+    if(btnEst) btnEst.onclick = function(){ cambiarEstadoCurso(id); };
+
+    var btnIns = document.getElementById('btn-det-inscripciones');
+    if(btnIns) btnIns.onclick = function(){
+      closeModal('modal-detalle-curso');
+      verInscripcionesCurso(id, nombre);
+    };
+
+    var btnEdt = document.getElementById('btn-det-editar');
+    if(btnEdt) btnEdt.onclick = function(){
+      closeModal('modal-detalle-curso');
+      abrirModalEditarCurso(id);
+    };
+  }, 80);
+};
+
+// Compartir QR por WhatsApp
+window.compartirQRCurso = function(link, nombre, prof, dist, codigo){
+  var msg = 'Curso: *'+nombre+'*\nProfesora: '+prof+'\nDistrito: '+dist+'\n\nRegistrate aqui:\n'+link+'\n\nCodigo: *'+codigo+'*\n_Programa Apoyo a la Familia - CRE R.L._';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg), '_blank');
+};
+
+// Descargar QR del modal
+window.descargarQRModal = function(codigo, nombre){
+  var qrBox = document.getElementById('qr-modal-box');
+  if(!qrBox) return;
+  var canvas = qrBox.querySelector('canvas');
+  var img    = qrBox.querySelector('img');
+  var nombreClean = (nombre||'curso').replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
+  if(canvas){
+    var out = document.createElement('canvas');
+    out.width = 400; out.height = 480;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,400,480);
+    ctx.fillStyle = '#00703C'; ctx.fillRect(0,0,400,70);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('SIGPAF - CRE R.L.', 200, 28);
+    ctx.font = '12px sans-serif'; ctx.fillText('Programa Apoyo a la Familia', 200, 50);
+    ctx.drawImage(canvas, 100, 90, 200, 200);
+    ctx.fillStyle = '#111827'; ctx.font = 'bold 13px monospace';
+    ctx.fillText(codigo, 200, 320);
+    ctx.font = '12px sans-serif'; ctx.fillStyle = '#4B5563';
+    ctx.fillText((nombre||'Curso').slice(0,40), 200, 345);
+    ctx.fillText('Escanea para inscribirte', 200, 370);
+    var a = document.createElement('a');
+    a.download = 'QR_'+nombreClean+'_'+codigo+'.png';
+    a.href = out.toDataURL('image/png');
+    a.click();
+    showToast('QR descargado', 'success');
+  } else if(img){
+    var a2 = document.createElement('a');
+    a2.download = 'QR_'+nombreClean+'.png';
+    a2.href = img.src; a2.click();
+  }
+};
+
+// Copiar link al portapapeles
+window.copiarLink = function(link){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado', 'success'); });
+  }
+};
+
+function kv(k,v){
+  return '<div style="background:var(--bg);border-radius:8px;padding:10px;">'
+    +'<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px;">'+k+'</div>'
+    +'<div style="font-size:13px;color:var(--tx);">'+v+'</div></div>';
+}
+
+window.cambiarEstadoCurso = function(id){
+  var c = G.cursos.find(function(x){ return x.id===id; });
+  if(!c) return;
+  var flujo = ['registradoGU','enviadoFundacion','enEjecucion','finalizado','aprobado'];
+  var actual = normEstado(c.estado);
+  var idx    = flujo.indexOf(actual);
+  var siguiente = flujo[(idx+1)%flujo.length];
+  DB.collection(COL.cursos).doc(id).update({estado:siguiente}).then(function(){
+    c.estado = siguiente;
+    renderCursos(G.cursos);
+    renderDashboard();
+    closeModal('modal-detalle-curso');
+    showToast('Estado actualizado: '+ESTADO_MAP[siguiente].label,'success');
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+
+
+// ══════════════════════════════════════════════════════
+//  IMPORTADOR EXCEL INTEGRADO EN EL PANEL
+// ══════════════════════════════════════════════════════
+window.importarExcelCursos = function(){
+  // Crear input file oculto y dispararlo
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx,.xls,.csv';
+  input.onchange = function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var wb = XLSX.read(new Uint8Array(ev.target.result),{type:'array',raw:true});
+        var sname = wb.SheetNames.find(function(n){
+          return n.toUpperCase().includes('CURSO')||n.toUpperCase().includes('PROG');
+        })||wb.SheetNames[0];
+        var aoa = XLSX.utils.sheet_to_json(wb.Sheets[sname],{header:1,defval:'',raw:true});
+        if(!aoa.length){ showToast('Archivo vacío','error'); return; }
+        procesarImportExcel(aoa, file.name);
+      }catch(ex){
+        showToast('Error leyendo archivo: '+ex.message,'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  input.click();
+};
+
+function detectarColImport(headers, aliases){
+  var hdrs = headers.map(function(h){ return String(h||'').toUpperCase().trim().replace(/[\s_]+/g,' '); });
+  for(var i=0;i<aliases.length;i++){
+    var alias = aliases[i].toUpperCase().replace(/[\s_]+/g,' ');
+    var idx = hdrs.findIndex(function(h){ return h === alias || h.includes(alias); });
+    if(idx>-1) return idx;
+  }
+  return -1;
+}
+
+function procesarImportExcel(aoa, nombreArchivo){
+  var headers = aoa[0];
+  var IDX = {
+    nombre:    detectarColImport(headers,['NOMBRE CURSO','NOMBRE DEL CURSO','NOMBRE_CURSO','CURSO','DESCRIPCION']),
+    distrito:  detectarColImport(headers,['DISTRITO','DIST','NRO DISTRITO']),
+    seccion:   detectarColImport(headers,['SECCION','SECCIÓN','SECC']),
+    compania:  detectarColImport(headers,['COMPANIA','COMPAÑIA','CIA']),
+    profesora: detectarColImport(headers,['PROFESOR','PROFESORA','INSTRUCTOR','DOCENTE']),
+    inicio:    detectarColImport(headers,['F INICIO','F_INICIO','FECHA INICIO','INICIO']),
+    fin:       detectarColImport(headers,['F FIN','F_FIN','FECHA FIN','FIN']),
+    clausura:  detectarColImport(headers,['FECHA CLAUSURA','FECHA_CLAUSURA','CLAUSURA']),
+    cupo:      detectarColImport(headers,['CANT ALUMNOS','CANT_ALUMNOS','CUPO','CAPACIDAD','MAX']),
+    lugar:     detectarColImport(headers,['LUGAR CURSO','LUGAR_CURSO','LUGAR','UBICACION','DIRECCION','SEDE','INSTITUCION']),
+    mes:       detectarColImport(headers,['MES CURSO','MES_CURSO','MES','PERIODO']),
+    sesiones:  detectarColImport(headers,['SESIONES','CLASES','DIAS ASIGNADOS','DIAS_ASIGNADOS']),
+    codigo:    detectarColImport(headers,['CODIGO REGISTRO','CODIGO_REGISTRO','CODIGO','COD REG']),
+    solicitud: detectarColImport(headers,['NRO SOLICITUD','NRO_SOLICITUD','SOLICITUD']),
+    delegado:  detectarColImport(headers,['DELEGADO']),
+    hora_ini:  detectarColImport(headers,['HORA INICIO','HORA_INICIO']),
+    hora_fin:  detectarColImport(headers,['HORA FIN','HORA_FIN']),
+    estado:    detectarColImport(headers,['ESTADO']),
+    telefono:  detectarColImport(headers,['TELEF REF','TELEF_REF','TELEFONO']),
+    codigo_fijo: detectarColImport(headers,['CODIGO FIJO','CODIGO_FIJO']),
+  };
+
+  if(IDX.nombre < 0){
+    showToast('No se encontró columna NOMBRE_CURSO','error');
+    return;
+  }
+
+  var cursos = [];
+  for(var r=1;r<aoa.length;r++){
+    var row = aoa[r];
+    if(!row||row.every(function(c){return c===''||c==null;})) continue;
+    var nombre = IDX.nombre>=0 ? String(row[IDX.nombre]||'').trim() : '';
+    if(!nombre) continue;
+
+    var dist_num = IDX.distrito>=0 ? parseInt(row[IDX.distrito])||0 : 0;
+    var secc_num = IDX.seccion>=0  ? parseInt(row[IDX.seccion])||0  : 0;
+    var cod_reg  = IDX.codigo>=0   ? String(row[IDX.codigo]||'').trim() : '';
+    var cod_fijo = IDX.codigo_fijo>=0 ? String(row[IDX.codigo_fijo]||'').trim() : '';
+    var mes      = IDX.mes>=0 ? String(row[IDX.mes]||'').trim() : '';
+    var estado_excel = IDX.estado>=0 ? String(row[IDX.estado]||'').trim().toLowerCase() : '';
+
+    // Mapear estado del SIGECOOP al estado interno
+    var estado_sigpaf = 'registradoGU';
+    if(estado_excel.includes('ejec')||estado_excel.includes('activ')) estado_sigpaf = 'enEjecucion';
+    else if(estado_excel.includes('conclu')||estado_excel.includes('final')) estado_sigpaf = 'finalizado';
+    else if(estado_excel.includes('apro')) estado_sigpaf = 'aprobado';
+
+    var hora_ini = IDX.hora_ini>=0 ? String(row[IDX.hora_ini]||'').slice(0,5) : '';
+    var hora_fin = IDX.hora_fin>=0 ? String(row[IDX.hora_fin]||'').slice(0,5) : '';
+    var horario  = hora_ini && hora_fin ? hora_ini+' - '+hora_fin : '';
+
+    // Nombre localidad del distrito
+    var dist_nombres = {1:'Santa Cruz',2:'Santa Cruz',3:'Santa Cruz',4:'Santa Cruz',5:'Santa Cruz',
+      6:'Santa Cruz',7:'Santa Cruz',8:'Santa Cruz',9:'Santa Cruz',10:'Santa Cruz',11:'Santa Cruz',
+      12:'La Guardia',13:'Warnes',14:'Montero',15:'Portachuelo',16:'Yapacaní',17:'Mairana',
+      18:'Vallegrande',19:'Comarapa',20:'Camiri',21:'Cotoca',22:'San José Chiquitos',
+      23:'Puerto Suárez',24:'Guarayos',25:'San Javier',26:'San Ignacio Velasco'};
+    var dist_nombre = dist_num ? 'Distrito '+dist_num+(dist_nombres[dist_num]?' - '+dist_nombres[dist_num]:'') : '';
+
+    cursos.push({
+      nombre_curso:    nombre,
+      distrito_num:    dist_num,
+      distrito_nombre: dist_nombre,
+      seccion_num:     secc_num,
+      compania:        IDX.compania>=0 ? String(row[IDX.compania]||'').trim() : '',
+      profesora:       IDX.profesora>=0 ? String(row[IDX.profesora]||'').trim() : '',
+      fecha_inicio:    IDX.inicio>=0 ? fmtFechaImport(row[IDX.inicio]) : '',
+      fecha_fin:       IDX.fin>=0 ? fmtFechaImport(row[IDX.fin]) : '',
+      fecha_clausura:  IDX.clausura>=0 ? fmtFechaImport(row[IDX.clausura]) : '',
+      cupo_maximo:     IDX.cupo>=0 ? parseInt(row[IDX.cupo])||30 : 30,
+      lugar:           IDX.lugar>=0 ? String(row[IDX.lugar]||'').trim() : '',
+      mes:             mes,
+      horario:         horario,
+      sesiones_total:  IDX.sesiones>=0 ? (String(row[IDX.sesiones]||'').split('-').length||12) : 12,
+      codigo_registro: cod_reg,
+      nro_solicitud:   IDX.solicitud>=0 ? String(row[IDX.solicitud]||'').trim() : '',
+      delegado:        IDX.delegado>=0 ? String(row[IDX.delegado]||'').trim() : '',
+      telefono_ref:    IDX.telefono>=0 ? String(row[IDX.telefono]||'').trim() : '',
+      codigo_fijo:     cod_fijo,
+      estado:          estado_sigpaf,
+      estado_sigecoop: estado_excel,
+    });
+  }
+
+  if(!cursos.length){
+    showToast('Sin cursos válidos en el archivo','error');
+    return;
+  }
+
+  abrirModalImportConfirm(cursos, nombreArchivo);
+}
+
+function fmtFechaImport(val){
+  if(!val) return '';
+  if(typeof val==='number'){
+    var d=new Date((val-25569)*86400*1000);
+    return d.toISOString().slice(0,10);
+  }
+  return String(val).trim().slice(0,10);
+}
+
+function abrirModalImportConfirm(cursos, nombreArchivo){
+  // Usar el modal de detalle para mostrar preview
+  var cont = document.getElementById('modal-detalle-content');
+  if(!cont){ showToast('Error: modal no disponible','error'); return; }
+
+  cont.innerHTML =
+    '<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">'
+    +'<div style="font-size:15px;font-weight:700;margin-bottom:4px;"><i class="ti ti-file-spreadsheet" style="color:var(--g);"></i> Importar cursos del mes</div>'
+    +'<div style="font-size:12px;color:var(--tx3);">Archivo: '+nombreArchivo+' · '+cursos.length+' cursos detectados</div>'
+    +'</div>'
+    +'<div style="max-height:260px;overflow-y:auto;margin-bottom:14px;">'
+    +cursos.map(function(c,i){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:5px;">'
+        +'<div style="width:22px;height:22px;border-radius:50%;background:var(--g);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+(i+1)+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nombre_curso+'</div>'
+        +'<div style="font-size:11px;color:var(--tx3);">'+(c.profesora||'Sin profesora')+' · '+(c.mes||'Sin mes')+'</div>'
+        +'</div>'
+        +'<span class="badge badge-g">Nuevo</span>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="background:var(--gl);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--gd);margin-bottom:14px;">'
+    +'<strong>Se crearán '+cursos.length+' cursos</strong> en estado "Registrado GU". Puedes cambiar el estado después.'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button class="btn btn-primary" style="flex:1;" id="btn-confirmar-import"><i class="ti ti-check"></i> Confirmar e importar</button>'
+    +'<button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cancelar</button>'
+    +'</div>';
+
+  openModal('modal-detalle-curso');
+
+  // Conectar boton confirmar
+  var btnConf = document.getElementById('btn-confirmar-import');
+  if(btnConf) btnConf.onclick = function(){ ejecutarImport(cursos); };
+}
+
+async function ejecutarImport(cursos){
+  closeModal('modal-detalle-curso');
+  showLoading(true);
+  var ok=0, err=0;
+
+  for(var i=0;i<cursos.length;i++){
+    var c = cursos[i];
+    try{
+      // Buscar CI de la profesora
+      var prof_obj = G.profesoras.find(function(p){
+        return (p.nombre||'').toUpperCase().trim() === (c.profesora||'').toUpperCase().trim();
+      });
+      var prof_ci = prof_obj ? (prof_obj.ci||prof_obj.id||'') : '';
+
+      var cod_reg = c.codigo_registro ? String(c.codigo_registro).trim() : '';
+      var prof_obj2 = G.profesoras.find(function(p){
+        var pn=(p.nombre||'').toUpperCase().trim();
+        var cn=(c.profesora||'').toUpperCase().trim();
+        return pn===cn||(pn.length>3&&cn.includes(pn.split(' ')[0]))||(cn.length>3&&pn.includes(cn.split(' ')[0]));
+      });
+      var prof_ci2 = prof_obj2?(prof_obj2.ci||prof_obj2.id||''):'';
+
+      await DB.collection(COL.cursos).add({
+        nombre_curso:      c.nombre_curso,
+        distrito:          String(c.distrito_num||''),
+        distrito_num:      c.distrito_num||0,
+        distrito_nombre:   c.distrito_nombre||'',
+        seccion_num:       c.seccion_num||0,
+        compania:          c.compania||'',
+        profesora:         c.profesora||'',
+        profesora_ci:      prof_ci2,
+        fecha_inicio:      c.fecha_inicio||'',
+        fecha_fin:         c.fecha_fin||'',
+        fecha_clausura:    c.fecha_clausura||'',
+        cupo_maximo:       c.cupo_maximo||30,
+        lugar:             c.lugar||'',
+        mes:               c.mes||'',
+        horario:           c.horario||'',
+        sesiones_total:    c.sesiones_total||12,
+        sesiones_completadas: 0,
+        alumnas_count:     0,
+        codigo_registro:   cod_reg,
+        nro_solicitud:     c.nro_solicitud||'',
+        delegado:          c.delegado||'',
+        telefono_ref:      c.telefono_ref||'',
+        codigo_fijo:       c.codigo_fijo||'',
+        estado:            c.estado||'registradoGU',
+        estado_sigecoop:   c.estado_sigecoop||'',
+        origen:            'SIGECOOP_EXCEL',
+        creado_en:         new Date().toISOString(),
+        creado_por:        G.user?G.user.email:'admin'
+      });
+      ok++;
+    }catch(ex){ err++; }
+
+    // Pausa cada 10
+    if((i+1)%10===0) await new Promise(function(r){setTimeout(r,300);});
+  }
+
+  // Recargar cursos
+  DB.collection(COL.cursos).get().then(function(snap){
+    G.cursos = snapToArray(snap);
+    renderCursos(G.cursos);
+    poblarFiltroProfesorasCursos();
+    renderDashboard();
+    showLoading(false);
+    showToast(ok+' cursos importados correctamente'+(err?' · '+err+' errores':''),'success');
+  });
+}
+
+window.abrirModalNuevoCurso = function(){
+  // Poblar SELECT de cursos del catálogo
+  var selCurso = document.getElementById('nc-nombre');
+  if(selCurso){
+    // Obtener nombres únicos del catálogo desde Firestore
+    var nombres = {};
+    G.cursos.forEach(function(c){
+      var n = c.nombre_curso||c.nombre||'';
+      if(n) nombres[n] = true;
+    });
+    selCurso.innerHTML = '<option value="">Selecciona un curso del catálogo...</option>';
+    Object.keys(nombres).sort().forEach(function(n){
+      selCurso.innerHTML += '<option value="'+n+'">'+n+'</option>';
+    });
+    // Si hay catalogo_cursos en Firestore cargarlo también
+    DB.collection('catalogo_cursos').orderBy('nombre_curso').limit(100).get()
+      .then(function(snap){
+        var extra = {};
+        snap.docs.forEach(function(d){
+          var n = d.data().nombre_curso||d.data().nombre||'';
+          if(n && !nombres[n]) extra[n] = true;
+        });
+        Object.keys(extra).sort().forEach(function(n){
+          selCurso.innerHTML += '<option value="'+n+'">'+n+'</option>';
+        });
+      }).catch(function(){});
+  }
+
+  // Poblar SELECT de profesoras
+  var selProf = document.getElementById('nc-profesora');
+  if(selProf){
+    selProf.innerHTML = '<option value="">Selecciona una profesora...</option>';
+    var sorted = G.profesoras.slice().sort(function(a,b){
+      return (a.nombre||'').localeCompare(b.nombre||'');
+    });
+    sorted.forEach(function(p){
+      var nombre = p.nombre||p.nombre_completo||'';
+      if(nombre) selProf.innerHTML += '<option value="'+nombre+'">'+nombre+'</option>';
+    });
+  }
+
+  // Limpiar campos
+  var campos = ['nc-nombre-manual','nc-ubicacion','nc-obs','nc-codigo-sig','nc-inicio','nc-fin'];
+  campos.forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('nc-sesiones').value = '12';
+  document.getElementById('nc-cupo').value = '30';
+
+  openModal('modal-nuevo-curso');
+};
+
+// Cuando selecciona curso del catálogo, limpiar el manual
+window.onSelectCursoNombre = function(sel){
+  var manual = document.getElementById('nc-nombre-manual');
+  if(manual && sel.value) manual.value = '';
+};
+
+// Guardar nuevo curso
+window.guardarNuevoCurso = function(){
+  // Nombre del curso: del selector o del campo manual
+  var nombre_sel    = (document.getElementById('nc-nombre').value||'').trim();
+  var nombre_manual = (document.getElementById('nc-nombre-manual').value||'').trim();
+  var nombre = nombre_manual || nombre_sel;
+  var distrito = document.getElementById('nc-distrito').value;
+  var tipo     = document.getElementById('nc-tipo').value;
+  var inicio   = document.getElementById('nc-inicio').value;
+  var fin      = document.getElementById('nc-fin').value;
+  var sesiones = document.getElementById('nc-sesiones').value;
+  var cupo     = document.getElementById('nc-cupo').value;
+  var profesora= document.getElementById('nc-profesora').value||'';
+  var ubicacion= document.getElementById('nc-ubicacion').value.trim();
+  var obs      = document.getElementById('nc-obs').value.trim();
+  if(!nombre||!distrito){ showToast('Completa nombre y distrito (*)','error'); return; }
+  var btn = document.getElementById('btn-guardar-curso');
+  btn.disabled=true; btn.textContent='Guardando...';
+  // Buscar CI de la profesora seleccionada
+  var prof_obj = G.profesoras.find(function(p){ return (p.nombre||p.nombre_completo||'')=== profesora; });
+  var prof_ci = prof_obj ? (prof_obj.ci||prof_obj.id||'') : '';
+
+  DB.collection(COL.cursos).add({
+    nombre_curso:nombre, distrito:distrito, tipo:tipo,
+    fecha_inicio:inicio, fecha_fin:fin,
+    sesiones_total:parseInt(sesiones)||12, cupo_maximo:parseInt(cupo)||30,
+    profesora:profesora, profesora_ci:prof_ci,
+    ubicacion:ubicacion, observaciones:obs,
+    codigo_sigecoop:(document.getElementById('nc-codigo-sig').value||'').trim(),
+    mes:(document.getElementById('nc-mes').value||'').trim(),
+    estado:'registradoGU', creado_en:new Date().toISOString(),
+    creado_por:G.user?G.user.email:'sistema', alumnas_count:0
+  }).then(function(){
+    closeModal('modal-nuevo-curso');
+    showToast('Curso registrado ✓','success');
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i> Registrar curso';
+    return DB.collection(COL.cursos).get();
+  }).then(function(snap){
+    G.cursos = snapToArray(snap);
+    renderCursos(G.cursos);
+    renderDashboard();
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); btn.disabled=false; });
+};
+
+// ══════════════════════════════════════════════════════
+//  ALUMNAS — Búsqueda por CI
+// ══════════════════════════════════════════════════════
+window.buscarCI = function(){
+  var ci   = (document.getElementById('ci-input').value||'').trim();
+  var stat = document.getElementById('ci-status');
+  var res  = document.getElementById('ci-resultado');
+  if(!ci){ stat.innerHTML='<span style="color:var(--re);">Ingresa un número de CI</span>'; return; }
+  stat.innerHTML='<span style="color:var(--tx3);">Buscando en Firestore...</span>';
+  res.innerHTML='';
+  // Buscar por doc ID
+  DB.collection(COL.alumnas).doc(ci).get().then(function(byId){
+    if(byId.exists) return Promise.resolve(Object.assign({id:byId.id},byId.data()));
+    // buscar por campo ci
+    return DB.collection(COL.alumnas).where('ci','==',ci).limit(1).get()
+      .then(function(snap){
+        return snap.empty ? null : Object.assign({id:snap.docs[0].id},snap.docs[0].data());
+      });
+  }).then(function(alumna){
+    if(alumna){
+      stat.innerHTML='<span style="color:var(--g);font-weight:600;"><i class="ti ti-check"></i> Alumna encontrada en Firestore ('+( alumna.origen||'SIGECOOP')+')</span>';
+      var ini = (alumna.nombre||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      var cursos = alumna.historial_cursos||[];
+      res.innerHTML='<div class="ci-result-card">'
+        +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">'
+        +'<div class="av av-lg" style="background:var(--g);">'+ini+'</div>'
+        +'<div style="flex:1;"><div style="font-size:16px;font-weight:700;">'+(alumna.nombre||alumna.nombre_completo||'Sin nombre')+'</div>'
+        +'<div style="font-size:12px;color:var(--tx3);">CI: '+ci+(alumna.distrito_nombre?' · '+alumna.distrito_nombre:'')+'</div></div>'
+        +'<span class="badge badge-g">Verificado</span></div>'
+        +(alumna.telefono?'<div style="font-size:13px;color:var(--tx2);margin-bottom:10px;"><i class="ti ti-phone" style="color:var(--g);"></i> '+alumna.telefono+'</div>':'')
+        +(alumna.fecha_nacimiento?'<div style="font-size:13px;color:var(--tx2);margin-bottom:12px;"><i class="ti ti-calendar" style="color:var(--g);"></i> '+alumna.fecha_nacimiento+'</div>':'')
+        +(cursos.length?'<div style="font-size:12px;font-weight:600;margin-bottom:8px;">Historial de cursos ('+cursos.length+')</div>'
+          +cursos.slice(0,5).map(function(c){
+            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:7px;margin-bottom:4px;font-size:12.5px;">'
+              +'<span>'+(c.nombre_curso||c.nombre||'Curso')+'</span>'
+              +'<span style="color:var(--tx3);">'+(c.mes||c.fecha||'')+'</span>'
+              +'<span class="badge badge-g">'+(c.estado||'aprobado')+'</span></div>';
+          }).join(''):'<div style="font-size:12px;color:var(--tx3);">Sin historial de cursos registrado</div>')
+        +'<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;margin-top:14px;" onclick="inscribirAlumna(\''+ci+'\',\''+encodeURIComponent(alumna.nombre||'')+'\')">'
+        +'<i class="ti ti-user-plus"></i> Inscribir a curso actual</button></div>';
+    } else {
+      stat.innerHTML='<span style="color:var(--am);font-weight:600;"><i class="ti ti-user-plus"></i> CI no encontrado – Nueva alumna</span>';
+      res.innerHTML='<div class="ci-new-card">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px;background:#FFFBEB;border-radius:8px;">'
+        +'<i class="ti ti-info-circle" style="color:#92400E;font-size:20px;"></i>'
+        +'<div><div style="font-size:13px;font-weight:600;color:#92400E;">CI no registrado en el sistema</div>'
+        +'<div style="font-size:11.5px;color:#92400E;">Completa los datos para registrar una nueva alumna</div></div></div>'
+        +'<div class="form-grid-2">'
+        +'<div class="form-group"><label class="form-label">Nombre(s) *</label><input class="form-control" id="na-nombre" placeholder="Nombre(s)"></div>'
+        +'<div class="form-group"><label class="form-label">Apellidos *</label><input class="form-control" id="na-apellido" placeholder="Apellidos"></div>'
+        +'<div class="form-group"><label class="form-label">Fecha nacimiento</label><input class="form-control" id="na-nac" type="date"></div>'
+        +'<div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="na-tel" placeholder="7X XXX XXX"></div>'
+        +'<div class="form-group" style="grid-column:span 2"><label class="form-label">Dirección</label><input class="form-control" id="na-dir" placeholder="Barrio, calle..."></div>'
+        +'<div class="form-group" style="grid-column:span 2"><label class="form-label">Distrito</label>'
+        +'<select class="form-control" id="na-dist"><option value="">Selecciona...</option>'
+        +G.distritos.map(function(d){ return '<option value="'+d.id+'">'+( d.nombre_completo||d.nombre||'Distrito '+d.distrito_num)+'</option>'; }).join('')
+        +'</select></div></div>'
+        +'<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;" onclick="registrarNuevaAlumna(\''+ci+'\')">'
+        +'<i class="ti ti-user-check"></i> Registrar alumna e inscribir</button></div>';
+    }
+  }).catch(function(e){ stat.innerHTML='<span style="color:var(--re);">Error: '+e.message+'</span>'; });
+};
+
+window.inscribirAlumna = function(ci, nombreEnc){
+  var nombre = decodeURIComponent(nombreEnc);
+  var cursoSel = G.cursos.find(function(c){ return normEstado(c.estado)==='enEjecucion'; });
+  if(!cursoSel){ showToast('No hay cursos en ejecución activos','error'); return; }
+  var codigo = generarCodigo(cursoSel);
+  DB.collection(COL.registros).add({
+    ci_alumna:ci, nombre_alumna:nombre,
+    codigo_curso:codigo, nombre_curso:cursoSel.nombre_curso||cursoSel.nombre||'—',
+    curso_id:cursoSel.id, profesora:cursoSel.profesora||'—',
+    distrito:cursoSel.distrito_nombre||'—',
+    fecha_registro:new Date().toISOString(),
+    estado:'inscrita', origen_registro:'Admin'
+  }).then(function(){
+    showToast('Alumna inscrita correctamente ✓','success');
+    document.getElementById('ci-resultado').innerHTML='';
+    document.getElementById('ci-input').value='';
+    document.getElementById('ci-status').innerHTML='';
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+window.registrarNuevaAlumna = function(ci){
+  var nombre   = (document.getElementById('na-nombre').value||'').trim();
+  var apellido = (document.getElementById('na-apellido').value||'').trim();
+  if(!nombre||!apellido){ showToast('Completa nombre y apellidos','error'); return; }
+  var nac  = document.getElementById('na-nac').value||'';
+  var tel  = document.getElementById('na-tel').value||'';
+  var dir  = document.getElementById('na-dir').value||'';
+  var distEl = document.getElementById('na-dist');
+  var distId = distEl ? distEl.value : '';
+  var distNom= distEl ? distEl.options[distEl.selectedIndex].text : '';
+  DB.collection(COL.alumnas).doc(ci).set({
+    ci:ci, nombre:nombre+' '+apellido,
+    fecha_nacimiento:nac, telefono:tel, direccion:dir,
+    distrito_id:distId, distrito_nombre:distNom,
+    origen:'SIGPAF', creado_en:new Date().toISOString(), historial_cursos:[]
+  },{merge:true}).then(function(){
+    return DB.collection(COL.alumnas).limit(500).get();
+  }).then(function(snap){
+    G.alumnas = snapToArray(snap);
+    renderAlumnasRecientes();
+    showToast('Alumna registrada ✓','success');
+    document.getElementById('ci-resultado').innerHTML='';
+    document.getElementById('ci-input').value='';
+    document.getElementById('ci-status').innerHTML='';
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+function renderAlumnasRecientes(){
+  var lista = G.alumnas.slice(0,5);
+  var el = document.getElementById('alumnas-recientes');
+  if(!el) return;
+  if(!lista.length){ el.innerHTML='<div class="empty-state">Sin alumnas registradas</div>'; return; }
+  el.innerHTML = lista.map(function(a){
+    var nombre = a.nombre||a.nombre_completo||a.ci||'Sin nombre';
+    var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var cursos = (a.historial_cursos||[]).length;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">'
+      +'<div class="av av-sm" style="background:var(--g);">'+ini+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+nombre+'</div>'
+      +'<div style="font-size:11px;color:var(--tx3);">CI '+( a.ci||a.id||'—')+(a.distrito_nombre?' · '+a.distrito_nombre:'')+'</div></div>'
+      +(cursos?'<span class="badge badge-g" style="font-size:10px;">'+cursos+' cursos</span>':'')+'</div>';
+  }).join('');
+  // KPIs alumnas
+  setUI('kpi-total-alumnas',  G.alumnas.length);
+  setUI('kpi-sigecoop',  G.alumnas.filter(function(a){return a.origen==='SIGECOOP'||!a.origen;}).length);
+  setUI('kpi-sigpaf-new',G.alumnas.filter(function(a){return a.origen==='SIGPAF'||a.origen==='SIGPAF_QR';}).length);
+}
+
+// ══════════════════════════════════════════════════════
+//  PROFESORAS
+// ══════════════════════════════════════════════════════
+function renderProfesoras(){
+  var tb = document.getElementById('profesoras-table');
+  if(!tb) return;
+  var colors = ['#00703C','#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6'];
+  if(!G.profesoras.length){
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--tx3);">Sin profesoras registradas</td></tr>';
+    return;
+  }
+  tb.innerHTML = G.profesoras.map(function(p,i){
+    var nombre = p.nombre||p.nombre_completo||'Sin nombre';
+    var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var esps = (p.especialidades||[]).slice(0,2).join(', ')||(p.especialidad||'—');
+    return '<tr>'
+      +'<td><div style="display:flex;align-items:center;gap:10px;">'
+      +'<div class="av av-sm" style="background:'+colors[i%colors.length]+';">'+ini+'</div>'
+      +'<div class="td-name">'+nombre+'</div></div></td>'
+      +'<td><span style="font-size:12px;color:var(--tx2);">'+esps+'</span></td>'
+      +'<td><span style="font-weight:700;color:var(--g);">'+(p.cursos_activos||0)+'</span></td>'
+      +'<td><span style="font-size:12px;">'+(p.total_cursos||p.historial_cursos||0)+' cursos</span></td>'
+      +'<td>'+(p.activa!==false?'<span class="badge badge-g">Activa</span>':'<span class="badge badge-gray">Inactiva</span>')+'</td>'
+      +'<td><button class="btn btn-sm" style="padding:5px 10px;" onclick="verEspecialidades(\''+i+'\')"><i class="ti ti-eye"></i></button></td></tr>';
+  }).join('');
+}
+
+window.verEspecialidades = function(i){
+  var p = G.profesoras[i];
+  if(!p) return;
+  var esps = (p.especialidades||[p.especialidad||'—']);
+  showToast(p.nombre+': '+esps.join(', '),'success');
+};
+
+window.guardarNuevaProfesora = function(){
+  var nombre   = (document.getElementById('np-nombre').value||'').trim();
+  var apellido = (document.getElementById('np-apellido').value||'').trim();
+  if(!nombre||!apellido){ showToast('Completa nombre y apellidos','error'); return; }
+  DB.collection(COL.profesoras).add({
+    nombre:nombre+' '+apellido,
+    ci:document.getElementById('np-ci').value||'',
+    telefono:document.getElementById('np-tel').value||'',
+    especialidad:document.getElementById('np-esp').value||'',
+    especialidades:[document.getElementById('np-esp').value||''],
+    activa:true, cursos_activos:0, total_cursos:0,
+    origen:'SIGPAF', creado_en:new Date().toISOString()
+  }).then(function(){
+    return DB.collection(COL.profesoras).get();
+  }).then(function(snap){
+    G.profesoras = snapToArray(snap);
+    renderProfesoras();
+    closeModal('modal-nueva-profesora');
+    showToast('Profesora registrada ✓','success');
+  }).catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+// ══════════════════════════════════════════════════════
+//  ASISTENCIA — conectado a Firestore
+// ══════════════════════════════════════════════════════
+var attCursoId = null;
+var attStates  = {};
+var attAlumnas = [];
+
+function poblarSelectCursos(){
+  var sel = document.getElementById('att-curso-sel');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Selecciona un curso...</option>'
+    +G.cursos
+    .map(function(c){ return '<option value="'+c.id+'">'+(c.nombre_curso||c.nombre||'Sin nombre')+' ['+( normEstado(c.estado)==='enEjecucion'?'En ejecucion':normEstado(c.estado))+']</option>'; }).join('');
+  sel.onchange = function(){ cargarAlumnasCurso(this.value); };
+}
+
+function cargarAlumnasCurso(cursoId){
+  if(!cursoId){ attAlumnas=[]; renderAttendance(); return; }
+  attCursoId = cursoId;
+  DB.collection(COL.registros).where('curso_id','==',cursoId).get()
+    .then(function(snap){
+      attAlumnas = snapToArray(snap);
+      attAlumnas.forEach(function(a){ if(!attStates[a.ci_alumna]) attStates[a.ci_alumna]='presente'; });
+      renderAttendance();
+    }).catch(function(){ attAlumnas=[]; renderAttendance(); });
+}
+
+function renderAttendance(){
+  var list = document.getElementById('attendance-list');
+  if(!list) return;
+  var p=0,au=0,ju=0;
+  var colors=['#00703C','#6366F1','#EF4444','#F59E0B','#10B981','#8B5CF6'];
+  if(!attAlumnas.length){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx3);font-size:13px;">Selecciona un curso para cargar alumnas</div>';
+    document.getElementById('cnt-p').textContent='0';
+    document.getElementById('cnt-a').textContent='0';
+    document.getElementById('cnt-j').textContent='0';
+    return;
+  }
+  list.innerHTML = attAlumnas.map(function(a,i){
+    var s = attStates[a.ci_alumna]||'presente';
+    if(s==='presente') p++; else if(s==='ausente') au++; else ju++;
+    var ini = (a.nombre_alumna||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    return '<div class="att-row '+s+'">'
+      +'<div class="av av-sm" style="background:'+colors[i%colors.length]+';">'+ini+'</div>'
+      +'<div style="flex:1;font-size:13px;font-weight:500;">'+(a.nombre_alumna||'Alumna')+'</div>'
+      +'<div class="att-btns">'
+      +'<button class="att-btn pres '+(s==='presente'?'active':'')+'" onclick="setAtt(\''+a.ci_alumna+'\',\'presente\')">✓ Pres.</button>'
+      +'<button class="att-btn aus '+(s==='ausente'?'active':'')+'" onclick="setAtt(\''+a.ci_alumna+'\',\'ausente\')">✗ Aus.</button>'
+      +'<button class="att-btn just '+(s==='justificada'?'active':'')+'" onclick="setAtt(\''+a.ci_alumna+'\',\'justificada\')">~ Just.</button>'
+      +'</div></div>';
+  }).join('');
+  document.getElementById('cnt-p').textContent=p;
+  document.getElementById('cnt-a').textContent=au;
+  document.getElementById('cnt-j').textContent=ju;
+  renderRiskList();
+}
+
+window.setAtt = function(ci, estado){ attStates[ci]=estado; renderAttendance(); };
+
+window.guardarAsistencia = function(){
+  if(!attCursoId){ showToast('Selecciona un curso primero','error'); return; }
+  var sesion = {
+    curso_id: attCursoId,
+    fecha:    new Date().toISOString().split('T')[0],
+    registros: attAlumnas.map(function(a){
+      return { ci:a.ci_alumna, nombre:a.nombre_alumna, estado:attStates[a.ci_alumna]||'presente' };
+    }),
+    guardado_por: G.user?G.user.email:'sistema',
+    timestamp: new Date().toISOString()
+  };
+  DB.collection(COL.asistencia).add(sesion)
+    .then(function(){ showToast('Asistencia guardada en Firestore ✓','success'); })
+    .catch(function(e){ showToast('Error: '+e.message,'error'); });
+};
+
+function renderRiskList(){
+  var el = document.getElementById('risk-list');
+  if(!el) return;
+  var risk = attAlumnas.filter(function(a){ return attStates[a.ci_alumna]==='ausente'; });
+  el.innerHTML = risk.length
+    ? risk.map(function(a){
+        var ini=(a.nombre_alumna||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#FEF2F2;border-radius:7px;">'
+          +'<div class="av av-sm" style="background:var(--re);">'+ini+'</div>'
+          +'<div style="flex:1;font-size:12.5px;">'+(a.nombre_alumna||'Alumna')+'</div>'
+          +'<span class="badge badge-re">Ausente</span></div>';
+      }).join('')
+    :'<div style="font-size:12px;color:var(--tx3);text-align:center;padding:12px;">Sin alumnas ausentes</div>';
+}
+
+// ══════════════════════════════════════════════════════
+//  REPORTES — datos reales
+// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+//  GRAFICOS CON CHART.JS
+// ══════════════════════════════════════════════════════
+var CHARTS = {};
+
+function destroyChart(id){
+  if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+function renderGraficos(){
+  if(typeof Chart === 'undefined') return;
+
+  // ── 1. BARRAS: Cursos por distrito ──
+  destroyChart('distritos');
+  var distConteo = {};
+  G.cursos.forEach(function(c){
+    var d = c.distrito_num ? 'D'+c.distrito_num : (c.distrito||'Sin dist.');
+    distConteo[d] = (distConteo[d]||0) + 1;
+  });
+  var distLabels = Object.keys(distConteo).sort(function(a,b){
+    return parseInt(a.replace('D',''))||0 - parseInt(b.replace('D',''))||0;
+  });
+  var distVals = distLabels.map(function(k){ return distConteo[k]; });
+  var ctxDist = document.getElementById('chart-distritos');
+  if(ctxDist){
+    CHARTS.distritos = new Chart(ctxDist, {
+      type: 'bar',
+      data: {
+        labels: distLabels,
+        datasets: [{
+          label: 'Cursos',
+          data: distVals,
+          backgroundColor: 'rgba(0,112,60,0.75)',
+          borderColor: '#00703C',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { title: function(i){ return 'Distrito '+i[0].label; } } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } },
+               grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
+  }
+
+  // ── 2. DONA: Estado de cursos ──
+  destroyChart('estados');
+  var estados = {
+    'Registrado GU':0, 'Enviado Fund.':0, 'En ejecucion':0,
+    'Finalizado':0, 'Aprobado':0, 'Observado':0
+  };
+  var estMap = {
+    registradoGU:'Registrado GU', enviadoFundacion:'Enviado Fund.',
+    enEjecucion:'En ejecucion', finalizado:'Finalizado',
+    aprobado:'Aprobado', observado:'Observado'
+  };
+  G.cursos.forEach(function(c){ var k=estMap[normEstado(c.estado)]; if(k) estados[k]++; });
+  var estLabels = Object.keys(estados).filter(function(k){ return estados[k]>0; });
+  var estVals   = estLabels.map(function(k){ return estados[k]; });
+  var estColors = {
+    'Registrado GU':'#6366F1','Enviado Fund.':'#F59E0B',
+    'En ejecucion':'#00703C','Finalizado':'#9CA3AF',
+    'Aprobado':'#10B981','Observado':'#EF4444'
+  };
+  var estBgColors = estLabels.map(function(k){ return estColors[k]||'#9CA3AF'; });
+  var ctxEst = document.getElementById('chart-estados');
+  if(ctxEst){
+    CHARTS.estados = new Chart(ctxEst, {
+      type: 'doughnut',
+      data: { labels: estLabels, datasets: [{ data: estVals, backgroundColor: estBgColors, borderWidth: 2, borderColor: '#fff' }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: function(i){ return i.label+': '+i.raw+' ('+Math.round(i.raw/G.cursos.length*100)+'%)'; }
+          }}
+        }
+      }
+    });
+    // Leyenda manual
+    var leg = document.getElementById('chart-estados-legend');
+    if(leg){
+      leg.innerHTML = estLabels.map(function(k,i){
+        return '<span style="display:inline-flex;align-items:center;gap:4px;">'
+          +'<span style="width:10px;height:10px;border-radius:50%;background:'+estBgColors[i]+';display:inline-block;"></span>'
+          +'<span>'+k+': <b>'+estVals[i]+'</b></span></span>';
+      }).join('');
+    }
+  }
+
+  // ── 3. LINEA: Inscripciones por mes ──
+  destroyChart('meses');
+  var mesesConteo = {};
+  var mesesOrden = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  G.registros.forEach(function(r){
+    var fecha = r.fecha_registro||'';
+    if(fecha.length >= 7){
+      var mes = parseInt(fecha.slice(5,7));
+      var lbl = mesesOrden[mes-1]||'?';
+      mesesConteo[lbl] = (mesesConteo[lbl]||0) + 1;
+    }
+  });
+  G.cursos.forEach(function(c){
+    var mes = (c.mes||'').slice(0,3).toUpperCase();
+    if(mes && mesesOrden.includes(mes)){
+      // no sumar cursos, solo registros
+    }
+  });
+  var mesesActivos = mesesOrden.filter(function(m){ return mesesConteo[m]; });
+  var mesesVals    = mesesActivos.map(function(m){ return mesesConteo[m]||0; });
+  var ctxMeses = document.getElementById('chart-meses');
+  if(ctxMeses){
+    CHARTS.meses = new Chart(ctxMeses, {
+      type: 'line',
+      data: {
+        labels: mesesActivos.length ? mesesActivos : mesesOrden.slice(0,6),
+        datasets: [{
+          label: 'Inscripciones',
+          data: mesesActivos.length ? mesesVals : [0,0,0,0,0,0],
+          borderColor: '#0D9488',
+          backgroundColor: 'rgba(13,148,136,0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#0D9488',
+          pointRadius: 4,
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } },
+               grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
+  }
+
+  // ── 4. BARRAS HORIZONTALES: Top profesoras ──
+  destroyChart('profesoras');
+  var profConteo = {};
+  G.cursos.forEach(function(c){
+    var p = c.profesora||c.profesora_nombre||'Sin asignar';
+    // Tomar solo el primer apellido para que quepa
+    var nombre_corto = p.split(' ').slice(0,2).join(' ');
+    profConteo[nombre_corto] = (profConteo[nombre_corto]||0) + 1;
+  });
+  var profEntries = Object.entries(profConteo)
+    .sort(function(a,b){ return b[1]-a[1]; }).slice(0,8);
+  var profLabels = profEntries.map(function(e){ return e[0]; });
+  var profVals   = profEntries.map(function(e){ return e[1]; });
+  var profColors = ['#00703C','#6366F1','#F59E0B','#0D9488','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
+  var ctxProf = document.getElementById('chart-profesoras');
+  if(ctxProf){
+    CHARTS.profesoras = new Chart(ctxProf, {
+      type: 'bar',
+      data: {
+        labels: profLabels,
+        datasets: [{
+          label: 'Cursos',
+          data: profVals,
+          backgroundColor: profColors.slice(0, profLabels.length),
+          borderWidth: 0,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } },
+               grid: { color: 'rgba(0,0,0,0.05)' } },
+          y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+  }
+}
+
+function actualizarReportes(){
+  setUI('kpi-rep-alumnas',  G.alumnas.length||'—');
+  setUI('kpi-rep-cursos',   G.cursos.length||'—');
+  setUI('kpi-rep-prof',     G.profesoras.length||'—');
+  var aprobados = G.cursos.filter(function(c){ return normEstado(c.estado)==='aprobado'; }).length;
+  var tasa = G.cursos.length ? Math.round(aprobados/G.cursos.length*100)+'%' : '—';
+  setUI('kpi-rep-tasa', tasa);
+  renderTopCursos();
+  // Renderizar graficos
+  setTimeout(function(){ renderGraficos(); }, 100);
+  // Inicializar exportador integrado
+  EXP.tipo = 'alumnas';
+  EXP.datos = G.alumnas;
+  EXP.filtrados = G.alumnas;
+  window.poblarExportFiltros();
+  window.aplicarExportFiltros();
+  // Badges firebase
+  setUI('fb-cursos-count',  G.cursos.length+' docs');
+  setUI('fb-alumnas-count', G.alumnas.length+' docs');
+  setUI('fb-prof-count',    G.profesoras.length+' docs');
+}
+
+function renderTopCursos(){
+  var conteo={};
+  G.cursos.forEach(function(c){
+    var n=c.nombre_curso||c.nombre||'Sin nombre';
+    conteo[n]=(conteo[n]||0)+1;
+  });
+  var top = Object.entries(conteo).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+  var clases=['badge-te','badge-in','badge-am','badge-gray','badge-g'];
+  var el = document.getElementById('top-cursos-list');
+  if(!el) return;
+  el.innerHTML = top.length
+    ? top.map(function(entry,i){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:5px;font-size:12.5px;">'
+          +'<span>'+entry[0]+'</span>'
+          +'<span class="badge '+clases[i]+'">'+entry[1]+' '+(entry[1]===1?'edición':'ediciones')+'</span></div>';
+      }).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--tx3);">Sin datos</div>';
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORTADOR INTEGRADO CON FILTROS
+// ══════════════════════════════════════════════════════
+var EXP = {
+  tipo: 'alumnas',
+  datos: [],
+  filtrados: []
+};
+
+// Columnas por tipo
+var EXP_COLS = {
+  alumnas: [
+    {id:'ci',label:'CI'}, {id:'nombre',label:'Nombre completo'},
+    {id:'telefono',label:'Teléfono'}, {id:'fecha_nacimiento',label:'Fecha nacimiento'},
+    {id:'distrito_nombre',label:'Distrito'}, {id:'seccion_nombre',label:'Sección'},
+    {id:'compania',label:'Compañía'}, {id:'cuenta',label:'N° cuenta'},
+    {id:'origen',label:'Origen'}, {id:'historial_count',label:'N° cursos anteriores'},
+    {id:'ultimo_curso',label:'Último curso'}
+  ],
+  registros: [
+    {id:'ci_alumna',label:'CI'}, {id:'nombre_alumna',label:'Nombre'},
+    {id:'nombre_curso',label:'Curso'}, {id:'codigo_curso',label:'Código curso'},
+    {id:'profesora',label:'Profesora'}, {id:'distrito',label:'Distrito'},
+    {id:'fecha_registro',label:'Fecha registro'}, {id:'estado',label:'Estado'},
+    {id:'origen_registro',label:'Origen'}, {id:'es_nueva',label:'Es nueva'}
+  ],
+  cursos: [
+    {id:'nombre_curso',label:'Nombre curso'}, {id:'codigo_curso',label:'Código'},
+    {id:'profesora',label:'Profesora'}, {id:'distrito_nombre',label:'Distrito'},
+    {id:'seccion_nombre',label:'Sección'}, {id:'mes',label:'Mes'},
+    {id:'fecha_inicio',label:'Fecha inicio'}, {id:'fecha_fin',label:'Fecha fin'},
+    {id:'cupo_maximo',label:'Cupo'}, {id:'alumnas_count',label:'Inscritas'},
+    {id:'estado',label:'Estado'}, {id:'lugar',label:'Lugar'}
+  ]
+};
+
+function expGetVal(row, col){
+  if(col==='historial_count') return (row.historial_cursos||[]).length;
+  if(col==='ultimo_curso'){
+    var h=row.historial_cursos||[];
+    return h.length?(h[h.length-1].nombre_curso||'—'):'—';
+  }
+  if(col==='es_nueva') return row.es_nueva?'Sí':'No';
+  if(col==='fecha_registro') return (row.fecha_registro||'').slice(0,10);
+  var v=row[col];
+  return (v===undefined||v===null||v==='')?'—':String(v);
+}
+
+window.setExportTipo = function(tipo){
+  EXP.tipo = tipo;
+  // Estilos botones
+  ['alumnas','registros','cursos'].forEach(function(t){
+    var btn = document.getElementById('etipo-'+t);
+    if(!btn) return;
+    if(t===tipo){
+      btn.style.borderColor='var(--g)';
+      btn.style.background='var(--gl)';
+      btn.style.color='var(--g)';
+    } else {
+      btn.style.borderColor='rgba(0,0,0,.14)';
+      btn.style.background='var(--card)';
+      btn.style.color='var(--tx2)';
+    }
+  });
+  // Ocultar filtro curso para alumnas
+  var cw=document.getElementById('ef-curso-wrap');
+  if(cw) cw.style.display=tipo==='alumnas'?'none':'block';
+
+  // Asignar datos según tipo
+  if(tipo==='alumnas')   EXP.datos=G.alumnas;
+  else if(tipo==='registros') EXP.datos=G.registros;
+  else EXP.datos=G.cursos;
+
+  window.poblarExportFiltros();
+  window.aplicarExportFiltros();
+};
+
+window.poblarExportFiltros = function(){
+  // Distritos
+  var dists={};
+  EXP.datos.forEach(function(r){
+    var d=r.distrito_nombre||r.distrito||'';
+    if(d) dists[d]=true;
+  });
+  var dEl=document.getElementById('ef-distrito');
+  if(!dEl) return;
+  dEl.innerHTML='<option value="">Todos</option>';
+  Object.keys(dists).sort().forEach(function(d){ dEl.innerHTML+='<option>'+d+'</option>'; });
+
+  // Cursos (solo para registros y cursos)
+  var cEl=document.getElementById('ef-curso');
+  if(cEl){
+    cEl.innerHTML='<option value="">Todos</option>';
+    var cNames=[...new Set(G.cursos.map(function(c){return c.nombre_curso||c.nombre||'';}).filter(Boolean))].sort();
+    cNames.forEach(function(n){ cEl.innerHTML+='<option>'+n+'</option>'; });
+  }
+
+  // Profesoras
+  var pEl=document.getElementById('ef-profesora');
+  if(pEl){
+    pEl.innerHTML='<option value="">Todas</option>';
+    var pNames=[...new Set(G.profesoras.map(function(p){return p.nombre||'';}).filter(Boolean))].sort();
+    pNames.forEach(function(n){ pEl.innerHTML+='<option>'+n+'</option>'; });
+  }
+};
+
+window.aplicarExportFiltros = function(){
+  var fDist  = (document.getElementById('ef-distrito')||{}).value||'';
+  var fCurso = (document.getElementById('ef-curso')||{}).value||'';
+  var fProf  = (document.getElementById('ef-profesora')||{}).value||'';
+  var fMes   = (document.getElementById('ef-mes')||{}).value||'';
+  var fOrig  = (document.getElementById('ef-origen')||{}).value||'';
+  var fBuscar= ((document.getElementById('ef-buscar')||{}).value||'').toLowerCase().trim();
+
+  EXP.filtrados = EXP.datos.filter(function(r){
+    var dist=r.distrito_nombre||r.distrito||'';
+    var prof=r.profesora||'';
+    var mes=r.mes||r.mes_curso||'';
+    var orig=r.origen||r.origen_registro||'';
+    var nom=(r.nombre||r.nombre_alumna||r.nombre_curso||'').toLowerCase();
+    var ci=(r.ci||r.ci_alumna||'').toLowerCase();
+    var curso=r.nombre_curso||r.nombre||'';
+    if(fDist   && !dist.includes(fDist))   return false;
+    if(fCurso  && !curso.toLowerCase().includes(fCurso.toLowerCase())) return false;
+    if(fProf   && !prof.toLowerCase().includes(fProf.toLowerCase())) return false;
+    if(fMes    && !mes.toUpperCase().includes(fMes.toUpperCase())) return false;
+    if(fOrig   && orig!==fOrig)            return false;
+    if(fBuscar && !nom.includes(fBuscar) && !ci.includes(fBuscar)) return false;
+    return true;
+  });
+
+  // Chips activos
+  var chips=[];
+  if(fDist)   chips.push({l:'Distrito: '+fDist,   k:'ef-distrito'});
+  if(fCurso)  chips.push({l:'Curso: '+fCurso.slice(0,20), k:'ef-curso'});
+  if(fProf)   chips.push({l:'Profesora: '+fProf.slice(0,18),k:'ef-profesora'});
+  if(fMes)    chips.push({l:'Mes: '+fMes,          k:'ef-mes'});
+  if(fOrig)   chips.push({l:'Origen: '+fOrig,      k:'ef-origen'});
+  if(fBuscar) chips.push({l:'Búsqueda: '+fBuscar,  k:'ef-buscar'});
+  var chEl=document.getElementById('exp-chips');
+  if(chEl){
+    chEl.innerHTML=chips.map(function(c){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--gl);color:var(--gd);font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;">'
+        +c.l+'<button onclick="window.quitarExpFiltro(&quot;'+c.k+'&quot;)" style="background:none;border:none;cursor:pointer;color:inherit;display:flex;align-items:center;font-size:13px;">x</button></span>';
+    }).join('');
+  }
+
+  // Total label
+  var tot=document.getElementById('exp-total-label');
+  if(tot) tot.textContent=EXP.filtrados.length.toLocaleString()+' registros';
+
+  renderExpPreview();
+};
+
+window.quitarExpFiltro = function(key){
+  var el=document.getElementById(key);
+  if(el) el.value='';
+  window.aplicarExportFiltros();
+};
+
+window.limpiarExportFiltros = function(){
+  ['ef-distrito','ef-curso','ef-profesora','ef-mes','ef-origen'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var eb=document.getElementById('ef-buscar'); if(eb) eb.value='';
+  window.aplicarExportFiltros();
+};
+
+function renderExpPreview(){
+  var cols=EXP_COLS[EXP.tipo];
+  var thead=document.getElementById('exp-thead');
+  var tbody=document.getElementById('exp-tbody');
+  var note=document.getElementById('exp-preview-note');
+  if(!thead||!tbody) return;
+
+  thead.innerHTML='<tr>'+cols.map(function(c){
+    return '<th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--tx2);white-space:nowrap;border-bottom:1px solid var(--border);">'+c.label+'</th>';
+  }).join('')+'</tr>';
+
+  var top=EXP.filtrados.slice(0,60);
+  if(!top.length){
+    tbody.innerHTML='<tr><td colspan="'+cols.length+'" style="text-align:center;padding:32px;color:var(--tx3);font-size:13px;">Sin resultados con los filtros actuales</td></tr>';
+    if(note) note.textContent='';
+    return;
+  }
+
+  tbody.innerHTML=top.map(function(row){
+    return '<tr style="border-bottom:1px solid var(--border);">'
+      +cols.map(function(c){
+        return '<td style="padding:7px 12px;font-size:12px;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;">'+expGetVal(row,c.id)+'</td>';
+      }).join('')+'</tr>';
+  }).join('');
+
+  if(note){
+    if(EXP.filtrados.length>60)
+      note.textContent='Mostrando 60 de '+EXP.filtrados.length.toLocaleString()+' registros. El Excel incluirá todos.';
+    else
+      note.textContent=EXP.filtrados.length.toLocaleString()+' registros listos para exportar.';
+  }
+}
+
+window.exportarExcelFiltrado = function(){
+  if(typeof XLSX==='undefined'){ showToast('Cargando librería Excel...',''); return; }
+  var cols=EXP_COLS[EXP.tipo];
+  var datos=EXP.filtrados.length?EXP.filtrados:EXP.datos;
+  if(!datos.length){ showToast('Sin datos para exportar',''); return; }
+
+  var rows=datos.map(function(row){
+    var obj={};
+    cols.forEach(function(c){ obj[c.label]=expGetVal(row,c.id); });
+    return obj;
+  });
+
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=cols.map(function(c){ return {wch:Math.min(40,Math.max(12,c.label.length+4))}; });
+  XLSX.utils.book_append_sheet(wb,ws,'Datos SIGPAF');
+
+  // Hoja resumen
+  var tipo_label=EXP.tipo==='alumnas'?'Alumnas SIGECOOP':EXP.tipo==='registros'?'Inscripciones QR':'Cursos del mes';
+  var resumen=[
+    ['SIGPAF · CRE R.L. · Reporte exportado'],
+    ['Fecha', new Date().toLocaleString('es-BO')],
+    ['Tipo', tipo_label],
+    ['Total registros', datos.length],
+    [],['Filtros aplicados:'],
+    ['Distrito',   (document.getElementById('ef-distrito')||{}).value||'Todos'],
+    ['Profesora',  (document.getElementById('ef-profesora')||{}).value||'Todas'],
+    ['Mes',        (document.getElementById('ef-mes')||{}).value||'Todos'],
+    ['Origen',     (document.getElementById('ef-origen')||{}).value||'Todos'],
+    ['Búsqueda',   (document.getElementById('ef-buscar')||{}).value||'—'],
+  ];
+  var wsRes=XLSX.utils.aoa_to_sheet(resumen);
+  wsRes['!cols']=[{wch:24},{wch:46}];
+  XLSX.utils.book_append_sheet(wb,wsRes,'Resumen');
+
+  XLSX.writeFile(wb,'SIGPAF_'+tipo_label.replace(/\s/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast(datos.length.toLocaleString()+' registros exportados ✓','success');
+};
+
+window.exportarCSVFiltrado = function(){
+  var cols=EXP_COLS[EXP.tipo];
+  var datos=EXP.filtrados.length?EXP.filtrados:EXP.datos;
+  if(!datos.length){ showToast('Sin datos',''); return; }
+  var lineas=[];
+  lineas.push(cols.map(function(c){return c.label;}).join(','));
+  datos.forEach(function(row){
+    lineas.push(cols.map(function(c){
+      return '"'+String(expGetVal(row,c.id)).replace(/"/g,'""')+'"';
+    }).join(','));
+  });
+  var blob=new Blob([lineas.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='SIGPAF_'+EXP.tipo+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('CSV descargado','success');
+};
+
+window.copiarTablaPortapapeles = function(){
+  var cols=EXP_COLS[EXP.tipo];
+  var datos=EXP.filtrados.slice(0,500);
+  if(!datos.length){ showToast('Sin datos',''); return; }
+  var lineas=[];
+  lineas.push(cols.map(function(c){return c.label;}).join('	'));
+  datos.forEach(function(row){
+    lineas.push(cols.map(function(c){return expGetVal(row,c.id);}).join('	'));
+  });
+  navigator.clipboard.writeText(lineas.join('\n'))
+    .then(function(){ showToast('Tabla copiada','success'); })
+    .catch(function(){ showToast('No se pudo copiar',''); });
+};
+
+// Compatibilidad con botón antiguo
+window.exportarExcel = window.exportarExcelFiltrado;
+
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════════════════════
+function actualizarConfiguracion(){
+  if(G.user){
+    setUI('conf-nombre', document.getElementById('sidebar-uname').textContent);
+    setUI('conf-email',  G.user.email);
+    var av = document.getElementById('conf-av');
+    if(av) av.textContent = G.user.email.slice(0,2).toUpperCase();
+  }
+  setUI('fb-cursos-count',  G.cursos.length+' docs');
+  setUI('fb-alumnas-count', G.alumnas.length+' docs');
+  setUI('fb-prof-count',    G.profesoras.length+' docs');
+}
+
+// ══════════════════════════════════════════════════════
+//  NOTIFICACIONES — generadas desde datos reales
+// ══════════════════════════════════════════════════════
+function renderNotifs(){
+  var notifs = [];
+  var obs = G.cursos.filter(function(c){ return normEstado(c.estado)==='observado'; });
+  if(obs.length) notifs.push({tipo:'danger',icono:'ti-alert-triangle',
+    texto:obs.length+' curso(s) marcados como "Observado" requieren atención.',tiempo:'Ahora',leida:false});
+  var nuevas = G.registros.filter(function(r){ return r.es_nueva; });
+  if(nuevas.length) notifs.push({tipo:'green',icono:'ti-user-plus',
+    texto:nuevas.length+' alumna(s) nueva(s) registradas vía QR.',tiempo:'Hoy',leida:false});
+  var enviados = G.cursos.filter(function(c){ return normEstado(c.estado)==='enviadoFundacion'; });
+  if(enviados.length) notifs.push({tipo:'amber',icono:'ti-send',
+    texto:enviados.length+' curso(s) enviados a Fundación pendientes de aprobación.',tiempo:'Pendiente',leida:false});
+  notifs.push({tipo:'green',icono:'ti-database',
+    texto:'Firebase conectado · '+G.cursos.length+' cursos · '+G.alumnas.length+' alumnas · '+G.profesoras.length+' profesoras.',tiempo:'Sistema',leida:true});
+
+  var colorMap={danger:'var(--re)',amber:'var(--am)',green:'var(--g)',indigo:'var(--in)'};
+  var el = document.getElementById('notifs-list');
+  if(!el) return;
+  el.innerHTML = notifs.map(function(n){
+    return '<div class="notif '+(n.leida?'':'unread')+'">'
+      +'<i class="ti '+n.icono+' notif-icon" style="color:'+colorMap[n.tipo]+';"></i>'
+      +'<div class="notif-body"><div class="notif-text">'+n.texto+'</div>'
+      +'<div class="notif-time">'+n.tiempo+'</div></div>'
+      +(n.leida?'':'<div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:6px;"></div>')
+      +'</div>';
+  }).join('');
+  // Badge en sidebar
+  var badge = document.getElementById('badge-notif');
+  var sinLeer = notifs.filter(function(n){ return !n.leida; }).length;
+  if(badge) badge.textContent = sinLeer||'';
+}
+
+
+// Render notificaciones al cargar la app (se llama desde initApp)
+// Las notificaciones se generan desde datos reales en renderNotifs()
+// que ya está definida en el bloque principal
+
+// Actualizar badges secundarios de configuración
+var _origRecargar = window.recargarDatos;
+window.recargarDatos = function(){
+  showLoading(true);
+  Promise.all([
+    DB.collection(COL.cursos).get(),
+    DB.collection(COL.alumnas).limit(500).get(),
+    DB.collection(COL.profesoras).get(),
+    DB.collection(COL.distritos).get(),
+    DB.collection(COL.registros).orderBy('fecha_registro','desc').limit(200).get()
+  ]).then(function(results){
+    G.cursos     = snapToArray(results[0]);
+    G.alumnas    = snapToArray(results[1]);
+    G.profesoras = snapToArray(results[2]);
+    G.distritos  = snapToArray(results[3]);
+    G.registros  = snapToArray(results[4]);
+    renderDashboard();
+    renderCursos(G.cursos);
+    renderAlumnasRecientes();
+    renderProfesoras();
+    renderAttendance();
+    poblarSelectCursos();
+    actualizarReportes();
+    actualizarConfiguracion();
+    renderNotifs();
+    // Badges de config
+    var fc2 = document.getElementById('fb-cursos-count2');
+    var fa2 = document.getElementById('fb-alumnas-count2');
+    var fp2 = document.getElementById('fb-prof-count2');
+    if(fc2) fc2.textContent = G.cursos.length+' docs';
+    if(fa2) fa2.textContent = G.alumnas.length+' docs';
+    if(fp2) fp2.textContent = G.profesoras.length+' docs';
+    showLoading(false);
+    showToast('Datos actualizados desde Firebase ✓','success');
+  }).catch(function(e){
+    showLoading(false);
+    showToast('Error: '+e.message,'error');
+  });
+};
+
+// ══════════════════════════════════════════════════════
+//  IMPORTADOR SIGECOOP — INTEGRADO EN EL PANEL
+// ══════════════════════════════════════════════════════
+var IMP = { archivo:null, cursos:[], paso:1 };
+var IMP_DIST = {1:'Santa Cruz',2:'Santa Cruz',3:'Santa Cruz',4:'Santa Cruz',5:'Santa Cruz',
+  6:'Santa Cruz',7:'Santa Cruz',8:'Santa Cruz',9:'Santa Cruz',10:'Santa Cruz',
+  11:'Santa Cruz',12:'La Guardia',13:'Warnes',14:'Montero',15:'Portachuelo',
+  16:'Yapacaní',17:'Mairana',18:'Vallegrande',19:'Comarapa',20:'Camiri',
+  21:'Cotoca',22:'San José Chiquitos',23:'Puerto Suárez',24:'Guarayos',
+  25:'San Javier',26:'San Ignacio Velasco'};
+
+function impOnDrop(e){
+  e.preventDefault();
+  document.getElementById('imp-upload-zone').style.borderColor='var(--gm)';
+  var f=e.dataTransfer.files[0];
+  if(f) impOnFileSelected(f);
+}
+
+function impOnFileSelected(file){
+  if(!file) return;
+  IMP.archivo = file;
+  document.getElementById('imp-file-name').textContent = file.name;
+  document.getElementById('imp-file-size').textContent = (file.size/1024).toFixed(1)+' KB';
+  document.getElementById('imp-file-info').style.display = 'flex';
+  document.getElementById('imp-btn-preview').disabled = false;
+}
+
+function impColIdx(hdrs, aliases){
+  var norm = hdrs.map(function(h){ return String(h||'').toUpperCase().trim().replace(/[_\s]+/g,' '); });
+  for(var i=0;i<aliases.length;i++){
+    var a = aliases[i].toUpperCase().replace(/[_\s]+/g,' ');
+    var idx = norm.findIndex(function(h){ return h===a||h.includes(a); });
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+
+function impFmtFecha(v){
+  if(!v||v==='') return '';
+  var s = String(v).trim();
+  if(s.includes('T')||s.includes(' ')){ return s.split(/[T ]/)[0].slice(0,10); }
+  return s.slice(0,10);
+}
+
+function impFmtHora(v){
+  if(!v) return '';
+  var s = String(v).trim();
+  return s.match(/^\d{1,2}:\d{2}/)?s.slice(0,5):s;
+}
+
+function impNormEstado(s){
+  s=(s||'').toUpperCase();
+  if(s.includes('EJEC')||s.includes('ACTIV')) return 'enEjecucion';
+  if(s.includes('CONCLU')||s.includes('FINAL')) return 'finalizado';
+  if(s.includes('APRO')) return 'aprobado';
+  return 'registradoGU';
+}
+
+function impGenerarPreview(){
+  if(!IMP.archivo){ showToast('Selecciona un archivo primero','error'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(new Uint8Array(e.target.result),{type:'array',raw:false});
+      var sname = wb.SheetNames.find(function(n){ return /PROG|CURS/i.test(n); })||wb.SheetNames[0];
+      var aoa = XLSX.utils.sheet_to_json(wb.Sheets[sname],{header:1,defval:'',raw:false});
+      impProcesarAoa(aoa);
+    }catch(ex){ showToast('Error leyendo archivo: '+ex.message,'error'); }
+  };
+  reader.readAsArrayBuffer(IMP.archivo);
+}
+
+function impProcesarAoa(aoa){
+  var hdrs = aoa[0];
+  var I = {
+    dist:    impColIdx(hdrs,['DISTRITO']),
+    secc:    impColIdx(hdrs,['SECCION','SECCIÓN']),
+    cia:     impColIdx(hdrs,['COMPANIA','COMPAÑIA','CIA']),
+    mes:     impColIdx(hdrs,['MES CURSO','MES_CURSO','MES']),
+    cupo:    impColIdx(hdrs,['CANT ALUMNOS','CANT_ALUMNOS','CUPO','CAPACIDAD']),
+    nombre:  impColIdx(hdrs,['NOMBRE CURSO','NOMBRE_CURSO']),
+    codigo:  impColIdx(hdrs,['CODIGO REGISTRO','CODIGO_REGISTRO']),
+    solicit: impColIdx(hdrs,['NRO SOLICITUD','NRO_SOLICITUD']),
+    prof:    impColIdx(hdrs,['PROFESOR','PROFESORA']),
+    deleg:   impColIdx(hdrs,['DELEGADO']),
+    inst:    impColIdx(hdrs,['INSTITUCION','INSTITUCIÓN']),
+    inicio:  impColIdx(hdrs,['F INICIO','F_INICIO','FECHA INICIO']),
+    fin:     impColIdx(hdrs,['F FIN','F_FIN','FECHA FIN']),
+    clausura:impColIdx(hdrs,['FECHA CLAUSURA','FECHA_CLAUSURA']),
+    lugar:   impColIdx(hdrs,['LUGAR CURSO','LUGAR_CURSO','LUGAR']),
+    solicit2:impColIdx(hdrs,['SOLICITANTE']),
+    dias:    impColIdx(hdrs,['DIAS ASIGNADOS','DIAS_ASIGNADOS']),
+    hora_ini:impColIdx(hdrs,['HORA INICIO','HORA_INICIO']),
+    hora_fin:impColIdx(hdrs,['HORA FIN','HORA_FIN']),
+    estado:  impColIdx(hdrs,['ESTADO']),
+    telef:   impColIdx(hdrs,['TELEF REF','TELEF_REF']),
+    cod_fijo:impColIdx(hdrs,['CODIGO FIJO','CODIGO_FIJO']),
+  };
+
+  if(I.nombre<0){ showToast('No se encontró columna NOMBRE_CURSO','error'); return; }
+
+  IMP.cursos = [];
+  for(var r=1;r<aoa.length;r++){
+    var row=aoa[r];
+    if(!row||!row.filter(Boolean).length) continue;
+    var nombre=I.nombre>=0?String(row[I.nombre]||'').trim():'';
+    if(!nombre) continue;
+    var dist_num=I.dist>=0?parseInt(row[I.dist])||0:0;
+    var cod_reg=I.codigo>=0?String(row[I.codigo]||'').trim():'';
+    var hi=I.hora_ini>=0?impFmtHora(row[I.hora_ini]):'';
+    var hf=I.hora_fin>=0?impFmtHora(row[I.hora_fin]):'';
+    var est=I.estado>=0?String(row[I.estado]||'').trim():'';
+    IMP.cursos.push({
+      nombre_curso:    nombre,
+      distrito_num:    dist_num,
+      distrito_nombre: dist_num?'Distrito '+dist_num+(IMP_DIST[dist_num]?' – '+IMP_DIST[dist_num]:''):'',
+      seccion_num:     I.secc>=0?parseInt(row[I.secc])||0:0,
+      compania:        I.cia>=0?String(row[I.cia]||'').trim():'',
+      mes:             I.mes>=0?String(row[I.mes]||'').trim():'',
+      cupo_maximo:     I.cupo>=0?parseInt(row[I.cupo])||30:30,
+      profesora:       I.prof>=0?String(row[I.prof]||'').trim():'',
+      delegado:        I.deleg>=0?String(row[I.deleg]||'').trim():'',
+      institucion:     I.inst>=0?String(row[I.inst]||'').trim():'',
+      fecha_inicio:    I.inicio>=0?impFmtFecha(row[I.inicio]):'',
+      fecha_fin:       I.fin>=0?impFmtFecha(row[I.fin]):'',
+      fecha_clausura:  I.clausura>=0?impFmtFecha(row[I.clausura]):'',
+      lugar:           I.lugar>=0?String(row[I.lugar]||'').trim():'',
+      dias_asignados:  I.dias>=0?String(row[I.dias]||'').trim():'',
+      hora_inicio:     hi,
+      hora_fin:        hf,
+      horario:         hi&&hf?hi+' - '+hf:'',
+      nro_solicitud:   I.solicit>=0?String(row[I.solicit]||'').trim():'',
+      solicitante:     I.solicit2>=0?String(row[I.solicit2]||'').trim():'',
+      estado:          impNormEstado(est),
+      estado_sigecoop: est,
+      telefono_ref:    I.telef>=0?String(row[I.telef]||'').trim():'',
+      codigo_registro: cod_reg,
+      codigo_fijo:     I.cod_fijo>=0?String(row[I.cod_fijo]||'').trim():'',
+      alumnas_count:   0,
+      sesiones_completadas:0,
+      sesiones_total:  12,
+      origen:          'SIGECOOP_EXCEL',
+    });
+  }
+
+  if(!IMP.cursos.length){ showToast('No se encontraron cursos válidos','error'); return; }
+  impMostrarPreview();
+}
+
+function impMostrarPreview(){
+  impSetPaso(2);
+  var con_cod = IMP.cursos.filter(function(c){ return c.codigo_registro; }).length;
+  var profs = new Set(IMP.cursos.map(function(c){ return c.profesora; })).size;
+
+  // Stats
+  var stats = document.getElementById('imp-preview-stats');
+  stats.innerHTML =
+    impStat(IMP.cursos.length,'ti-calendar-event','Cursos','var(--g)')
+    +impStat(profs,'ti-user-star','Profesoras','var(--in)')
+    +impStat(con_cod,'ti-qrcode','Con código SIGECOOP','var(--te)')
+    +impStat(IMP.cursos.length-con_cod,'ti-alert-triangle','Sin código','var(--am)');
+
+  document.getElementById('imp-preview-sub').textContent =
+    IMP.cursos.length+' cursos detectados en "'+IMP.archivo.name+'"';
+
+  document.getElementById('imp-preview-alert').innerHTML = (IMP.cursos.length-con_cod)>0
+    ? '<div style="background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;padding:10px 12px;border-radius:8px;font-size:12.5px;"><i class="ti ti-alert-triangle"></i> '+(IMP.cursos.length-con_cod)+' cursos sin CODIGO_REGISTRO. Se generará código interno para ellos.</div>'
+    : '<div style="background:var(--gl);border:1px solid var(--gm);color:#065F46;padding:10px 12px;border-radius:8px;font-size:12.5px;"><i class="ti ti-check"></i> Todos los cursos tienen CODIGO_REGISTRO del SIGECOOP ✓</div>';
+
+  var ELBL = {enEjecucion:'En ejecución',finalizado:'Finalizado',aprobado:'Aprobado',registradoGU:'Registrado GU',observado:'Observado'};
+  var ECLS = {enEjecucion:'badge-te',finalizado:'badge-gray',aprobado:'badge-g',registradoGU:'badge-in',observado:'badge-re'};
+  var tbody = document.getElementById('imp-preview-tbody');
+  tbody.innerHTML = IMP.cursos.map(function(c,i){
+    return '<tr style="border-bottom:1px solid var(--border);">'
+      +'<td style="padding:7px 10px;color:var(--tx3);font-weight:600;">'+(i+1)+'</td>'
+      +'<td style="padding:7px 10px;font-family:monospace;font-size:11px;color:var(--g);font-weight:700;">'+( c.codigo_registro||'—')+'</td>'
+      +'<td style="padding:7px 10px;font-weight:600;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nombre_curso+'</td>'
+      +'<td style="padding:7px 10px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;">'+( c.profesora||'—')+'</td>'
+      +'<td style="padding:7px 10px;text-align:center;font-weight:700;">'+( c.distrito_num||'—')+'</td>'
+      +'<td style="padding:7px 10px;"><span class="badge badge-am">'+( c.mes||'—')+'</span></td>'
+      +'<td style="padding:7px 10px;font-size:11px;">'+( c.fecha_inicio||'—')+' / '+(c.fecha_fin||'—')+'</td>'
+      +'<td style="padding:7px 10px;font-family:monospace;font-size:10.5px;">'+( c.horario||'—')+'</td>'
+      +'<td style="padding:7px 10px;"><span class="badge '+(ECLS[c.estado]||'badge-gray')+'">'+( ELBL[c.estado]||c.estado)+'</span></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function impStat(val,icon,lbl,color){
+  return '<div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center;">'
+    +'<div style="font-size:'+(String(val).length>6?'13px':'24px')+';font-weight:700;color:'+color+';margin-bottom:3px;">'+val+'</div>'
+    +'<div style="font-size:10.5px;color:var(--tx3);"><i class="ti '+icon+'"></i> '+lbl+'</div></div>';
+}
+
+async function impIniciarImportacion(){
+  var modo = document.querySelector('input[name="imp-mode"]:checked').value;
+  impSetPaso(3);
+  var log = document.getElementById('imp-log-box');
+  function addLog(msg,tipo){
+    var color = tipo==='ok'?'#3FB950':tipo==='err'?'#F85149':tipo==='warn'?'#D29922':'#58A6FF';
+    log.innerHTML += '<div style="color:'+color+'">'+msg+'</div>';
+    log.scrollTop = log.scrollHeight;
+  }
+  var ok=0,err=0,skip=0,upd=0,errores=[];
+  try{
+    // Borrar si corresponde
+    if(modo==='borrar'){
+      document.getElementById('imp-prog-label').textContent='Eliminando cursos existentes...';
+      addLog('⚠ Borrando todos los cursos existentes...','warn');
+      var snapAll = await DB.collection(COL.cursos).get();
+      var batch = DB.batch(); var cnt=0;
+      for(var d of snapAll.docs){
+        batch.delete(d.ref); cnt++;
+        if(cnt%400===0){ await batch.commit(); batch=DB.batch(); }
+      }
+      if(cnt>0) await batch.commit();
+      addLog('✓ '+cnt+' cursos eliminados','ok');
+    }
+
+    // Cargar codigos existentes
+    var codigos_fb = {};
+    if(modo!=='borrar'){
+      var snapEx = await DB.collection(COL.cursos).get();
+      snapEx.docs.forEach(function(d){
+        var cod=String(d.data().codigo_registro||'').trim();
+        if(cod) codigos_fb[cod]=d.id;
+      });
+      addLog('Cursos existentes con código: '+Object.keys(codigos_fb).length);
+    }
+
+    // Cargar profesoras para CI
+    var profs_map = {};
+    G.profesoras.forEach(function(p){
+      var n=(p.nombre||p.nombre_completo||'').toUpperCase().trim();
+      if(n) profs_map[n]={ci:p.ci||p.id,id:p.id};
+    });
+
+    // Importar
+    addLog('Importando '+IMP.cursos.length+' cursos...');
+    for(var i=0;i<IMP.cursos.length;i++){
+      var c=IMP.cursos[i];
+      var pct=Math.round((i+1)/IMP.cursos.length*100);
+      document.getElementById('imp-prog-fill').style.width=pct+'%';
+      document.getElementById('imp-prog-pct').textContent=pct+'%';
+      document.getElementById('imp-prog-detail').textContent=(i+1)+'/'+IMP.cursos.length+' · '+c.nombre_curso;
+      try{
+        // Buscar CI profesora
+        var pn=(c.profesora||'').toUpperCase().trim();
+        var po=profs_map[pn];
+        if(!po){
+          var parts=pn.split(' ').filter(function(p){return p.length>4;});
+          var key=Object.keys(profs_map).find(function(k){ return parts.some(function(p){return k.includes(p);}); });
+          if(key) po=profs_map[key];
+        }
+        var docData=Object.assign({},c,{profesora_ci:po?po.ci:'',creado_en:new Date().toISOString(),creado_por:G.user?G.user.email:'admin'});
+
+        if(modo==='agregar'&&codigos_fb[c.codigo_registro]){
+          skip++; addLog('  = Existe: '+c.codigo_registro+' · '+c.nombre_curso);
+        } else if(modo==='reemplazar'&&codigos_fb[c.codigo_registro]){
+          await DB.collection(COL.cursos).doc(codigos_fb[c.codigo_registro]).set(docData,{merge:true});
+          upd++; addLog('  ↑ Actualizado: '+c.codigo_registro+' · '+c.nombre_curso,'ok');
+        } else {
+          await DB.collection(COL.cursos).add(docData);
+          ok++; addLog('  + Importado: '+c.codigo_registro+' · '+c.nombre_curso+'  ('+( c.profesora||'?')+')','ok');
+        }
+      }catch(ex){ err++; errores.push({curso:c.nombre_curso,error:ex.message}); addLog('  ✗ Error: '+c.nombre_curso+' → '+ex.message,'err'); }
+      if((i+1)%10===0) await new Promise(function(r){setTimeout(r,150);});
+    }
+    addLog('✓ Importación completada','ok');
+
+    // Recargar datos
+    DB.collection(COL.cursos).get().then(function(snap){
+      G.cursos=snapToArray(snap);
+      renderCursos(G.cursos);
+      poblarFiltroProfesorasCursos();
+      renderDashboard();
+    });
+
+    impMostrarResultado(ok,upd,skip,err,errores);
+  }catch(ex){ addLog(' ✗ Error fatal: '+ex.message,'err'); showToast('Error: '+ex.message,'error'); }
+}
+
+function impMostrarResultado(ok,upd,skip,err,errores){
+  impSetPaso(4);
+  var exito=err===0;
+  document.getElementById('imp-result-header').innerHTML =
+    '<div style="background:'+(exito?'var(--gl)':'#FFFBEB')+';border:1px solid '+(exito?'var(--gm)':'#FDE68A')+';border-radius:8px;padding:14px;display:flex;align-items:center;gap:10px;">'
+    +'<i class="ti '+(exito?'ti-circle-check':'ti-alert-triangle')+'" style="font-size:22px;color:'+(exito?'var(--g)':'var(--am)')+';"></i>'
+    +'<div><div style="font-size:14px;font-weight:700;">'+(exito?'¡Importación completada exitosamente!':'Importación completada con errores')+'</div>'
+    +'<div style="font-size:12px;color:var(--tx3);">'+(ok+upd+skip+err)+' cursos procesados desde "'+IMP.archivo.name+'"</div></div></div>';
+
+  document.getElementById('imp-result-stats').innerHTML =
+    impStat(ok,'ti-plus','Importados','var(--g)')
+    +impStat(upd,'ti-refresh','Actualizados','var(--te)')
+    +impStat(skip,'ti-minus','Omitidos','var(--am)')
+    +impStat(err,'ti-x','Errores','var(--re)');
+
+  if(errores.length){
+    document.getElementById('imp-result-errores').innerHTML =
+      '<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;font-size:12.5px;color:#991B1B;margin-top:8px;">'
+      +'<strong>Cursos con error:</strong><br>'
+      +errores.map(function(e){ return '• '+e.curso+': '+e.error; }).join('<br>')+'</div>';
+  }
+
+  showToast('Importación completada: '+ok+' nuevos, '+upd+' actualizados','success');
+}
+
+function impSetPaso(n){
+  [1,2,3,4].forEach(function(i){
+    var s=document.getElementById('imp-screen-'+i);
+    if(s) s.style.display=i===n?'block':'none';
+    var snum=document.getElementById('imp-snum-'+i);
+    var slbl=document.getElementById('imp-slbl-'+i);
+    var ssep=document.getElementById('imp-ssep-'+(i));
+    if(snum){
+      if(i<n){ snum.style.background='var(--te)'; snum.style.color='#fff'; snum.innerHTML='<i class="ti ti-check" style="font-size:12px;"></i>'; }
+      else if(i===n){ snum.style.background='var(--g)'; snum.style.color='#fff'; snum.textContent=String(i); }
+      else{ snum.style.background='#E5E7EB'; snum.style.color='var(--tx3)'; snum.textContent=String(i); }
+    }
+    if(slbl){
+      slbl.style.color=i<=n?'var(--g)':'var(--tx3)';
+    }
+    if(ssep) ssep.style.background=i<n?'var(--te)':'#E5E7EB';
+  });
+}
+
+function impVolverPaso1(){ impSetPaso(1); IMP.cursos=[]; }
+function impReiniciar(){ IMP={archivo:null,cursos:[],paso:1}; impSetPaso(1); document.getElementById('imp-file-info').style.display='none'; document.getElementById('imp-btn-preview').disabled=true; }
+
+
+
+
+// Toggle password visibility
+function togglePass(){
+  var inp = document.getElementById('login-pass');
+  var ico = document.getElementById('toggle-pass');
+  if(inp.type==='password'){ inp.type='text'; ico.className='ti ti-eye-off'; }
+  else { inp.type='password'; ico.className='ti ti-eye'; }
+}
+
+// Inicializacion Firebase al cargar
+window.addEventListener('load', function(){
+  var dot = document.getElementById('sdk-dot');
+  var msg = document.getElementById('sdk-msg');
+  try{
+    if(dot){ dot.style.animation='none'; dot.style.background='var(--g)'; }
+    if(msg) msg.textContent='Firebase listo · Ingresa tus credenciales';
+  }catch(e){}
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter'){
+    var lp = document.getElementById('login-pass');
+    if(lp && document.activeElement===lp) window.doLogin();
+  }
+});
+
+</script>
+
+</body>
+</html>
