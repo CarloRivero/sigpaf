@@ -327,6 +327,19 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 .tab-item{padding:7px 16px;border-radius:25px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--tx3);transition:all .15s;}
 .tab-item.active{background:var(--card);color:var(--g);box-shadow:var(--shadow);}
 
+/* ═══ PRINT ═══ */
+@media print {
+  body { background: #fff !important; }
+  #app-login, .sidebar, .topbar, .sb-overlay, .modal-overlay, .toast,
+  #global-loader, .hamburger, .filter-select, .search-wrap,
+  .btn, .tabs, #rep-tab-general { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .content { padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; page-break-inside: avoid; }
+  .kpi { box-shadow: none !important; }
+  #rm-header-imp { display: block !important; }
+}
+
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:1024px){.chart-grid{grid-template-columns:1fr;}}
 @media(max-width:900px){.kv-grid{grid-template-columns:1fr;}}
@@ -376,9 +389,10 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
   <div style="background:rgba(255,255,255,.97);border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,.4);position:relative;">
     <!-- Header -->
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="width:60px;height:60px;background:linear-gradient(135deg,var(--g),var(--gd));border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;margin:0 auto 14px;box-shadow:0 8px 24px rgba(0,112,60,.35);">S</div>
-      <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;">SIGPAF</div>
-      <div style="font-size:12px;color:var(--tx3);margin-top:4px;">Sistema de Gestión · Programa Apoyo a la Familia</div>
+      <img src="data:image/png;base64,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" alt="CRE" style="width:80px;height:80px;border-radius:18px;background:#fff;padding:8px;margin:0 auto 14px;display:block;box-shadow:0 8px 28px rgba(0,112,60,.35);">
+      <div style="font-size:10.5px;font-weight:700;color:var(--g);letter-spacing:.18em;margin-bottom:4px;">PROGRAMA</div>
+      <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;line-height:1;">APOYO A LA FAMILIA</div>
+      <div style="font-size:12px;color:var(--tx3);margin-top:8px;">Sistema de Gestión · SIGPAF</div>
       <div style="font-size:11px;color:var(--tx3);">CRE R.L. · Gerencia de Asistencia al Consumidor</div>
     </div>
 
@@ -422,10 +436,10 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
   <aside class="sidebar" id="sidebar">
     <div class="sb-header">
       <div class="sb-brand">
-        <div class="sb-logo">S</div>
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAARE0lEQVR42u2ceZAc1X3HP++97p5jd2ZWq5V2JQECg2UhZAkEEreFbQzIXMGFCWVchoRgBdvYsVM4LjtxKnFsV6rs2IQkShEDDrYxPvCBuYwLG3RxWAgESBYCLCEhkNDex1zd77380d2j2VOz2lm0Tm1XjWY02z3T/e3f8f19f783gk/eYJneDnuT0xBMAzgN4DSA0wBOb9MATgP4p7k5U+lkhBBIIRCD38ViMcZgpwEcGzgdBOhSCawBBGDBAkpCIomjFHqKAXnEAZRSYoIAXcwzs7mFc5eezPJjjqWtKYcxht2dnTy1cyfrX91Bvq8X0o1IITHWTAOopETnB2jK5Lj50j/jL846hzm5phH3ffmt/ax57Lfc+tijBLqETKQw5siDKI5ULSyFwBQKvHfRYu649i85dmZLTcdtem0n1975HbbtfR2RTGKt/f8DoIxiWS1ua0slPrBoMT+4fjWNyQT5UhmlJKMdba1FG0MmleK1jg6uWHMrW994A1wXOw53NtZi6gh6HQEU4Jeg7Ne0K8aQyDWBNfjGomoAHkBbQ9JxKAYBpr8fpKSmrBLlJFwXEgmoE4hOvSzPlsqcdvw7OePY4wisOWiJdvAFCBG+5SiHQGustYgawau2IiUlUgq01hVsBpts1fdGxzhC8uzre1i/YzvS8+piifUBUEqCcokPnbKML1ywakoT39vWr2X9C88jk0mM1lPDhYUAqw2zMllaM5nwzlZboACJQPs+81tm8dOP34jnOJVjD2cLv0LwVm8Pl6+5lbzvI2J3rqKQB83TIoWgY6CfN3u6EcqpSwKqiwVaC0jJgd4eDnR1jmKmCnp7uHjpUpKuS2AMSsoJ3TRjDK3ZHK25Jh7YuB4aM2AOYVVKgVJ1y9515YHCcZCOUzGCwSZqSc6ezecvWIWSckLgVcUOAL606mIe3rIZmfAq3HA0eGyU0Y8IkRY1+JwZEsNjxcJoTVM2xyNbX6zbydsogXUX8iTSDRR8HyFE5bvfDo44jhgoQAcQBHC41aiQUCxORjEdUZMqPqgccNzDP9d6WmBccl15xln8/YUXU9YGJQ+qJrY6Vo9GwQT4WuPUMf4MsnxjcaREW0NCKu56+km++eCvUA0N6Eks+cblwq5UpDwXpceXAELebFgy7ygcqSblQvpLRV5rb8dKB1dKHPX2SJ3jozHGhm48UjASIzxXu1ixyMOf/yLvf9eJE87A1VtgDK6UrFn7Oz59+22QyYAxYYJRatIBHF8WlgKhvMMTDowll0rhKIVTxwtzo8/KplMI18XxPAJj3jaRYdw0ptYTk0IgIysLXwte2r+PtmwWf6gFVlvs0NeM/bfAajzpsKu9HeU4KCGxcgQqULOTmXGVeJMkZwkIfCiVhvv5iDRoNATHsV8lA4sR0BOj/H+EeOMlQsGhRvTrLqhKITDlMkuPmc8li5cQGFMRC6SUURKp8z2zEBg9IXHAWIsrJQ9te5HNu3bWLDZMGoBnH388/3L5h/hT24pBmc07tiMTiSMDoDYGkUpzzzPPsHHnTkwkV2ltyCaT/Hz1jTSnG8d01PFYjRCCbfve5No7bgvJM/aw7NsCCsHr3V2QStfMHesOoI2ydedAP53dXZU6GCkhP8BjO17iw8uWD08kh0WeNa5S/Py5Z9iyfRtksnA4EpWI/rEWHCcUG94uMSHs44oh8Tk8Eem6g6sZ4Dsb1nPVqSvw6kBlPOWgjeGHTz+Nm2saNW4Za2tjDxGG9m3Nwn45JNjj+MqTjzuOhFSYWJsYL42J28UCuotFtu/eFZLm0U7DdSvKzRHngdXOKiwsnHc0mUQCbS2ixqjWXy7iS40QoSwvhrIOO1JcOPjaRqWhMQYpBcsXLByxxRGD/NJb++kpFBFS1F1aOGwABRIb+Nz3iZs4oWX2lM6sq279Nx7e8iwyXX9hYWIWqBSf/ck9tDQ2YkztzSEpBH6pxMVLl3H18hX4WldaoiNl5/g9bSxChPH024/+hk27XsXzxqIb4TlteWMvuF5d25kTBjDOtvc/8/uweB8vKbGW7z/1BO39fXzqve8PyzKtw5sgBktlxloEtlJD33zvj/nG/b8I9cVazjSRBMeZlPp4wklESXl4fE4IjNaYQoGPnHUO/3TZFZwwa+xQsGn3Lr5w74959IUtqMZMCHYNoOhas/CRAHCCFTNCSszAANnGDFedupxLTz6Fd8+dx4yGNMZa2nv72fz6a9y7eRO/fO45/HIJlU5Pqkg6pQAUhO1HEc35xbxsqBXrQEOxAFKSbGggE8299BQK+Pl8uGMyhVJyyoA3KZXIQQ8VKCFCba5cDuOkECEfc5xB4AE4jkJms1gsJW0o9vdXBIhEJgtYyloPA0/UOI8TS3H1TiSTAqCSEu37BMUiMp3muLY2mhsaKfllOgby7O/rI7AGrEXn86OoM6JiraUY/GQK6ahK61IgsL6PDvxRstwQEu644Ll1m4uZFACVlOiBAea2tLD6ksu44uRTWdDaSsJx0dZQ9H0+/v27uHvd72ie2cK/X3s9mWQyEgaGEmeLrzVv9vbw5B9f4b7nX6B/oB+ZSiEs6GKeK08/k4+tOBPf6OEibQSgNqFUdffvn+KeJzai0qm6hQGn7uD193H1Wefyras+Qls2W81asNbS4CVY0NoKgcFzXa4+dQWqhgbQTeedz4639nPD/97B2pe242Ua0b7Pu+fO49IlJ9d0fnm/zD0b1k5YBRrEaesLXj+fvuhifvhXf01bNkugQ5HTUjUqYy1zsjmQAmstXfkBtDEEUXwb6RFEf18wu5X7PvU3nDB3DkGpBEqS9320MZQCf9Tjy0GANoajZzSD56Hr6MKybuDl+7n0tOXcctVH0CbsKzhKDZq6FwiEEMxtagIpsdGY2qEejpQ4SuFrTS6V4utXfBjjB2FBKcQhj3eVQknJsTNn0ZhuwMaEfSoAKITABAEtuRnc9tHrKvN+I2bG6K22bBYcJ5riGke8UQpjLZctWcqJxxwNpVJtGTjaZ3Ymw1FNTRDNFE4JAJWQ2EKBz15wEW3ZHNraYRdlrCUwGm3C55mNjTiJxJiT9rH7DcXfWIunHC468STwy6MCGFOWWAuM6+13zGyBIJgaFiiEIAh8mmY0c/2Z54YuOQJ4UggcqfCUwpGKo5uayabSYcNpBFuw2ENOcC2bf+wYg04HvSB+uFE4WXrU0WB0zdLbpGZhKQS6WOIDy06jNZtFD5HpY/B2drTzqy2b2dXRyazGRi4/+RTm5rK82n5gEAax+7f393Hdd2/n7BMWhONwQlQsJt59bi4HUg3TcrU1KCG5Y+M67t6wDi+ajdHGIIHdXV2QTKHtFKAxAgHWsGrR4nDubkgBr4Tgx5s3ccOdt9HbPxD5oOarv34QKQSJOA4Oka2KZZ8Ht73IgxvWkXQcPnf+hQTG4FTdnKTrghw+0mSjD3n29T08unED5HJhn8RRlX4Hrjc1BiwDo5GpFKfOn4+ILDK2PCUEfzxwgOvu/B8KfoCbzYUnLWAgCMD3acllRywKhBA0pRvo8wN+tHkTnzv/wmGhoRzoESuKeK/Fc+Zx1vIVuOk0wlp2dXWyp6MDpKqb9U1MkRYCGwS0ZHMc09wy6ORj17194zoK/X242Sb8qqEkKQVWyjHl9UBrtBB05vP4WldmYOIJ092dHRDoYUkkDiGrz13J6nNXVt7/5wd/xT/+5B6cTLaufX15+O4LaE1rNksumayASpUlrntlB8Jxh2Vbaw99DUpKlLU0JVM4EWesVncef3nHIQXfOPsaa/EnScGRE7FArKE5nQ65YHSB8dhtKfDZ09WFPYyBSgvky2V0Ps/1Z54TNuYjSiKF4M2ebn7x7LOQSo5a01ZktBGX0E4VNcaC57jDpHqEoBRoitoPe63j/FhPKebPmMEV7zuf1StXVioWayxCCm7+2U/p7O0OZfqxWg4RB7STOOY7YTGhHAQjsv6055JJJNln7Jjjv0NpEcDMxgxbv/yVgzdHRHFVCr58/8/5wfrH8TIZyj3dY4cYIXCUqljjlHJhG41rdBUGsBysPuJqwZGKd81uQ+raWX/s6nu7utjV3l6pqau3tS+/jBAckgiXgoC+UoneYoFCuTz8Rh9pC7QASvFGTzfd+Twz0g0VIhzHqiuXncr9Tz2BJ1XkSiHAUkqCUT5TAN2FPI/t2M5n2uaEMa7qMz+64nQef2HLqEVIzBe/9egj3PLQA3iNjVhr6CkWEZPQS5mQBQrHob23l1cOvDVIw1RSYqzl6tNOZ+XSZZQ7DmCCAKs1plQm6O+PafiIduQ6Do9s2zrIrePn9y9cRDKTDXngGEbYWcizr6Od3V2d7Olop7dQwAoxrqWxk14LKyGhWGJtRCliuhIDk3Acfnnjp/jMJZdzQksLzQ0NLGxr5etXXc0Fi06it1isjAFXb2nP4+nXdrK7q2OQRRtrOW7mLJbPPxZTLo3ZF04oheN5pD0Pz0vgOQ6uEHhKUc+cPKEkYq0FR3Hvc8/wt+dfiKy6oHjFUC6V4tt/fg1fu+JKegsFsuk0adfjke1/wNqDqkvs4kYIHClp7+3hsR0vcc3yMypuGWiDUpIPLlrMuq0vVlw7iD5DROkqMJpPrnwf15x2euUGxdXR9v1vcvl//0e4du9IW6C2BplM8tTLL/PkzldCvlYVY0RVYkh7CdpyTaTdcMr/QF8fCcehuaEhFE2VwlUKR0qaGxqQSB75wzaUlCQcJ3x2HRwp+dgZZ9OYySK1ptFL4EhJwnEj8TVUfNqyORbOmcuC1jYWtLaxsG0O72xtI+G6UC5V1JmhD/F2WmBoaRIdBHzloQd44BOfGSIoRMrIhnXc98wmnFQSIkK8/a19BL7msjW3klAO8Y+ZSAR5v4QB7n12M6Xyf2GqiJBAoK2hZAKMlNz15BM8v2c3gWWIsnNwVjVmBq4QbN2/D4vAL5dH7s5JOa5RuLo01uNO3A9vvImrT1tRqV1j1/viL3/Gmkd+jdfYGFITLEnHQQpBMQiGXIgAASnHITCGgXIZTzkgbGW0TSBoTCYIjCbQGl9HHb1qhXvISnlE2IMRsZIzAgeQCDoLeQbK5ZoXMtcFQCkEaE3W83j85i+yZN5R4bo4KStJwFbFi2peGMe+ah5YLQrE8WuQXBU12VMRENVl5GCeVbkfWGuRNczxfOKe77Hm1w/hZHIERk++C1fUF8ehu1Dgg7d8g3tvvInTjzu+Is3HoMVy/56uTu7auI7GVJrV56wk5XmDqhhtDN/4zcOU/DItmSw3nPOeSkMqnmdOScntG9Yyf+ZMzl940qj9l+oKaaBU4j8f/22khA+/BiUlm3a/Bp5X8w/71K0vbIxBJhLs7e3hvG/+K19adQmr33MeszLZYaXai3v38g/fvZ1E2xyuP/tcIFwsmC+XGSiV2PrmG9z8o7uhXAbP44OLl3D0jGaMNfQWCuzr7WF/bx9ffeA+zlmwkNPnv4Oy0aMuZDTW4AjJxp2v8nffuzOcUBhN4EgkwUvUPAJS9+GicF2cgXye2bNnsWrRuzll/nyaEin6SgVeaW/ndy9t5w9v7CWRSLBk7jz6iiW6C3kGSiUG/BKlcoDjOggp0eUy71t4Ig2ux6sd7Rzo66VzII9fLiJcj0wyRYPjYA55oVAMfPrLfqRkj1wGGTMFlnrF5Zr24+VeQ1YUux54XjhwFAfsOPsJERFke9Cti8Vw3+j3DlASKUJB1mpd+6xL/D1TSY0ZrU7WxiAcBzVCxqv8epAQqFSqkjwqElR1OrAWlUoNTjhVU1YiBr3GE6u3tDWpPz5mrSU4hHXUUtyPtY89mJqPyDb9C5bTAE4DOA3gNIDT2zSA0wD+iW7/BxSgN8Q0Uh3iAAAAAElFTkSuQmCC" alt="CRE" class="sb-logo" style="background:#fff;padding:4px;object-fit:contain;">
         <div>
           <div class="sb-name">SIGPAF</div>
-          <div class="sb-sub">CRE R.L. · GU</div>
+          <div class="sb-sub">Apoyo a la Familia</div>
         </div>
       </div>
     </div>
@@ -570,7 +584,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <option value="5">Distrito 5</option><option value="6">Distrito 6</option>
             <option value="7">Distrito 7</option><option value="8">Distrito 8</option>
             <option value="9">Distrito 9</option><option value="10">Distrito 10</option>
-            <option value="11">Distrito 11</option><option value="12">Distrito 12</option>
+            <option value="11">Distrito 11</option><option value="10">Distrito 12</option>
             <option value="13">Distrito 13</option><option value="14">Distrito 14</option>
             <option value="15">Distrito 15</option><option value="16">Distrito 16</option>
             <option value="17">Distrito 17</option><option value="18">Distrito 18</option>
@@ -640,36 +654,53 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         </div>
       </div>
 
-      <!-- ═══ ASISTENCIA ═══ -->
+      <!-- ═══ ASISTENCIA (SOLO CONTROL Y VERIFICACIÓN) ═══ -->
       <div class="screen" id="screen-asistencia">
-        <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
-          <div>
-            <div class="card" style="margin-bottom:0;">
-              <div class="card-header">
-                <div>
-                  <div class="card-title"><i class="ti ti-checkbox" style="color:var(--g);"></i> Control de asistencia</div>
-                  <div class="card-sub" style="margin-bottom:0;">Selecciona el curso y registra la asistencia del día</div>
-                </div>
-                <button class="btn btn-primary btn-sm" onclick="window.guardarAsistencia()"><i class="ti ti-device-floppy"></i> Guardar</button>
-              </div>
-              <div style="margin:14px 0;">
-                <label class="form-label">Curso</label>
-                <select class="form-control" id="att-curso-sel"><option value="">Cargando cursos...</option></select>
-              </div>
-              <div id="attendance-list"><div class="empty-state">Selecciona un curso para ver sus alumnas</div></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);">
-                <span style="color:var(--g);font-weight:700;font-size:13px;"><i class="ti ti-check"></i> Presentes: <span id="cnt-p">0</span></span>
-                <span style="color:var(--re);font-weight:700;font-size:13px;"><i class="ti ti-x"></i> Ausentes: <span id="cnt-a">0</span></span>
-                <span style="color:var(--am);font-weight:700;font-size:13px;">~ Justif.: <span id="cnt-j">0</span></span>
-              </div>
+        <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--gl),#fff);border-color:var(--gm);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="background:var(--g);color:#fff;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-eye" style="font-size:20px;"></i></div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--gd);">Control y verificación de asistencia</div>
+              <div style="font-size:12px;color:var(--tx2);margin-top:2px;">Las profesoras registran asistencia desde su portal. Esta pantalla es solo de lectura y verificación.</div>
             </div>
           </div>
-          <div>
-            <div class="card">
-              <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-alert-triangle" style="color:var(--re);"></i> Alumnas ausentes</div>
-              <div id="risk-list"><div class="empty-state" style="padding:14px;">Sin datos</div></div>
-            </div>
-          </div>
+        </div>
+
+        <div class="filters-bar">
+          <select class="filter-select" id="att-curso-sel" onchange="window.cargarVerificacionAsistencia()">
+            <option value="">Selecciona un curso para verificar...</option>
+          </select>
+          <select class="filter-select" id="att-mes-sel" onchange="window.cargarVerificacionAsistencia()">
+            <option value="">Todos los meses</option>
+            <option value="ENERO 2026">Enero 2026</option>
+            <option value="FEBRERO 2026">Febrero 2026</option>
+            <option value="MARZO 2026">Marzo 2026</option>
+            <option value="ABRIL 2026">Abril 2026</option>
+            <option value="MAYO 2026">Mayo 2026</option>
+            <option value="JUNIO 2026">Junio 2026</option>
+            <option value="JULIO 2026">Julio 2026</option>
+            <option value="AGOSTO 2026">Agosto 2026</option>
+            <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
+            <option value="OCTUBRE 2026">Octubre 2026</option>
+            <option value="NOVIEMBRE 2026">Noviembre 2026</option>
+            <option value="DICIEMBRE 2026">Diciembre 2026</option>
+          </select>
+          <button class="btn" style="margin-left:auto;" onclick="window.exportarAsistenciaConsolidado()"><i class="ti ti-download"></i> Exportar Excel</button>
+        </div>
+
+        <!-- KPIs de aprobacion del curso -->
+        <div class="kpi-grid" id="att-kpis" style="margin-bottom:14px;display:none;"></div>
+
+        <!-- Tabla de alumnas con su progreso -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-list-check" style="color:var(--g);"></i> Estado de las alumnas</div>
+          <div id="att-alumnas-table"><div class="empty-state"><i class="ti ti-checkbox-off"></i><div class="empty-state-title">Selecciona un curso</div><div class="empty-state-sub">Para ver el detalle de asistencia de sus alumnas</div></div></div>
+        </div>
+
+        <!-- Historial de sesiones registradas -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-history" style="color:var(--in);"></i> Sesiones registradas por la profesora</div>
+          <div id="att-sesiones"><div class="empty-state" style="padding:14px;"><div class="empty-state-sub">Sin sesiones que mostrar</div></div></div>
         </div>
       </div>
 
@@ -693,6 +724,14 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
       <!-- ═══ REPORTES ═══ -->
       <div class="screen" id="screen-reportes">
+        <!-- Tabs Reportes -->
+        <div class="tabs">
+          <div class="tab-item active" id="tab-rep-general" onclick="window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
+          <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual ejecutivo</div>
+        </div>
+
+        <!-- ─── TAB GENERAL ─── -->
+        <div id="rep-tab-general">
         <div class="kpi-grid" style="margin-bottom:18px;">
           <div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);"><div class="kpi-icon"><i class="ti ti-users" style="color:var(--g);"></i></div><div class="kpi-val" id="kpi-rep-alumnas">—</div><div class="kpi-lbl">Total alumnas</div></div>
           <div class="kpi" style="--kpi-color:var(--in);--kpi-bg:var(--inl);"><div class="kpi-icon"><i class="ti ti-calendar-event" style="color:var(--in);"></i></div><div class="kpi-val" id="kpi-rep-cursos">—</div><div class="kpi-lbl">Cursos registrados</div></div>
@@ -772,6 +811,100 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px;" onclick="window.recargarDatos()"><i class="ti ti-refresh"></i> Recargar Firebase</button>
           </div>
         </div>
+        </div><!-- /rep-tab-general -->
+
+        <!-- ─── TAB MENSUAL EJECUTIVO ─── -->
+        <div id="rep-tab-mensual" style="display:none;">
+
+          <!-- Selector de mes -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title"><i class="ti ti-calendar-month" style="color:var(--g);"></i> Informe Ejecutivo Mensual</div>
+                <div class="card-sub" style="margin-bottom:0;">Resumen institucional del Programa Apoyo a la Familia · CRE R.L.</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div>
+                  <label class="form-label">Mes a analizar</label>
+                  <select class="form-control" id="rm-mes-sel" onchange="window.actualizarResumenMensual()" style="min-width:170px;">
+                    <option value="ENERO 2026">Enero 2026</option>
+                    <option value="FEBRERO 2026">Febrero 2026</option>
+                    <option value="MARZO 2026">Marzo 2026</option>
+                    <option value="ABRIL 2026">Abril 2026</option>
+                    <option value="MAYO 2026" selected>Mayo 2026</option>
+                    <option value="JUNIO 2026">Junio 2026</option>
+                    <option value="JULIO 2026">Julio 2026</option>
+                    <option value="AGOSTO 2026">Agosto 2026</option>
+                    <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
+                    <option value="OCTUBRE 2026">Octubre 2026</option>
+                    <option value="NOVIEMBRE 2026">Noviembre 2026</option>
+                    <option value="DICIEMBRE 2026">Diciembre 2026</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="window.exportarResumenMensualExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+                <button class="btn" onclick="window.imprimirResumenMensual()"><i class="ti ti-printer"></i> Imprimir</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Header institucional para impresion -->
+          <div id="rm-header-imp" style="display:none;margin-bottom:14px;text-align:center;padding:16px;border-bottom:3px solid var(--g);">
+            <div style="font-size:22px;font-weight:800;color:var(--g);">CRE R.L.</div>
+            <div style="font-size:13px;color:var(--tx2);margin-top:4px;">Gerencia de Asistencia y Comunicación al Consumidor</div>
+            <div style="font-size:15px;font-weight:700;margin-top:8px;">Informe Ejecutivo · Programa Apoyo a la Familia</div>
+            <div style="font-size:13px;color:var(--tx3);" id="rm-header-mes">—</div>
+          </div>
+
+          <!-- KPIs del mes -->
+          <div class="kpi-grid" style="margin-bottom:18px;" id="rm-kpis"></div>
+
+          <!-- Tasa de cumplimiento -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:14px;"><i class="ti ti-target" style="color:var(--g);"></i> Tasa de cumplimiento del programa</div>
+            <div id="rm-cumplimiento"></div>
+          </div>
+
+          <!-- Distribuciones -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-map-pin" style="color:var(--in);"></i> Cursos por distrito</div>
+              <div id="rm-distritos"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-chart-donut" style="color:var(--te);"></i> Estado de cursos</div>
+              <div id="rm-estados"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+            </div>
+          </div>
+
+          <!-- Top profesoras y cursos -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-user-star" style="color:var(--am);"></i> Top profesoras del mes</div>
+              <div id="rm-top-profesoras"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-trophy" style="color:var(--g);"></i> Cursos más demandados</div>
+              <div id="rm-top-cursos"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+            </div>
+          </div>
+
+          <!-- Cursos pendientes de gestión -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-alert-circle" style="color:var(--am);"></i> Atención requerida</div>
+            <div id="rm-alertas"></div>
+          </div>
+
+          <!-- Observaciones y firma -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-file-text" style="color:var(--tx2);"></i> Observaciones del responsable</div>
+            <textarea class="form-control" id="rm-observaciones" rows="3" placeholder="Notas y observaciones para el informe..." style="margin-bottom:12px;"></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11.5px;color:var(--tx3);">
+              <div>Elaborado por:<br><strong style="color:var(--tx);" id="rm-elaborado">—</strong></div>
+              <div>Fecha de emisión:<br><strong style="color:var(--tx);" id="rm-fecha">—</strong></div>
+            </div>
+          </div>
+
+        </div><!-- /rep-tab-mensual -->
       </div>
 
       <!-- ═══ IMPORTAR ═══ -->
@@ -946,7 +1079,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
           <label class="form-label">Distrito *</label>
           <select class="form-control" id="nc-distrito">
             <option value="">Selecciona...</option>
-            <option value="1">Distrito 1 – Santa Cruz</option><option value="2">Distrito 2</option><option value="3">Distrito 3</option><option value="4">Distrito 4</option><option value="5">Distrito 5</option><option value="6">Distrito 6</option><option value="7">Distrito 7</option><option value="8">Distrito 8</option><option value="9">Distrito 9</option><option value="10">Distrito 10</option><option value="11">Distrito 11</option><option value="12">Distrito 12 – La Guardia</option><option value="13">Distrito 13 – Warnes</option><option value="14">Distrito 14 – Montero</option><option value="15">Distrito 15 – Portachuelo</option><option value="16">Distrito 16 – Yapacaní</option><option value="17">Distrito 17 – Mairana</option><option value="18">Distrito 18 – Vallegrande</option><option value="19">Distrito 19 – Comarapa</option><option value="20">Distrito 20 – Camiri</option><option value="21">Distrito 21 – Cotoca</option><option value="22">Distrito 22 – San José</option><option value="23">Distrito 23 – Puerto Suárez</option><option value="24">Distrito 24 – Guarayos</option><option value="25">Distrito 25 – San Javier</option><option value="26">Distrito 26 – San Ignacio</option>
+            <option value="1">Distrito 1 – Santa Cruz</option><option value="2">Distrito 2</option><option value="3">Distrito 3</option><option value="4">Distrito 4</option><option value="5">Distrito 5</option><option value="6">Distrito 6</option><option value="7">Distrito 7</option><option value="8">Distrito 8</option><option value="9">Distrito 9</option><option value="10">Distrito 10</option><option value="11">Distrito 11</option><option value="10">Distrito 12 – La Guardia</option><option value="13">Distrito 13 – Warnes</option><option value="14">Distrito 14 – Montero</option><option value="15">Distrito 15 – Portachuelo</option><option value="16">Distrito 16 – Yapacaní</option><option value="17">Distrito 17 – Mairana</option><option value="18">Distrito 18 – Vallegrande</option><option value="19">Distrito 19 – Comarapa</option><option value="20">Distrito 20 – Camiri</option><option value="21">Distrito 21 – Cotoca</option><option value="22">Distrito 22 – San José</option><option value="23">Distrito 23 – Puerto Suárez</option><option value="24">Distrito 24 – Guarayos</option><option value="25">Distrito 25 – San Javier</option><option value="26">Distrito 26 – San Ignacio</option>
           </select>
         </div>
         <div class="form-group">
@@ -963,7 +1096,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         </div>
         <div class="form-group">
           <label class="form-label">Sesiones</label>
-          <input class="form-control" id="nc-sesiones" type="number" value="12">
+          <input class="form-control" id="nc-sesiones" type="number" value="10">
         </div>
         <div class="form-group">
           <label class="form-label">Cupo máximo</label>
@@ -1455,6 +1588,23 @@ window.renderCursos = function(list){
 };
 
 
+
+// ── POBLAR FILTRO DE PROFESORAS EN CURSOS ──
+function poblarFiltroProfesorasCursos(){
+  var sel = document.getElementById('filtro-profesora');
+  if(!sel) return;
+  var profs = {};
+  G.cursos.forEach(function(c){
+    var p = c.profesora||c.profesora_nombre||'';
+    if(p) profs[p] = true;
+  });
+  var val = sel.value; // preservar seleccion actual
+  sel.innerHTML = '<option value="">Todas las profesoras</option>';
+  Object.keys(profs).sort().forEach(function(p){
+    sel.innerHTML += '<option value="'+p+'"'+(p===val?' selected':'')+'>'+p+'</option>';
+  });
+}
+
 window.filterCursos = function(){
   var search = (document.getElementById('curso-search').value||'').toLowerCase();
   var dist   = document.getElementById('filtro-distrito').value;
@@ -1558,7 +1708,7 @@ window.abrirModalEditarCurso = function(id){
       'nc-distrito': c.distrito||c.distrito_num||'',
       'nc-inicio': c.fecha_inicio||'',
       'nc-fin': c.fecha_fin||'',
-      'nc-sesiones': c.sesiones_total||12,
+      'nc-sesiones': c.sesiones_total||10,
       'nc-cupo': c.cupo_maximo||30,
       'nc-ubicacion': c.lugar||c.institucion||'',
       'nc-obs': c.observaciones||'',
@@ -1607,7 +1757,7 @@ window.guardarEditarCurso = function(id){
     distrito_num:    parseInt(document.getElementById('nc-distrito').value)||0,
     fecha_inicio:    document.getElementById('nc-inicio').value||'',
     fecha_fin:       document.getElementById('nc-fin').value||'',
-    sesiones_total:  parseInt(document.getElementById('nc-sesiones').value)||12,
+    sesiones_total:  parseInt(document.getElementById('nc-sesiones').value)||10,
     cupo_maximo:     parseInt(document.getElementById('nc-cupo').value)||30,
     profesora:       prof,
     profesora_ci:    prof_obj?(prof_obj.ci||prof_obj.id||''):'',
@@ -1941,7 +2091,7 @@ function procesarImportExcel(aoa, nombreArchivo){
       lugar:           IDX.lugar>=0 ? String(row[IDX.lugar]||'').trim() : '',
       mes:             mes,
       horario:         horario,
-      sesiones_total:  IDX.sesiones>=0 ? (String(row[IDX.sesiones]||'').split('-').length||12) : 12,
+      sesiones_total:  IDX.sesiones>=0 ? (String(row[IDX.sesiones]||'').split('-').length||10) : 10,
       codigo_registro: cod_reg,
       nro_solicitud:   IDX.solicitud>=0 ? String(row[IDX.solicitud]||'').trim() : '',
       delegado:        IDX.delegado>=0 ? String(row[IDX.delegado]||'').trim() : '',
@@ -2044,7 +2194,7 @@ async function ejecutarImport(cursos){
         lugar:             c.lugar||'',
         mes:               c.mes||'',
         horario:           c.horario||'',
-        sesiones_total:    c.sesiones_total||12,
+        sesiones_total:    c.sesiones_total||10,
         sesiones_completadas: 0,
         alumnas_count:     0,
         codigo_registro:   cod_reg,
@@ -2123,7 +2273,7 @@ window.abrirModalNuevoCurso = function(){
     var el = document.getElementById(id);
     if(el) el.value = '';
   });
-  document.getElementById('nc-sesiones').value = '12';
+  document.getElementById('nc-sesiones').value = '10';
   document.getElementById('nc-cupo').value = '30';
 
   openModal('modal-nuevo-curso');
@@ -2160,7 +2310,7 @@ window.guardarNuevoCurso = function(){
   DB.collection(COL.cursos).add({
     nombre_curso:nombre, distrito:distrito, tipo:tipo,
     fecha_inicio:inicio, fecha_fin:fin,
-    sesiones_total:parseInt(sesiones)||12, cupo_maximo:parseInt(cupo)||30,
+    sesiones_total:parseInt(sesiones)||10, cupo_maximo:parseInt(cupo)||30,
     profesora:profesora, profesora_ci:prof_ci,
     ubicacion:ubicacion, observaciones:obs,
     codigo_sigecoop:(document.getElementById('nc-codigo-sig').value||'').trim(),
@@ -2427,6 +2577,10 @@ function renderAttendance(){
 window.setAtt = function(ci, estado){ attStates[ci]=estado; renderAttendance(); };
 
 window.guardarAsistencia = function(){
+  showToast('Las profesoras registran asistencia desde su portal. Esta pantalla es solo de verificación.','warn');
+  return;
+};
+window._guardarAsistenciaDeprecated = function(){
   if(!attCursoId){ showToast('Selecciona un curso primero','error'); return; }
   var sesion = {
     curso_id: attCursoId,
@@ -3066,6 +3220,408 @@ window.recargarDatos = function(){
   });
 };
 
+
+
+// ══════════════════════════════════════════════════════
+//  RESUMEN MENSUAL EJECUTIVO
+// ══════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════
+//  CONTROL Y VERIFICACIÓN DE ASISTENCIA (SOLO LECTURA)
+// ══════════════════════════════════════════════════════
+window.cargarVerificacionAsistencia = async function(){
+  var cursoId = document.getElementById('att-curso-sel').value;
+  if(!cursoId){
+    document.getElementById('att-kpis').style.display = 'none';
+    document.getElementById('att-alumnas-table').innerHTML = '<div class="empty-state"><i class="ti ti-checkbox-off"></i><div class="empty-state-title">Selecciona un curso</div><div class="empty-state-sub">Para ver el detalle de asistencia de sus alumnas</div></div>';
+    document.getElementById('att-sesiones').innerHTML = '<div class="empty-state" style="padding:14px;"><div class="empty-state-sub">Sin sesiones que mostrar</div></div>';
+    return;
+  }
+
+  var curso = G.cursos.find(function(c){ return c.id===cursoId; });
+  if(!curso){ showToast('Curso no encontrado','error'); return; }
+  var sesionesTotales = parseInt(curso.sesiones_total)||10;
+  var minimo = Math.ceil(sesionesTotales*0.7);
+
+  showLoading(true);
+  try{
+    // Cargar inscripciones (alumnas)
+    var snapAlumnas = await DB.collection('registros').where('curso_id','==',cursoId).get();
+    var alumnas = snapAlumnas.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+
+    // Cargar sesiones registradas
+    var snapSes = await DB.collection('asistencia').where('curso_id','==',cursoId).orderBy('fecha','desc').get();
+    var sesiones = snapSes.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+
+    // Calcular stats por alumna
+    var stats = {};
+    sesiones.forEach(function(s){
+      (s.registros||[]).forEach(function(r){
+        if(!stats[r.ci]) stats[r.ci] = {presentes:0,ausentes:0,justificadas:0,total:0};
+        stats[r.ci].total++;
+        if(r.estado==='presente') stats[r.ci].presentes++;
+        else if(r.estado==='ausente') stats[r.ci].ausentes++;
+        else if(r.estado==='justificada') stats[r.ci].justificadas++;
+      });
+    });
+
+    // KPIs
+    var aprobadas=0, reprobadas=0, enCurso=0, sinReg=0;
+    alumnas.forEach(function(a){
+      var s = stats[a.ci_alumna] || {presentes:0,justificadas:0,total:0};
+      var pres = s.presentes + s.justificadas;
+      var faltantes = sesionesTotales - s.total;
+      if(s.total===0) sinReg++;
+      else if(pres>=minimo) aprobadas++;
+      else if((pres+faltantes)<minimo) reprobadas++;
+      else enCurso++;
+    });
+
+    document.getElementById('att-kpis').style.display = 'grid';
+    document.getElementById('att-kpis').innerHTML =
+      kpiVer(alumnas.length,'Inscritas','ti-users','var(--in)','var(--inl)')
+      +kpiVer(sesiones.length+'/'+sesionesTotales,'Sesiones registradas','ti-checkbox','var(--g)','var(--gl)')
+      +kpiVer(aprobadas,'Aprobadas (≥'+minimo+'/'+sesionesTotales+')','ti-check','var(--g)','var(--gl)')
+      +kpiVer(enCurso,'En curso','ti-clock','var(--am)','var(--aml)')
+      +kpiVer(reprobadas,'Reprobadas','ti-x','var(--re)','var(--rel)')
+      +kpiVer(sinReg,'Sin registros','ti-help','var(--tx3)','#F3F4F6');
+
+    // Tabla de alumnas
+    var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+    var tablaHtml = '';
+    if(!alumnas.length){
+      tablaHtml = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin alumnas inscritas</div></div>';
+    } else {
+      tablaHtml = '<div class="table-wrap">'
+        +'<table><thead><tr><th></th><th>Alumna</th><th>CI</th><th style="text-align:center;">Presentes</th><th style="text-align:center;">Ausentes</th><th style="text-align:center;">Justif.</th><th>Progreso</th><th>Estado</th></tr></thead><tbody>'
+        + alumnas.map(function(a,i){
+            var s = stats[a.ci_alumna] || {presentes:0,ausentes:0,justificadas:0,total:0};
+            var pres = s.presentes + s.justificadas;
+            var pct = Math.round(pres/sesionesTotales*100);
+            var faltantes = sesionesTotales - s.total;
+            var nombre = a.nombre_alumna||'—';
+            var ini = nombre.split(" ").map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();
+
+            var estado, badge, barColor;
+            if(s.total===0){
+              estado='Sin registros'; badge='badge-gray'; barColor='#E5E7EB';
+            } else if(pres>=minimo){
+              estado='Aprobada'; badge='badge-g'; barColor='var(--g)';
+            } else if((pres+faltantes)<minimo){
+              estado='Reprobada'; badge='badge-re'; barColor='var(--re)';
+            } else {
+              estado='En curso'; badge='badge-am'; barColor='var(--am)';
+            }
+
+            return '<tr>'
+              +'<td><div class="av av-sm" style="background:'+COLS[i%COLS.length]+';">'+ini+'</div></td>'
+              +'<td class="td-bold">'+nombre+'</td>'
+              +'<td style="font-family:monospace;">'+(a.ci_alumna||'—')+'</td>'
+              +'<td style="text-align:center;color:var(--g);font-weight:700;">'+s.presentes+'</td>'
+              +'<td style="text-align:center;color:var(--re);font-weight:700;">'+s.ausentes+'</td>'
+              +'<td style="text-align:center;color:var(--am);font-weight:700;">'+s.justificadas+'</td>'
+              +'<td><div style="width:120px;"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px;">'+pres+'/'+sesionesTotales+' ('+pct+'%)</div><div class="prog-wrap" style="height:5px;"><div class="prog-fill" style="height:5px;width:'+Math.min(100,pct)+'%;background:'+barColor+';"></div></div></div></td>'
+              +'<td><span class="badge '+badge+'">'+estado+'</span></td>'
+              +'</tr>';
+          }).join('')
+        +'</tbody></table></div>';
+    }
+    document.getElementById('att-alumnas-table').innerHTML = tablaHtml;
+
+    // Historial de sesiones
+    if(!sesiones.length){
+      document.getElementById('att-sesiones').innerHTML = '<div class="empty-state" style="padding:14px;"><i class="ti ti-history" style="font-size:32px;"></i><div class="empty-state-title">Sin sesiones registradas</div><div class="empty-state-sub">La profesora aún no ha registrado ninguna sesión</div></div>';
+    } else {
+      document.getElementById('att-sesiones').innerHTML = '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;font-weight:600;">'+sesiones.length+' sesiones registradas por '+(curso.profesora||"la profesora")+'</div>'
+        + sesiones.map(function(s,i){
+            var p = (s.registros||[]).filter(function(r){return r.estado==="presente";}).length;
+            var a = (s.registros||[]).filter(function(r){return r.estado==="ausente";}).length;
+            var j = (s.registros||[]).filter(function(r){return r.estado==="justificada";}).length;
+            var t = (s.registros||[]).length;
+            var num = sesiones.length - i;
+            return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:5px;">'
+              +'<div style="background:var(--g);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+num+'</div>'
+              +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+s.fecha+'</div><div style="font-size:11px;color:var(--tx3);">'+(s.hora||"")+' · '+t+' alumnas</div></div>'
+              +'<div style="display:flex;gap:10px;font-size:12px;">'
+              +'<span style="color:var(--g);font-weight:700;"><i class="ti ti-check"></i> '+p+'</span>'
+              +'<span style="color:var(--re);font-weight:700;"><i class="ti ti-x"></i> '+a+'</span>'
+              +'<span style="color:var(--am);font-weight:700;">~ '+j+'</span>'
+              +'</div></div>';
+          }).join('');
+    }
+
+    window.__ATT_VERIF = {curso:curso, alumnas:alumnas, sesiones:sesiones, stats:stats, sesionesTotales:sesionesTotales, minimo:minimo};
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+    console.error(e);
+  }finally{ showLoading(false); }
+};
+
+function kpiVer(val, lbl, icon, color, bg){
+  return '<div class="kpi" style="--kpi-color:'+color+';--kpi-bg:'+bg+';">'
+    +'<div class="kpi-icon"><i class="ti '+icon+'" style="color:'+color+';"></i></div>'
+    +'<div class="kpi-val" style="font-size:'+(String(val).length>4?'18px':'26px')+';">'+val+'</div>'
+    +'<div class="kpi-lbl">'+lbl+'</div></div>';
+}
+
+window.exportarAsistenciaConsolidado = function(){
+  var data = window.__ATT_VERIF;
+  if(!data){ showToast('Selecciona un curso primero','warn'); return; }
+  if(typeof XLSX==='undefined'){ showToast('Cargando librería...','warn'); return; }
+
+  var rows = data.alumnas.map(function(a){
+    var s = data.stats[a.ci_alumna] || {presentes:0,ausentes:0,justificadas:0,total:0};
+    var pres = s.presentes + s.justificadas;
+    var pct = Math.round(pres/data.sesionesTotales*100);
+    var estado;
+    if(s.total===0) estado='Sin registros';
+    else if(pres>=data.minimo) estado='Aprobada';
+    else if((pres+(data.sesionesTotales-s.total))<data.minimo) estado='Reprobada';
+    else estado='En curso';
+    return {
+      'CI': a.ci_alumna||'',
+      'Nombre': a.nombre_alumna||'',
+      'Presentes': s.presentes,
+      'Ausentes': s.ausentes,
+      'Justificadas': s.justificadas,
+      'Total': s.total,
+      'Asistencia %': pct,
+      'Mínimo requerido': data.minimo+'/'+data.sesionesTotales,
+      'Estado': estado,
+    };
+  });
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:35},{wch:10},{wch:10},{wch:12},{wch:8},{wch:12},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
+  XLSX.writeFile(wb, 'Asistencia_'+(data.curso.nombre_curso||'curso').replace(/\s/g,'_')+'.xlsx');
+  showToast('Exportado ✓','success');
+};
+
+// Poblar selector de cursos en asistencia
+function poblarSelectorAsistencia(){
+  var sel = document.getElementById('att-curso-sel');
+  if(!sel) return;
+  var val = sel.value;
+  sel.innerHTML = '<option value="">Selecciona un curso para verificar...</option>';
+  (G.cursos||[]).forEach(function(c){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var prof = c.profesora||c.profesora_nombre||'';
+    var mes = c.mes?' · '+c.mes:'';
+    sel.innerHTML += '<option value="'+c.id+'"'+(c.id===val?' selected':'')+'>'+nombre+' — '+prof+mes+'</option>';
+  });
+}
+
+window.cambiarTabReporte = function(tab){
+  document.getElementById('tab-rep-general').classList.toggle('active', tab==='general');
+  document.getElementById('tab-rep-mensual').classList.toggle('active', tab==='mensual');
+  document.getElementById('rep-tab-general').style.display = tab==='general'?'block':'none';
+  document.getElementById('rep-tab-mensual').style.display = tab==='mensual'?'block':'none';
+  if(tab==='mensual') window.actualizarResumenMensual();
+};
+
+window.actualizarResumenMensual = function(){
+  var mes = (document.getElementById('rm-mes-sel')||{value:'MAYO 2026'}).value;
+  document.getElementById('rm-header-mes').textContent = 'Mes evaluado: '+mes;
+
+  var hoy = new Date();
+  document.getElementById('rm-fecha').textContent = hoy.toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('rm-elaborado').textContent = G.user?G.user.email:'Administrador SIGPAF';
+
+  var cursosMes = (G.cursos||[]).filter(function(c){
+    return (c.mes||'').toUpperCase()===mes.toUpperCase();
+  });
+
+  // KPIs del mes
+  var totalCursos = cursosMes.length;
+  var aprobados = cursosMes.filter(function(c){return c.estado==='aprobado';}).length;
+  var finalizados = cursosMes.filter(function(c){return c.estado==='finalizado';}).length;
+  var observados = cursosMes.filter(function(c){return c.estado==='observado';}).length;
+  var enEjecucion = cursosMes.filter(function(c){return c.estado==='enEjecucion';}).length;
+  var cupoTotal = cursosMes.reduce(function(s,c){return s+(parseInt(c.cupo_maximo)||30);},0);
+  var inscritasTotal = cursosMes.reduce(function(s,c){return s+(parseInt(c.alumnas_count)||0);},0);
+  var ocupacion = cupoTotal>0?Math.round(inscritasTotal/cupoTotal*100):0;
+  var profesorasUnicas = new Set(cursosMes.map(function(c){return c.profesora||c.profesora_nombre;}).filter(Boolean)).size;
+  var distritosUnicos = new Set(cursosMes.map(function(c){return c.distrito_num;}).filter(Boolean)).size;
+
+  // Render KPIs
+  var kpis = document.getElementById('rm-kpis');
+  kpis.innerHTML =
+    kpi(totalCursos, 'Cursos del mes', 'ti-calendar-event', 'var(--g)', 'var(--gl)')
+    + kpi(inscritasTotal, 'Alumnas inscritas', 'ti-users', 'var(--in)', 'var(--inl)')
+    + kpi(ocupacion+'%', 'Ocupación promedio', 'ti-chart-pie', 'var(--te)', 'var(--tel)')
+    + kpi(profesorasUnicas, 'Profesoras activas', 'ti-user-star', 'var(--am)', 'var(--aml)')
+    + kpi(distritosUnicos+'/26', 'Distritos cubiertos', 'ti-map-pin', 'var(--in)', 'var(--inl)')
+    + kpi(finalizados+aprobados, 'Cursos completados', 'ti-check', 'var(--g)', 'var(--gl)');
+
+  // Tasa de cumplimiento
+  var pct_finalizados = totalCursos>0?Math.round((finalizados+aprobados)/totalCursos*100):0;
+  var pct_ejecucion = totalCursos>0?Math.round(enEjecucion/totalCursos*100):0;
+  var pct_observados = totalCursos>0?Math.round(observados/totalCursos*100):0;
+  var pct_total = pct_finalizados + pct_ejecucion;
+  var estadoTexto = pct_total>=80?'<span style="color:var(--g);font-weight:700;">EXCELENTE</span>':pct_total>=60?'<span style="color:var(--te);font-weight:700;">BUENO</span>':pct_total>=40?'<span style="color:var(--am);font-weight:700;">REGULAR</span>':'<span style="color:var(--re);font-weight:700;">CRÍTICO</span>';
+
+  document.getElementById('rm-cumplimiento').innerHTML =
+    '<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:center;">'
+    +'<div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;"><span>Cursos completados o en ejecución</span><span style="font-weight:700;">'+pct_total+'%</span></div>'
+    +'<div class="prog-wrap" style="height:14px;"><div class="prog-fill" style="height:14px;width:'+pct_total+'%;background:linear-gradient(90deg,var(--g),var(--te));"></div></div>'
+    +'<div style="display:flex;gap:16px;margin-top:14px;font-size:11.5px;">'
+    +'<div><span class="stat-dot" style="background:var(--g);display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;"></span> Finalizados: <strong>'+(finalizados+aprobados)+'</strong></div>'
+    +'<div><span class="stat-dot" style="background:var(--te);display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;"></span> En ejecución: <strong>'+enEjecucion+'</strong></div>'
+    +'<div><span class="stat-dot" style="background:var(--re);display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;"></span> Observados: <strong>'+observados+'</strong></div>'
+    +'</div></div>'
+    +'<div style="text-align:center;padding:14px;background:var(--bg);border-radius:var(--radius-sm);">'
+    +'<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Estado general</div>'
+    +'<div style="font-size:18px;">'+estadoTexto+'</div>'
+    +'</div></div>';
+
+  // Distribución por distrito
+  var porDistrito = {};
+  cursosMes.forEach(function(c){
+    var d = c.distrito_num||0;
+    porDistrito[d] = (porDistrito[d]||0)+1;
+  });
+  var distArr = Object.keys(porDistrito).map(function(d){return {dist:parseInt(d), n:porDistrito[d]};}).sort(function(a,b){return b.n-a.n;}).slice(0,10);
+  var maxDist = distArr.length?distArr[0].n:1;
+  document.getElementById('rm-distritos').innerHTML = distArr.length===0
+    ? '<div class="empty-state" style="padding:14px;">Sin datos para este mes</div>'
+    : distArr.map(function(d){
+        var w = Math.round(d.n/maxDist*100);
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>Distrito '+d.dist+'</span><span style="font-weight:700;color:var(--in);">'+d.n+'</span></div>'
+          +'<div class="prog-wrap"><div class="prog-fill" style="width:'+w+'%;background:var(--in);"></div></div>'
+          +'</div>';
+      }).join('');
+
+  // Distribución por estado
+  var estadosLbl = {enEjecucion:'En ejecución',finalizado:'Finalizado',aprobado:'Aprobado',registradoGU:'Registrado GU',observado:'Observado',enviadoFundacion:'Enviado Fundación'};
+  var estadosCol = {enEjecucion:'var(--te)',finalizado:'var(--g)',aprobado:'var(--g)',registradoGU:'var(--in)',observado:'var(--re)',enviadoFundacion:'var(--am)'};
+  var porEstado = {};
+  cursosMes.forEach(function(c){
+    porEstado[c.estado] = (porEstado[c.estado]||0)+1;
+  });
+  document.getElementById('rm-estados').innerHTML = Object.keys(porEstado).length===0
+    ? '<div class="empty-state" style="padding:14px;">Sin datos</div>'
+    : Object.keys(porEstado).map(function(e){
+        var n = porEstado[e];
+        var p = Math.round(n/totalCursos*100);
+        return '<div class="stat-row">'
+          +'<div style="display:flex;align-items:center;gap:8px;"><span class="stat-dot" style="background:'+(estadosCol[e]||'var(--tx3)')+';"></span><span style="font-size:12.5px;">'+(estadosLbl[e]||e)+'</span></div>'
+          +'<div><strong style="font-size:13px;">'+n+'</strong> <span style="font-size:11px;color:var(--tx3);">('+p+'%)</span></div>'
+          +'</div>';
+      }).join('');
+
+  // Top profesoras
+  var porProf = {};
+  cursosMes.forEach(function(c){
+    var p = c.profesora||c.profesora_nombre||'Sin asignar';
+    porProf[p] = (porProf[p]||0)+1;
+  });
+  var profArr = Object.keys(porProf).map(function(p){return {nombre:p, n:porProf[p]};}).sort(function(a,b){return b.n-a.n;}).slice(0,5);
+  document.getElementById('rm-top-profesoras').innerHTML = profArr.length===0
+    ? '<div class="empty-state" style="padding:14px;">Sin datos</div>'
+    : profArr.map(function(p,i){
+        var ini = p.nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+        var COL = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:var(--bg);margin-bottom:5px;">'
+          +'<div class="av av-sm" style="background:'+COL[i%5]+';">'+ini+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.nombre+'</div></div>'
+          +'<span class="badge badge-g">'+p.n+' '+(p.n===1?'curso':'cursos')+'</span>'
+          +'</div>';
+      }).join('');
+
+  // Top cursos demandados
+  var porCurso = {};
+  cursosMes.forEach(function(c){
+    var n = c.nombre_curso||c.nombre||'Sin nombre';
+    porCurso[n] = (porCurso[n]||0)+1;
+  });
+  var cursoArr = Object.keys(porCurso).map(function(n){return {nombre:n, n:porCurso[n]};}).sort(function(a,b){return b.n-a.n;}).slice(0,5);
+  var maxCurso = cursoArr.length?cursoArr[0].n:1;
+  document.getElementById('rm-top-cursos').innerHTML = cursoArr.length===0
+    ? '<div class="empty-state" style="padding:14px;">Sin datos</div>'
+    : cursoArr.map(function(c){
+        var w = Math.round(c.n/maxCurso*100);
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">'+c.nombre+'</span><span style="font-weight:700;color:var(--g);margin-left:8px;">'+c.n+'</span></div>'
+          +'<div class="prog-wrap"><div class="prog-fill" style="width:'+w+'%;"></div></div>'
+          +'</div>';
+      }).join('');
+
+  // Alertas
+  var sinProf = cursosMes.filter(function(c){return !c.profesora && !c.profesora_nombre;}).length;
+  var sinCodigo = cursosMes.filter(function(c){return !c.codigo_registro;}).length;
+  var ocupBaja = cursosMes.filter(function(c){
+    var ins = parseInt(c.alumnas_count)||0;
+    var cup = parseInt(c.cupo_maximo)||30;
+    return cup>0 && (ins/cup)<0.5;
+  }).length;
+  var alertas = [];
+  if(sinProf>0) alertas.push({i:'ti-user-off',t:sinProf+' cursos sin profesora asignada',c:'var(--re)'});
+  if(sinCodigo>0) alertas.push({i:'ti-qrcode-off',t:sinCodigo+' cursos sin código del SIGECOOP',c:'var(--am)'});
+  if(observados>0) alertas.push({i:'ti-alert-triangle',t:observados+' cursos con observaciones',c:'var(--re)'});
+  if(ocupBaja>0) alertas.push({i:'ti-trending-down',t:ocupBaja+' cursos con ocupación menor al 50%',c:'var(--am)'});
+
+  document.getElementById('rm-alertas').innerHTML = alertas.length===0
+    ? '<div style="background:var(--gl);border:1px solid var(--gm);padding:12px;border-radius:8px;color:var(--gd);font-size:13px;"><i class="ti ti-check"></i> Todos los cursos del mes están en orden. Sin alertas pendientes.</div>'
+    : alertas.map(function(a){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-left:3px solid '+a.c+';border-radius:6px;margin-bottom:5px;">'
+          +'<i class="ti '+a.i+'" style="color:'+a.c+';font-size:18px;"></i>'
+          +'<span style="font-size:13px;">'+a.t+'</span></div>';
+      }).join('');
+};
+
+function kpi(val, lbl, icon, color, bg){
+  return '<div class="kpi" style="--kpi-color:'+color+';--kpi-bg:'+bg+';">'
+    +'<div class="kpi-icon"><i class="ti '+icon+'" style="color:'+color+';"></i></div>'
+    +'<div class="kpi-val">'+val+'</div>'
+    +'<div class="kpi-lbl">'+lbl+'</div></div>';
+}
+
+window.exportarResumenMensualExcel = function(){
+  if(typeof XLSX==='undefined'){ showToast('Cargando librería...','warn'); return; }
+  var mes = document.getElementById('rm-mes-sel').value;
+  var cursos = (G.cursos||[]).filter(function(c){ return (c.mes||'').toUpperCase()===mes.toUpperCase(); });
+
+  var rows = cursos.map(function(c){
+    return {
+      'Código SIGECOOP': c.codigo_registro||'—',
+      'Nombre del curso': c.nombre_curso||c.nombre||'',
+      'Profesora':       c.profesora||c.profesora_nombre||'',
+      'Distrito':        c.distrito_num||'',
+      'Sección':         c.seccion_num||'',
+      'Mes':             c.mes||'',
+      'Inicio':          c.fecha_inicio||'',
+      'Fin':             c.fecha_fin||'',
+      'Horario':         c.horario||'',
+      'Lugar':           c.lugar||'',
+      'Inscritas':       parseInt(c.alumnas_count)||0,
+      'Cupo':            parseInt(c.cupo_maximo)||30,
+      'Estado':          c.estado||'',
+    };
+  });
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:35},{wch:30},{wch:8},{wch:8},{wch:12},{wch:12},{wch:12},{wch:14},{wch:25},{wch:9},{wch:6},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Resumen '+mes);
+  XLSX.writeFile(wb, 'Informe_Ejecutivo_'+mes.replace(/\s/g,'_')+'.xlsx');
+  showToast('Informe exportado ✓','success');
+};
+
+window.imprimirResumenMensual = function(){
+  document.getElementById('rm-header-imp').style.display = 'block';
+  setTimeout(function(){
+    window.print();
+    setTimeout(function(){
+      document.getElementById('rm-header-imp').style.display = 'none';
+    }, 500);
+  }, 100);
+};
+
 // ══════════════════════════════════════════════════════
 //  IMPORTADOR SIGECOOP — INTEGRADO EN EL PANEL
 // ══════════════════════════════════════════════════════
@@ -3206,7 +3762,7 @@ function impProcesarAoa(aoa){
       codigo_fijo:     I.cod_fijo>=0?String(row[I.cod_fijo]||'').trim():'',
       alumnas_count:   0,
       sesiones_completadas:0,
-      sesiones_total:  12,
+      sesiones_total:  10,
       origen:          'SIGECOOP_EXCEL',
     });
   }
