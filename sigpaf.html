@@ -468,6 +468,9 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       </div>
 
       <div class="sb-section">Análisis</div>
+      <div class="sb-item" data-screen="supervision" onclick="navTo('supervision',this)" style="display:none;">
+        <i class="ti ti-eye-check"></i> Supervisión de profesoras
+      </div>
       <div class="sb-item" data-screen="reportes" onclick="navTo('reportes',this)">
         <i class="ti ti-chart-bar"></i> Reportes y exportación
       </div>
@@ -666,26 +669,51 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
           </div>
         </div>
 
-        <div class="filters-bar">
-          <select class="filter-select" id="att-curso-sel" onchange="window.cargarVerificacionAsistencia()">
-            <option value="">Selecciona un curso para verificar...</option>
-          </select>
-          <select class="filter-select" id="att-mes-sel" onchange="window.cargarVerificacionAsistencia()">
-            <option value="">Todos los meses</option>
-            <option value="ENERO 2026">Enero 2026</option>
-            <option value="FEBRERO 2026">Febrero 2026</option>
-            <option value="MARZO 2026">Marzo 2026</option>
-            <option value="ABRIL 2026">Abril 2026</option>
-            <option value="MAYO 2026">Mayo 2026</option>
-            <option value="JUNIO 2026">Junio 2026</option>
-            <option value="JULIO 2026">Julio 2026</option>
-            <option value="AGOSTO 2026">Agosto 2026</option>
-            <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
-            <option value="OCTUBRE 2026">Octubre 2026</option>
-            <option value="NOVIEMBRE 2026">Noviembre 2026</option>
-            <option value="DICIEMBRE 2026">Diciembre 2026</option>
-          </select>
-          <button class="btn" style="margin-left:auto;" onclick="window.exportarAsistenciaConsolidado()"><i class="ti ti-download"></i> Exportar Excel</button>
+        <!-- Filtros combinados: Mes + Profesora + Código -->
+        <div class="card" style="margin-bottom:14px;padding:14px 16px;">
+          <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+            <div>
+              <label class="form-label">Mes</label>
+              <select class="filter-select" id="att-mes-sel" onchange="window.aplicarFiltrosAsistencia()" style="min-width:130px;">
+                <option value="">Todos</option>
+                <option value="ENERO 2026">Enero 2026</option>
+                <option value="FEBRERO 2026">Febrero 2026</option>
+                <option value="MARZO 2026">Marzo 2026</option>
+                <option value="ABRIL 2026">Abril 2026</option>
+                <option value="MAYO 2026" selected>Mayo 2026</option>
+                <option value="JUNIO 2026">Junio 2026</option>
+                <option value="JULIO 2026">Julio 2026</option>
+                <option value="AGOSTO 2026">Agosto 2026</option>
+                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
+                <option value="OCTUBRE 2026">Octubre 2026</option>
+                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
+                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Profesora</label>
+              <select class="filter-select" id="att-prof-sel" onchange="window.aplicarFiltrosAsistencia()" style="width:100%;">
+                <option value="">Todas las profesoras</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Código SIGECOOP</label>
+              <input class="filter-select" id="att-codigo-buscar" placeholder="Ej: 8228" oninput="window.aplicarFiltrosAsistencia()" style="width:100%;font-family:monospace;">
+            </div>
+            <div>
+              <label class="form-label">Curso específico</label>
+              <select class="filter-select" id="att-curso-sel" onchange="window.cargarVerificacionAsistencia()" style="width:100%;">
+                <option value="">Selecciona un curso...</option>
+              </select>
+            </div>
+            <div>
+              <button class="btn" onclick="window.exportarAsistenciaConsolidado()"><i class="ti ti-download"></i> Excel</button>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:var(--tx3);margin-top:10px;display:flex;align-items:center;gap:6px;">
+            <i class="ti ti-info-circle"></i>
+            <span id="att-filtro-info">Filtra por mes, profesora o código. Luego elige el curso específico a verificar.</span>
+          </div>
         </div>
 
         <!-- KPIs de aprobacion del curso -->
@@ -1008,6 +1036,45 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         </div>
       </div>
 
+      <!-- ═══ SUPERVISIÓN (Jefa Fundación) ═══ -->
+      <div class="screen" id="screen-supervision">
+        <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--inl),#fff);border-color:rgba(99,102,241,.3);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="background:var(--in);color:#fff;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-eye-check" style="font-size:20px;"></i></div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--in);">Supervisión del equipo de profesoras</div>
+              <div style="font-size:12px;color:var(--tx2);margin-top:2px;">Resumen mensual del trabajo de cada profesora. Aquí puedes dejar comentarios y retroalimentación.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de mes -->
+        <div class="card" style="margin-bottom:14px;padding:14px 16px;">
+          <div style="display:flex;gap:10px;align-items:end;">
+            <div>
+              <label class="form-label">Mes a supervisar</label>
+              <select class="filter-select" id="sup-mes-sel" onchange="window.renderSupervision()" style="min-width:170px;">
+                <option value="ENERO 2026">Enero 2026</option>
+                <option value="FEBRERO 2026">Febrero 2026</option>
+                <option value="MARZO 2026">Marzo 2026</option>
+                <option value="ABRIL 2026">Abril 2026</option>
+                <option value="MAYO 2026" selected>Mayo 2026</option>
+                <option value="JUNIO 2026">Junio 2026</option>
+                <option value="JULIO 2026">Julio 2026</option>
+                <option value="AGOSTO 2026">Agosto 2026</option>
+                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
+                <option value="OCTUBRE 2026">Octubre 2026</option>
+                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
+                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="window.renderSupervision()"><i class="ti ti-refresh"></i> Actualizar</button>
+          </div>
+        </div>
+
+        <div id="sup-content"><div class="empty-state"><i class="ti ti-eye"></i><div class="empty-state-title">Selecciona un mes</div><div class="empty-state-sub">El resumen aparecerá automáticamente</div></div></div>
+      </div>
+
       <!-- ═══ NOTIFICACIONES ═══ -->
       <div class="screen" id="screen-notificaciones">
         <div style="max-width:600px;">
@@ -1288,6 +1355,7 @@ function navTo(screen, el){
   var titles = {
     dashboard:'Dashboard', cursos:'Programación de cursos',
     importar:'Importar Programación del SIGECOOP',
+    supervision:'Supervisión de profesoras',
     alumnas:'Registro de alumnas', asistencia:'Control de asistencia',
     profesoras:'Profesoras', reportes:'Reportes institucionales',
     notificaciones:'Notificaciones', configuracion:'Configuración'
@@ -1400,6 +1468,8 @@ window.doLogin = function(){
     }
     // Login exitoso - guardar token y continuar
     G.user = { email: data.email, uid: data.localId, token: data.idToken };
+    // Disparar evento de login para sistema de roles
+    try { window.dispatchEvent(new CustomEvent('sigpaf:login',{detail:{email:data.email}})); } catch(e){}
     // Configurar Firestore con el token
     DB = firebase.firestore();
     // Mostrar app
@@ -1465,10 +1535,13 @@ function initApp(){
     G.alumnas    = snapToArray(results[1]);
     G.profesoras = snapToArray(results[2]);
     G.distritos  = snapToArray(results[3]);
+    // Refrescar selector de asistencia con las profesoras cargadas
+    try { poblarSelectorAsistencia(); } catch(e){}
     G.registros  = snapToArray(results[4]);
     renderDashboard();
     renderCursos(G.cursos);
     poblarFiltroProfesorasCursos();
+    try { poblarSelectorAsistencia(); } catch(e){}
     renderAlumnasRecientes();
     renderProfesoras();
     renderAttendance();
@@ -1637,13 +1710,15 @@ window.verInscripcionesCurso = function(cursoId, nombreCurso){
   cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div><div style="margin-top:10px;font-size:13px;color:var(--tx3);">Cargando inscripciones...</div></div>';
   openModal('modal-detalle-curso');
 
-  DB.collection('registros').where('curso_id','==',cursoId).orderBy('fecha_registro','desc').get()
+  DB.collection('registros').where('curso_id','==',cursoId).get()
     .then(function(snap){
       if(snap.empty){
         cont.innerHTML = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin inscripciones aún</div><div class="empty-state-sub">Nadie se ha inscrito a este curso via QR</div></div>';
         return;
       }
       var docs = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      // Ordenar en cliente por fecha de registro (descendente)
+      docs.sort(function(a,b){ return (b.fecha_registro||'').localeCompare(a.fecha_registro||''); });
       var COLORS = ['#00703C','#6366F1','#F59E0B','#0D9488','#EF4444'];
       cont.innerHTML =
         '<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--tx3);">'+docs.length+' alumnas inscritas</div>'
@@ -1775,6 +1850,7 @@ window.guardarEditarCurso = function(id){
     renderCursos(G.cursos);
     renderDashboard();
     poblarFiltroProfesorasCursos();
+    try { poblarSelectorAsistencia(); } catch(e){}
   }).catch(function(e){ showToast('Error: '+e.message,'error'); });
 };
 
@@ -2220,6 +2296,7 @@ async function ejecutarImport(cursos){
     G.cursos = snapToArray(snap);
     renderCursos(G.cursos);
     poblarFiltroProfesorasCursos();
+    try { poblarSelectorAsistencia(); } catch(e){}
     renderDashboard();
     showLoading(false);
     showToast(ok+' cursos importados correctamente'+(err?' · '+err+' errores':''),'success');
@@ -3195,6 +3272,8 @@ window.recargarDatos = function(){
     G.alumnas    = snapToArray(results[1]);
     G.profesoras = snapToArray(results[2]);
     G.distritos  = snapToArray(results[3]);
+    // Refrescar selector de asistencia con las profesoras cargadas
+    try { poblarSelectorAsistencia(); } catch(e){}
     G.registros  = snapToArray(results[4]);
     renderDashboard();
     renderCursos(G.cursos);
@@ -3227,6 +3306,288 @@ window.recargarDatos = function(){
 // ══════════════════════════════════════════════════════
 
 
+
+
+// ══════════════════════════════════════════════════════
+//  SISTEMA DE ROLES (Admin GU / Jefa Fundación)
+// ══════════════════════════════════════════════════════
+// Roles disponibles:
+//  - admin    : Carlos / GU - acceso total al sistema
+//  - jefa     : Jefa Fundación - solo supervisión y comentarios
+//  - readonly : Solo lectura (para auditoría)
+var ROLE = 'admin'; // Default; se determina por email al login
+
+// Mapeo de emails a roles (configurable)
+var ROLE_MAP = {
+  // Agregar aquí los emails de la jefa de fundación cuando se sepan
+  // 'jefa.fundacion@cre.com.bo': 'jefa',
+  // 'auditor@cre.com.bo': 'readonly',
+};
+
+function determinarRol(email){
+  email = (email||'').toLowerCase().trim();
+  if(ROLE_MAP[email]) return ROLE_MAP[email];
+  // Por defecto: si el email contiene 'fundacion' es jefa
+  if(email.includes('fundacion') || email.includes('jefa')) return 'jefa';
+  return 'admin';
+}
+
+function aplicarRol(){
+  document.body.setAttribute('data-role', ROLE);
+
+  // Items del sidebar que solo ve el admin
+  var itemsAdminOnly = ['importar','configuracion'];
+  itemsAdminOnly.forEach(function(s){
+    var el = document.querySelector('[data-screen="'+s+'"]');
+    if(el) el.style.display = ROLE==='admin' ? '' : 'none';
+  });
+
+  // Pantalla de supervisión solo para jefa
+  var supervItem = document.querySelector('[data-screen="supervision"]');
+  if(supervItem) supervItem.style.display = ROLE==='jefa' ? '' : 'none';
+
+  // Botón "Nuevo curso" solo admin
+  document.querySelectorAll('[onclick*="abrirModalNuevoCurso"]').forEach(function(b){
+    if(ROLE !== 'admin') b.style.display = 'none';
+  });
+
+  // Botones de editar/borrar curso solo admin
+  var roleStyle = document.getElementById('role-style');
+  if(!roleStyle){
+    roleStyle = document.createElement('style');
+    roleStyle.id = 'role-style';
+    document.head.appendChild(roleStyle);
+  }
+  if(ROLE === 'jefa'){
+    roleStyle.textContent = '#btn-det-editar,[data-admin-only]{display:none !important;}';
+  } else {
+    roleStyle.textContent = '';
+  }
+
+  // Actualizar rol mostrado en sidebar
+  var roleLbl = document.querySelector('.sb-urole');
+  if(roleLbl){
+    var roleNames = {admin:'Administrador GU', jefa:'Jefa Fundación', readonly:'Solo lectura'};
+    roleLbl.textContent = roleNames[ROLE]||ROLE;
+  }
+}
+
+// Aplicar rol después del login exitoso
+window.addEventListener('sigpaf:login', function(e){
+  if(e.detail && e.detail.email){
+    ROLE = determinarRol(e.detail.email);
+    setTimeout(aplicarRol, 200);
+  }
+});
+
+// ══════════════════════════════════════════════════════
+//  SUPERVISIÓN — Pantalla para la Jefa de Fundación
+// ══════════════════════════════════════════════════════
+window.renderSupervision = async function(){
+  var mes = (document.getElementById('sup-mes-sel')||{value:'MAYO 2026'}).value;
+  var cont = document.getElementById('sup-content');
+  if(!cont) return;
+
+  cont.innerHTML = '<div class="empty-state"><div class="loader-spin" style="margin:0 auto;"></div><div style="margin-top:10px;">Analizando datos de las profesoras...</div></div>';
+
+  try{
+    // Filtrar cursos del mes
+    var cursosMes = (G.cursos||[]).filter(function(c){
+      if(!mes) return true;
+      var mesBaseSup = mes.toUpperCase().split(' ')[0].trim();
+      var cMesRaw = (c.mes||'').toUpperCase().trim();
+      var cMesBase = cMesRaw.split(' ')[0].trim();
+      return cMesBase === mesBaseSup || cMesRaw.includes(mesBaseSup);
+    });
+
+    // Agrupar por profesora
+    var porProf = {};
+    cursosMes.forEach(function(c){
+      var p = (c.profesora||c.profesora_nombre||'Sin asignar').trim();
+      if(!porProf[p]) porProf[p] = { nombre:p, ci:c.profesora_ci||'', cursos:[], total_alumnas:0, sesiones:0 };
+      porProf[p].cursos.push(c);
+      porProf[p].total_alumnas += parseInt(c.alumnas_count)||0;
+    });
+
+    // Cargar sesiones registradas en paralelo
+    var profsArr = Object.values(porProf);
+    var allSesionesPromises = profsArr.map(function(p){
+      var cursoIds = p.cursos.map(function(c){ return c.id; });
+      if(!cursoIds.length) return Promise.resolve([]);
+      return Promise.all(cursoIds.map(function(cid){
+        return DB.collection('asistencia').where('curso_id','==',cid).get()
+          .then(function(s){ return s.docs.length; }).catch(function(){ return 0; });
+      })).then(function(arr){ return arr.reduce(function(a,b){return a+b;},0); });
+    });
+
+    var sesionesTotales = await Promise.all(allSesionesPromises);
+    profsArr.forEach(function(p,i){ p.sesiones = sesionesTotales[i]||0; });
+
+    // Cargar comentarios existentes
+    var snapComents = await DB.collection('comentarios_supervision').where('mes','==',mes).get().catch(function(){return {docs:[]};});
+    var comentarios = {};
+    snapComents.docs.forEach(function(d){
+      var data = d.data();
+      comentarios[data.profesora_ci||data.profesora] = Object.assign({id:d.id}, data);
+    });
+
+    // Ordenar por número de cursos descendente
+    profsArr.sort(function(a,b){ return b.cursos.length - a.cursos.length; });
+
+    // KPIs generales
+    var totalCursos = cursosMes.length;
+    var totalAlumnas = profsArr.reduce(function(s,p){return s+p.total_alumnas;},0);
+    var totalSesiones = profsArr.reduce(function(s,p){return s+p.sesiones;},0);
+    var profsActivas = profsArr.filter(function(p){return p.cursos.length>0 && p.nombre!=='Sin asignar';}).length;
+
+    var html = '<div class="kpi-grid" style="margin-bottom:18px;">'
+      + kpiSup(profsActivas, 'Profesoras activas', 'ti-user-star', 'var(--g)', 'var(--gl)')
+      + kpiSup(totalCursos, 'Cursos del mes', 'ti-calendar-event', 'var(--in)', 'var(--inl)')
+      + kpiSup(totalAlumnas, 'Alumnas atendidas', 'ti-users', 'var(--te)', 'var(--tel)')
+      + kpiSup(totalSesiones, 'Sesiones registradas', 'ti-checkbox', 'var(--am)', 'var(--aml)')
+      + '</div>';
+
+    // Tabla de profesoras
+    html += '<div class="card">'
+      + '<div class="card-header"><div class="card-title"><i class="ti ti-users" style="color:var(--g);"></i> Mis profesoras — ' + mes + '</div>'
+      + '<button class="btn btn-sm" onclick="window.exportarSupervisionExcel()"><i class="ti ti-download"></i> Exportar Excel</button></div>';
+
+    if(profsArr.length === 0){
+      html += '<div class="empty-state"><i class="ti ti-user-off"></i><div class="empty-state-title">Sin profesoras este mes</div></div>';
+    } else {
+      var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+      profsArr.forEach(function(p,i){
+        if(p.nombre==='Sin asignar') return; // No mostrar las no asignadas
+        var ini = p.nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+        var avgSesionesPorCurso = p.cursos.length>0 ? (p.sesiones/p.cursos.length).toFixed(1) : 0;
+        var comentario = comentarios[p.ci] || comentarios[p.nombre] || {};
+
+        var statusColor, statusText;
+        if(p.sesiones === 0){ statusColor='var(--re)'; statusText='Sin registros'; }
+        else if(avgSesionesPorCurso < 3){ statusColor='var(--am)'; statusText='Inicio'; }
+        else if(avgSesionesPorCurso < 7){ statusColor='var(--te)'; statusText='En curso'; }
+        else { statusColor='var(--g)'; statusText='Avanzado'; }
+
+        html += '<div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;">'
+          + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+          + '<div class="av av-md" style="background:'+COLS[i%5]+';">'+ini+'</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:14px;font-weight:700;">'+p.nombre+'</div>'
+          + '<div style="font-size:11.5px;color:var(--tx3);">CI: '+(p.ci||'—')+' · '+p.cursos.length+' '+(p.cursos.length===1?'curso':'cursos')+' · '+p.total_alumnas+' alumnas</div>'
+          + '</div>'
+          + '<span class="badge" style="background:'+statusColor+'20;color:'+statusColor+';">'+statusText+'</span>'
+          + '</div>'
+
+          // Stats row
+          + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">'
+          + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--g);">'+p.cursos.length+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Cursos</div></div>'
+          + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--in);">'+p.total_alumnas+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Alumnas</div></div>'
+          + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--te);">'+p.sesiones+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Sesiones</div></div>'
+          + '</div>'
+
+          // Lista compacta de cursos
+          + '<details style="margin-bottom:10px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--g);font-weight:600;padding:4px 0;">Ver sus cursos ('+p.cursos.length+')</summary>'
+          + '<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">'
+          + p.cursos.map(function(c){
+              return '<div style="font-size:12px;padding:6px 10px;background:var(--bg);border-radius:4px;display:flex;align-items:center;gap:8px;">'
+                + '<span class="cc-code" style="font-size:10px;">'+(c.codigo_registro||'—')+'</span>'
+                + '<span style="flex:1;">'+(c.nombre_curso||c.nombre||'Sin nombre')+'</span>'
+                + '<span style="color:var(--tx3);font-size:11px;">Distrito '+(c.distrito_num||'—')+'</span>'
+                + '</div>';
+            }).join('')
+          + '</div></details>'
+
+          // Comentario
+          + '<div style="background:var(--inl);border-radius:6px;padding:10px;margin-top:8px;">'
+          + '<div style="font-size:11px;font-weight:600;color:var(--in);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;"><i class="ti ti-message-circle"></i> Comentario de supervisión</div>'
+          + '<textarea id="coment-'+(p.ci||p.nombre.replace(/\s/g,"_"))+'" class="form-control" rows="2" placeholder="Escribe un comentario o retroalimentación para esta profesora..." style="font-size:12.5px;margin-bottom:6px;">'+(comentario.texto||'')+'</textarea>'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tx3);">'
+          + '<span>'+(comentario.fecha?'Último: '+comentario.fecha.slice(0,10)+' por '+(comentario.autor||'—'):'Sin comentarios previos')+'</span>'
+          + '<button class="btn btn-sm btn-primary" onclick="window.guardarComentarioSupervision(&quot;'+(p.ci||p.nombre.replace(/\s/g,"_"))+'&quot;,&quot;'+p.nombre.replace(/"/g,"")+'&quot;)"><i class="ti ti-device-floppy"></i> Guardar</button>'
+          + '</div></div>'
+
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    cont.innerHTML = html;
+    window.__SUP_DATA = {profsArr:profsArr, mes:mes};
+
+  }catch(e){
+    cont.innerHTML = '<div class="empty-state"><i class="ti ti-alert-triangle" style="color:var(--re);"></i><div class="empty-state-title">Error</div><div class="empty-state-sub">'+e.message+'</div></div>';
+    console.error(e);
+  }
+};
+
+function kpiSup(val, lbl, icon, color, bg){
+  return '<div class="kpi" style="--kpi-color:'+color+';--kpi-bg:'+bg+';">'
+    +'<div class="kpi-icon"><i class="ti '+icon+'" style="color:'+color+';"></i></div>'
+    +'<div class="kpi-val">'+val+'</div>'
+    +'<div class="kpi-lbl">'+lbl+'</div></div>';
+}
+
+window.guardarComentarioSupervision = async function(profKey, profNombre){
+  var textarea = document.getElementById('coment-'+profKey);
+  if(!textarea) return;
+  var texto = textarea.value.trim();
+  var mes = document.getElementById('sup-mes-sel').value;
+
+  if(!texto){ showToast('El comentario está vacío','warn'); return; }
+
+  try{
+    // Buscar si ya existe
+    var snap = await DB.collection('comentarios_supervision')
+      .where('mes','==',mes)
+      .where('profesora','==',profNombre)
+      .limit(1).get();
+
+    var data = {
+      mes: mes,
+      profesora: profNombre,
+      profesora_ci: profKey,
+      texto: texto,
+      autor: G.user?G.user.email:'jefa@cre.com.bo',
+      fecha: new Date().toISOString(),
+    };
+
+    if(snap.empty){
+      await DB.collection('comentarios_supervision').add(data);
+    } else {
+      await DB.collection('comentarios_supervision').doc(snap.docs[0].id).update(data);
+    }
+    showToast('Comentario guardado ✓','success');
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+window.exportarSupervisionExcel = function(){
+  if(typeof XLSX==='undefined' || !window.__SUP_DATA){ showToast('Sin datos para exportar','warn'); return; }
+  var rows = window.__SUP_DATA.profsArr
+    .filter(function(p){return p.nombre!=='Sin asignar';})
+    .map(function(p){
+      return {
+        'Profesora': p.nombre,
+        'CI': p.ci||'',
+        'Cursos asignados': p.cursos.length,
+        'Total alumnas': p.total_alumnas,
+        'Sesiones registradas': p.sesiones,
+        'Promedio sesiones/curso': p.cursos.length>0?(p.sesiones/p.cursos.length).toFixed(1):'0',
+        'Cursos': p.cursos.map(function(c){return (c.codigo_registro||'—')+' '+(c.nombre_curso||c.nombre);}).join(' | '),
+      };
+    });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:35},{wch:12},{wch:10},{wch:12},{wch:12},{wch:14},{wch:50}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Supervisión '+window.__SUP_DATA.mes);
+  XLSX.writeFile(wb, 'Supervision_'+window.__SUP_DATA.mes.replace(/\s/g,'_')+'.xlsx');
+  showToast('Exportado ✓','success');
+};
+
+
 // ══════════════════════════════════════════════════════
 //  CONTROL Y VERIFICACIÓN DE ASISTENCIA (SOLO LECTURA)
 // ══════════════════════════════════════════════════════
@@ -3247,12 +3608,38 @@ window.cargarVerificacionAsistencia = async function(){
   showLoading(true);
   try{
     // Cargar inscripciones (alumnas)
-    var snapAlumnas = await DB.collection('registros').where('curso_id','==',cursoId).get();
-    var alumnas = snapAlumnas.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    // Busqueda doble: por curso_id (doc ID de Firebase) Y por codigo_registro
+    // (en caso de que el curso haya sido reimportado y el ID haya cambiado)
+    var [snapById, snapByCodigo] = await Promise.all([
+      DB.collection('registros').where('curso_id','==',cursoId).get(),
+      curso.codigo_registro
+        ? DB.collection('registros').where('codigo_registro','==',String(curso.codigo_registro)).get()
+        : Promise.resolve({docs:[]})
+    ]);
+
+    // Combinar resultados eliminando duplicados por ID del registro
+    var alumnasMap = {};
+    snapById.docs.forEach(function(d){ alumnasMap[d.id] = Object.assign({id:d.id},d.data()); });
+    snapByCodigo.docs.forEach(function(d){ alumnasMap[d.id] = Object.assign({id:d.id},d.data()); });
+
+    // Tambien buscar por codigo_curso (formato CRE-XXX que el sistema genera)
+    if(curso.codigo_registro){
+      var fallback = await DB.collection('registros').where('codigo_curso','==',String(curso.codigo_registro)).get().catch(function(){return {docs:[]};});
+      fallback.docs.forEach(function(d){ alumnasMap[d.id] = Object.assign({id:d.id},d.data()); });
+    }
+
+    var alumnas = Object.values(alumnasMap);
+    console.log('[SIGPAF] Inscripciones encontradas para curso '+(curso.codigo_registro||cursoId)+':', alumnas.length, '(por curso_id:', snapById.docs.length, ', por codigo_registro:', snapByCodigo.docs.length+')');
 
     // Cargar sesiones registradas
-    var snapSes = await DB.collection('asistencia').where('curso_id','==',cursoId).orderBy('fecha','desc').get();
+    var snapSes = await DB.collection('asistencia').where('curso_id','==',cursoId).get();
     var sesiones = snapSes.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    // Ordenar en cliente (descendente por fecha) para evitar indice compuesto en Firebase
+    sesiones.sort(function(a,b){
+      var fa = (a.fecha||'')+(a.hora||'');
+      var fb = (b.fecha||'')+(b.hora||'');
+      return fb.localeCompare(fa);
+    });
 
     // Calcular stats por alumna
     var stats = {};
@@ -3291,7 +3678,7 @@ window.cargarVerificacionAsistencia = async function(){
     var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
     var tablaHtml = '';
     if(!alumnas.length){
-      tablaHtml = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin alumnas inscritas</div></div>';
+      tablaHtml = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin alumnas inscritas</div><div class="empty-state-sub">No hay registros para el código '+(curso.codigo_registro||'sin código')+' ni para el ID interno.<br>Si tu inscripción no aparece, verifica que escaneaste el QR correcto.</div></div>';
     } else {
       tablaHtml = '<div class="table-wrap">'
         +'<table><thead><tr><th></th><th>Alumna</th><th>CI</th><th style="text-align:center;">Presentes</th><th style="text-align:center;">Ausentes</th><th style="text-align:center;">Justif.</th><th>Progreso</th><th>Estado</th></tr></thead><tbody>'
@@ -3400,19 +3787,143 @@ window.exportarAsistenciaConsolidado = function(){
   showToast('Exportado ✓','success');
 };
 
-// Poblar selector de cursos en asistencia
+// Poblar selectores de asistencia (mes + profesora + curso)
 function poblarSelectorAsistencia(){
+  // Solo las 40 profesoras registradas en la colección profesoras
+  var selProf = document.getElementById('att-prof-sel');
+  if(selProf){
+    var profsList = (G.profesoras||[])
+      .map(function(p){ return (p.nombre||p.nombre_completo||'').trim(); })
+      .filter(function(n){ return n.length > 0; })
+      .sort();
+
+    // Quitar duplicados exactos
+    profsList = profsList.filter(function(item, idx){ return profsList.indexOf(item) === idx; });
+
+    var valProf = selProf.value;
+    selProf.innerHTML = '<option value="">Todas las profesoras ('+profsList.length+')</option>';
+    profsList.forEach(function(p){
+      selProf.innerHTML += '<option value="'+p+'"'+(p===valProf?' selected':'')+'>'+p+'</option>';
+    });
+
+    console.log('[SIGPAF] Profesoras del sistema:', profsList.length);
+  }
+  // Aplicar filtros con los selectores actuales
+  window.aplicarFiltrosAsistencia();
+}
+
+// Aplicar filtros combinados (mes + profesora + código)
+window.aplicarFiltrosAsistencia = function(){
+  var mes = (document.getElementById('att-mes-sel')||{value:''}).value.toUpperCase().trim();
+  var prof = (document.getElementById('att-prof-sel')||{value:''}).value.toUpperCase().trim();
+  var cod = (document.getElementById('att-codigo-buscar')||{value:''}).value.trim().toLowerCase();
   var sel = document.getElementById('att-curso-sel');
   if(!sel) return;
-  var val = sel.value;
-  sel.innerHTML = '<option value="">Selecciona un curso para verificar...</option>';
-  (G.cursos||[]).forEach(function(c){
-    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
-    var prof = c.profesora||c.profesora_nombre||'';
-    var mes = c.mes?' · '+c.mes:'';
-    sel.innerHTML += '<option value="'+c.id+'"'+(c.id===val?' selected':'')+'>'+nombre+' — '+prof+mes+'</option>';
+
+  // Normalizar: quitar acentos, mayúsculas, espacios extra
+  function norm(s){
+    return (s||'').toString().toUpperCase().trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\./g, '').replace(/\s+/g, ' ');
+  }
+
+  // Extraer palabras significativas (apellidos): palabras >= 5 chars (descartar iniciales, "DE", "LA", etc)
+  function apellidos(s){
+    return norm(s).split(' ').filter(function(w){ return w.length >= 5; });
+  }
+
+  var mesBase = mes.split(' ')[0].trim();
+  var profApellidos = apellidos(prof);
+
+  var cursosFiltrados = (G.cursos||[]).filter(function(c){
+    var cMesRaw = (c.mes||'').toUpperCase().trim();
+    var cMesBase = cMesRaw.split(' ')[0].trim();
+    var cCod = String(c.codigo_registro||'').toLowerCase();
+
+    // Filtro 1: MES (palabra base)
+    if(mesBase && cMesBase !== mesBase && !cMesRaw.includes(mesBase)) return false;
+
+    // Filtro 2: PROFESORA — al menos 1 apellido debe coincidir
+    if(prof){
+      var cProfApellidos = apellidos(c.profesora||c.profesora_nombre||'');
+      if(cProfApellidos.length === 0) return false;
+      // Buscar si algún apellido del filtro está en algún apellido del curso (o viceversa)
+      var match = profApellidos.some(function(pa){
+        return cProfApellidos.some(function(ca){
+          return ca === pa || ca.includes(pa) || pa.includes(ca);
+        });
+      });
+      if(!match) return false;
+    }
+
+    // Filtro 3: CÓDIGO
+    if(cod && !cCod.includes(cod)) return false;
+
+    return true;
   });
-}
+
+  console.log('[SIGPAF] Filtros:', {mes:mesBase, profApellidos:profApellidos, codigo:cod, resultados:cursosFiltrados.length});
+
+  var valActual = sel.value;
+  if(cursosFiltrados.length===0){
+    sel.innerHTML = '<option value="">'+(prof?prof+' no tiene cursos':'Sin cursos disponibles')+'</option>';
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">Elige uno de los '+cursosFiltrados.length+' '+(cursosFiltrados.length===1?'curso':'cursos')+'...</option>';
+    cursosFiltrados.forEach(function(c){
+      var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+      var p = c.profesora||c.profesora_nombre||'Sin asignar';
+      var codigo = c.codigo_registro?'['+c.codigo_registro+'] ':'';
+      // Si ya filtramos por profesora, no repetir el nombre
+      var profTxt = prof?'':' — '+p;
+      var mesTxt = c.mes?' · '+c.mes:'';
+      sel.innerHTML += '<option value="'+c.id+'"'+(c.id===valActual?' selected':'')+'>'+codigo+nombre+profTxt+mesTxt+'</option>';
+    });
+  }
+
+  // Mensaje informativo
+  var info = document.getElementById('att-filtro-info');
+  if(info){
+    var partes = [];
+    if(mes) partes.push('Mes: '+mes);
+    if(prof) partes.push('Profesora: '+prof);
+    if(cod) partes.push('Código: '+cod);
+    if(partes.length===0){
+      info.innerHTML = '<i class="ti ti-info-circle"></i> Mostrando todos los cursos ('+cursosFiltrados.length+')';
+    } else if(cursosFiltrados.length===0){
+      info.innerHTML = '<i class="ti ti-mood-empty" style="color:var(--am);"></i> '
+        + (prof?'<strong>'+prof+'</strong> no tiene cursos en '+mesBase+(cod?' con código '+cod:''):'<strong>'+partes.join(' · ')+'</strong>: 0 cursos')
+        + ' · <em>Selecciona otro mes o profesora</em>';
+    } else {
+      info.innerHTML = '<i class="ti ti-filter" style="color:var(--g);"></i> '+cursosFiltrados.length+' '+(cursosFiltrados.length===1?'curso':'cursos')+' · <strong>'+partes.join(' · ')+'</strong>';
+    }
+  }
+
+  // CASOS DE CARGA AUTOMATICA:
+  // a) Si hay un código exacto buscado y matchea exactamente 1 curso por código
+  // b) Si filtros (profesora+mes o cualquier combo) dejan solo 1 curso
+  if(cursosFiltrados.length === 1){
+    sel.value = cursosFiltrados[0].id;
+    window.cargarVerificacionAsistencia();
+  } else if(cursosFiltrados.length === 0){
+    // Sin resultados: limpiar vista
+    var kpi = document.getElementById('att-kpis');
+    if(kpi) kpi.style.display = 'none';
+    var tbl = document.getElementById('att-alumnas-table');
+    if(tbl) tbl.innerHTML = '<div class="empty-state"><i class="ti ti-filter-off"></i><div class="empty-state-title">Sin resultados</div><div class="empty-state-sub">'+(prof?prof+' no tiene cursos en '+(mesBase||'el sistema'):'Ningún curso coincide con los filtros')+'</div></div>';
+    var ses = document.getElementById('att-sesiones');
+    if(ses) ses.innerHTML = '<div class="empty-state" style="padding:14px;"><div class="empty-state-sub">Sin datos para mostrar</div></div>';
+  } else {
+    // Multiples cursos: limpiar la vista para que el usuario elija
+    var kpi2 = document.getElementById('att-kpis');
+    if(kpi2) kpi2.style.display = 'none';
+    var tbl2 = document.getElementById('att-alumnas-table');
+    if(tbl2) tbl2.innerHTML = '<div class="empty-state"><i class="ti ti-hand-finger"></i><div class="empty-state-title">'+cursosFiltrados.length+' cursos disponibles</div><div class="empty-state-sub">Elige un curso del dropdown para ver el detalle de sus alumnas</div></div>';
+    var ses2 = document.getElementById('att-sesiones');
+    if(ses2) ses2.innerHTML = '<div class="empty-state" style="padding:14px;"><div class="empty-state-sub">Selecciona un curso específico para ver sus sesiones</div></div>';
+  }
+};
 
 window.cambiarTabReporte = function(tab){
   document.getElementById('tab-rep-general').classList.toggle('active', tab==='general');
@@ -3430,8 +3941,12 @@ window.actualizarResumenMensual = function(){
   document.getElementById('rm-fecha').textContent = hoy.toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('rm-elaborado').textContent = G.user?G.user.email:'Administrador SIGPAF';
 
+  // Comparar solo por palabra base del mes (MAYO == "MAYO 2026")
+  var mesBaseRes = mes.toUpperCase().split(' ')[0].trim();
   var cursosMes = (G.cursos||[]).filter(function(c){
-    return (c.mes||'').toUpperCase()===mes.toUpperCase();
+    var cMesRaw = (c.mes||'').toUpperCase().trim();
+    var cMesBase = cMesRaw.split(' ')[0].trim();
+    return cMesBase === mesBaseRes || cMesRaw.includes(mesBaseRes);
   });
 
   // KPIs del mes
@@ -3584,7 +4099,11 @@ function kpi(val, lbl, icon, color, bg){
 window.exportarResumenMensualExcel = function(){
   if(typeof XLSX==='undefined'){ showToast('Cargando librería...','warn'); return; }
   var mes = document.getElementById('rm-mes-sel').value;
-  var cursos = (G.cursos||[]).filter(function(c){ return (c.mes||'').toUpperCase()===mes.toUpperCase(); });
+  var cursos = (G.cursos||[]).filter(function(c){
+    var mesBaseExp = mes.toUpperCase().split(' ')[0].trim();
+    var cMesRaw = (c.mes||'').toUpperCase().trim();
+    return cMesRaw.split(' ')[0].trim() === mesBaseExp || cMesRaw.includes(mesBaseExp);
+  });
 
   var rows = cursos.map(function(c){
     return {
@@ -3896,7 +4415,10 @@ async function impIniciarImportacion(){
       G.cursos=snapToArray(snap);
       renderCursos(G.cursos);
       poblarFiltroProfesorasCursos();
+    try { poblarSelectorAsistencia(); } catch(e){}
       renderDashboard();
+      // Refrescar selectores de asistencia si están visibles
+      try { poblarSelectorAsistencia(); } catch(e){}
     });
 
     impMostrarResultado(ok,upd,skip,err,errores);

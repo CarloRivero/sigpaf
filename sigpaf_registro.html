@@ -391,7 +391,7 @@ window.addEventListener('load', function(){
       appId:"1:783555160890:web:79bae67c10986f11a8fe03"
     });
     DB = firebase.firestore();
-    console.log('Firebase OK - Firestore inicializado');
+    
   }catch(e){ console.error('Firebase error:', e); }
   initApp();
 });
@@ -484,8 +484,26 @@ async function cargarCursoPorCodigo(codigo){
     ocultarLoader();
 
     if(!CURSO){
-      document.getElementById('chip-texto').textContent = 'Curso no encontrado';
-      mostrarCursoInfoBox('ci',codigo,'No se encontró el curso. Verifica el código QR.','—','—');
+      // Mostrar pantalla de error amigable cuando el QR no es valido
+      document.getElementById('chip-texto').textContent = 'QR no válido';
+      document.getElementById('chip-texto').style.color = '#EF4444';
+      var stepsBar = document.getElementById('steps-bar');
+      var screenCI = document.getElementById('screen-ci');
+      if(stepsBar) stepsBar.style.display = 'none';
+      if(screenCI){
+        screenCI.innerHTML =
+          '<div style="text-align:center;padding:40px 20px;animation:fadeIn .3s ease;">'
+          +'<div style="width:72px;height:72px;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">'
+          +'<i class="ti ti-qrcode-off" style="font-size:32px;color:#EF4444;"></i></div>'
+          +'<div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px;">Código QR no válido</div>'
+          +'<div style="font-size:13.5px;color:#6B7280;margin-bottom:24px;line-height:1.6;">El código <strong style="font-family:monospace;color:#00703C;background:#F0FDF4;padding:2px 8px;border-radius:4px;">'+codigo+'</strong> no corresponde a ningún curso activo.<br>Verifica que el QR sea el correcto o contacta a tu profesora.</div>'
+          +'<div style="background:#F0FDF4;border:1px solid #B7DFC8;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#005A2E;line-height:1.5;text-align:left;">'
+          +'<div style="display:flex;align-items:flex-start;gap:8px;"><i class="ti ti-info-circle" style="margin-top:1px;font-size:18px;flex-shrink:0;"></i>'
+          +'<div><strong>¿Qué hacer?</strong><br>Si escaneaste correctamente el QR, es posible que el curso aún no esté cargado en el sistema. Pide a tu profesora que verifique con la administración.</div></div></div>'
+          +'<button onclick="location.href=&quot;https://carlorivero.github.io/sigpaf/&quot;" style="margin-top:24px;background:#00703C;color:#fff;border:none;padding:11px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:inherit;">'
+          +'<i class="ti ti-home"></i> Volver al inicio</button>'
+          +'</div>';
+      }
       return;
     }
 
@@ -976,7 +994,7 @@ function toast(msg,tipo){
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('sw.js', {scope:'/sigpaf/'})
-      .then(function(reg){ console.log('SW registrado:', reg.scope); })
+      .then(function(reg){  })
       .catch(function(err){ console.log('SW error:', err); });
   });
 }

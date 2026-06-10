@@ -681,9 +681,6 @@ function actualizarContadores(p,a,j){
 
 // ── GUARDAR ASISTENCIA ──
 
-
-
-
 // ── RENDER RESUMEN DEL CURSO (vista global para la profesora) ──
 function renderResumen(){
   if(!CURSO_SEL) return;
@@ -804,8 +801,14 @@ function renderResumen(){
 async function cargarHistorialAsistencia(){
   if(!CURSO_SEL || !CURSO_SEL.id){ return; }
   try{
-    var snap = await DB.collection('asistencia').where('curso_id','==', CURSO_SEL.id).orderBy('fecha','desc').get();
+    var snap = await DB.collection('asistencia').where('curso_id','==', CURSO_SEL.id).get();
     SESIONES_REGISTRADAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    // Ordenar en cliente para evitar indice compuesto
+    SESIONES_REGISTRADAS.sort(function(a,b){
+      var fa = (a.fecha||'')+(a.hora||'');
+      var fb = (b.fecha||'')+(b.hora||'');
+      return fb.localeCompare(fa);
+    });
 
     // Calcular stats por alumna
     ASISTENCIAS_HIST = {};
@@ -821,7 +824,7 @@ async function cargarHistorialAsistencia(){
     });
 
     // Re-renderizar la lista para mostrar el progreso
-    renderListaAlumnas();
+    renderAlumnas();
     actualizarProgresoSesiones();
     renderHistorialSesiones();
   }catch(e){
