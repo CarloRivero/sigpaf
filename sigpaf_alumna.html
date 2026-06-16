@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGPAF · Mi Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<style>
+:root{--g:#00703C;--gd:#005A2E;--gl:#E8F5EE;--gm:#B7DFC8;
+  --in:#6366F1;--inl:#EDE9FE;--am:#F59E0B;--aml:#FEF3C7;--re:#EF4444;--rel:#FEE2E2;--te:#0D9488;--tel:#CCFBF1;
+  --bg:#F0F4F1;--card:#fff;--tx:#111827;--tx2:#4B5563;--tx3:#9CA3AF;
+  --border:rgba(0,0,0,.07);--radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+  --font:'Outfit',sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);min-height:100vh;-webkit-font-smoothing:antialiased;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Header */
+.header{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.hlogo{width:38px;height:38px;border-radius:9px;background:#fff;padding:3px;object-fit:contain;flex-shrink:0;}
+.htitle{font-size:14px;font-weight:700;}
+.hsub{font-size:10.5px;opacity:.7;}
+.hright{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;transition:background .15s;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+
+.content{max-width:600px;margin:0 auto;padding:16px 16px 80px;}
+
+/* Login */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#0A1209,#0F1C14,#1A3020);padding:24px;}
+.login-card{background:var(--card);border-radius:20px;padding:36px 28px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.login-logo{width:72px;height:72px;border-radius:16px;background:#fff;padding:8px;margin:0 auto 16px;box-shadow:0 8px 24px rgba(0,112,60,.3);}
+
+/* Form */
+.fi{width:100%;padding:12px 14px;border:1.5px solid rgba(0,0,0,.12);border-radius:var(--radius-sm);font-size:15px;font-family:var(--font);text-align:center;outline:none;transition:border-color .15s;}
+.fi:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(0,112,60,.1);}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;}
+.btn-g{background:var(--g);color:#fff;}
+.btn-g:hover{background:var(--gd);}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;animation:fadeIn .25s ease;}
+
+/* Course card */
+.curso-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;cursor:pointer;transition:all .15s;animation:fadeIn .25s ease;}
+.curso-card:hover{border-color:var(--g);box-shadow:0 4px 16px rgba(0,112,60,.12);}
+.curso-card.active{border-color:var(--g);box-shadow:0 4px 16px rgba(0,112,60,.15);}
+.cc-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.cc-prof{font-size:12.5px;color:var(--tx2);display:flex;align-items:center;gap:5px;}
+.cc-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:11.5px;color:var(--tx3);}
+.cc-meta span{display:flex;align-items:center;gap:4px;}
+.cc-code{font-family:monospace;font-size:10.5px;color:var(--g);font-weight:600;background:var(--gl);padding:2px 7px;border-radius:4px;}
+
+/* Progress */
+.prog-wrap{background:#E5E7EB;border-radius:20px;height:8px;overflow:hidden;}
+.prog-fill{height:8px;border-radius:20px;background:linear-gradient(90deg,var(--g),var(--te));transition:width .4s;}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;}
+.badge-g{background:#D1FAE5;color:#065F46;}
+.badge-am{background:var(--aml);color:#78350F;}
+.badge-re{background:var(--rel);color:#991B1B;}
+.badge-te{background:var(--tel);color:#0F766E;}
+.badge-gray{background:#F3F4F6;color:#374151;}
+.badge-in{background:var(--inl);color:#4C1D95;}
+
+/* Detail row */
+.kv{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:5px;font-size:13px;}
+.kv i{color:var(--g);font-size:16px;margin-top:1px;flex-shrink:0;}
+.kv-lbl{font-size:10.5px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--tx);color:#fff;padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:100;max-width:90%;text-align:center;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:var(--g);}
+.toast.warn{background:var(--am);color:#111;}
+.toast.error{background:var(--re);}
+
+/* Empty */
+.empty{text-align:center;padding:40px 20px;color:var(--tx3);}
+.empty i{font-size:36px;display:block;margin-bottom:10px;opacity:.5;}
+.empty-title{font-size:14px;font-weight:600;color:var(--tx2);margin-bottom:4px;}
+
+/* Search */
+.search-box{position:relative;margin-bottom:14px;}
+.search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:17px;}
+.search-box input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid rgba(0,0,0,.12);border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);outline:none;}
+.search-box input:focus{border-color:var(--g);}
+
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:#E5E7EB;border-radius:30px;padding:3px;margin-bottom:14px;}
+.tab{flex:1;padding:8px;border-radius:25px;font-size:12.5px;font-weight:600;text-align:center;cursor:pointer;color:var(--tx3);transition:all .15s;}
+.tab.active{background:var(--card);color:var(--g);box-shadow:var(--shadow);}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div class="login-page" id="page-login">
+  <div class="login-card">
+    <img src="data:image/png;base64,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" alt="CRE" class="login-logo">
+    <div style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:.18em;margin-bottom:4px;">PROGRAMA</div>
+    <div style="font-size:20px;font-weight:800;color:var(--g);letter-spacing:-.5px;margin-bottom:4px;">APOYO A LA FAMILIA</div>
+    <div style="font-size:13px;color:var(--tx3);margin-bottom:24px;">Portal de la Alumna · CRE R.L.</div>
+
+    <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:6px;">¿Cuál es tu carnet de identidad?</div>
+    <div style="font-size:12px;color:var(--tx3);margin-bottom:14px;">Ingresa tu CI para ver tus cursos e inscribirte</div>
+    <input class="fi" id="ci-login" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="12"
+           placeholder="0000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+           onkeydown="if(event.key==='Enter')buscarAlumna()">
+    <div style="height:10px;"></div>
+    <button class="btn btn-g" onclick="buscarAlumna()"><i class="ti ti-search"></i> Buscar mis cursos</button>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">¿Primera vez? Inscríbete a un curso:</div>
+      <div class="search-box" style="margin-bottom:0;">
+        <i class="ti ti-search"></i>
+        <input id="buscar-curso" placeholder="Buscar por código o nombre de profesora..."
+               oninput="buscarCursoPorTexto(this.value)"
+               onkeydown="if(event.key==='Enter')buscarCursoPorTexto(this.value)">
+      </div>
+      <div id="buscar-resultados" style="max-height:200px;overflow-y:auto;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="page-app" style="display:none;">
+  <div class="header">
+    <img src="data:image/png;base64,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" alt="CRE" class="hlogo">
+    <div>
+      <div class="htitle" id="h-nombre">Alumna</div>
+      <div class="hsub">Programa Apoyo a la Familia</div>
+    </div>
+    <div class="hright">
+      <button class="hbtn" onclick="cerrarSesion()"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" id="tab-cursos" onclick="setTab('cursos')"><i class="ti ti-school"></i> Mis cursos</div>
+      <div class="tab" id="tab-inscribir" onclick="setTab('inscribir')"><i class="ti ti-plus"></i> Inscribirme</div>
+      <div class="tab" id="tab-historial" onclick="setTab('historial')"><i class="ti ti-history"></i> Historial</div>
+    </div>
+
+    <!-- TAB: MIS CURSOS ACTUALES -->
+    <div class="screen active" id="panel-cursos">
+      <div id="mis-cursos"><div class="empty"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;opacity:1;font-size:24px;"></i></div></div>
+    </div>
+
+    <!-- TAB: INSCRIBIRME A UN CURSO -->
+    <div class="screen" id="panel-inscribir">
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;"><i class="ti ti-search" style="color:var(--g);"></i> Buscar un curso</div>
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:12px;">Busca por código del curso o nombre de la profesora</div>
+        <div class="search-box" style="margin-bottom:0;">
+          <i class="ti ti-search"></i>
+          <input id="buscar-curso-2" placeholder="Código del curso o nombre de profesora..."
+                 oninput="buscarCursoPorTexto2(this.value)">
+        </div>
+      </div>
+      <div id="buscar-resultados-2"></div>
+    </div>
+
+    <!-- TAB: HISTORIAL -->
+    <div class="screen" id="panel-historial">
+      <div id="mi-historial"><div class="empty"><i class="ti ti-history"></i><div class="empty-title">Historial de cursos</div>Todos los cursos que has tomado</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
+  authDomain:"sigpaf-cre.firebaseapp.com",
+  projectId:"sigpaf-cre",
+  storageBucket:"sigpaf-cre.firebasestorage.app",
+  messagingSenderId:"783555160890",
+  appId:"1:783555160890:web:79bae67c10986f11a8fe03"
+});
+var DB = firebase.firestore();
+
+var ALUMNA_CI = '';
+var MIS_INSCRIPCIONES = [];
+var TODOS_CURSOS = [];
+
+function showToast(msg, tipo){
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (tipo||'');
+  setTimeout(function(){ el.className = 'toast'; }, 3000);
+}
+
+function setTab(tab){
+  ['cursos','inscribir','historial'].forEach(function(t){
+    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  if(tab==='historial') renderHistorial();
+}
+
+// ── BUSCAR ALUMNA POR CI ──
+async function buscarAlumna(){
+  var ci = document.getElementById('ci-login').value.trim().replace(/[^0-9]/g, '');
+  if(!ci || ci.length < 4){ showToast('Ingresa un CI válido', 'warn'); return; }
+
+  ALUMNA_CI = ci;
+
+  // Buscar inscripciones de esta alumna
+  try{
+    var snap = await DB.collection('registros').where('ci_alumna','==', ci).get();
+    MIS_INSCRIPCIONES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+
+    if(MIS_INSCRIPCIONES.length === 0){
+      // No tiene inscripciones - pero puede inscribirse
+      document.getElementById('page-login').style.display = 'none';
+      document.getElementById('page-app').style.display = 'block';
+      document.getElementById('h-nombre').textContent = 'Bienvenida';
+      setTab('inscribir');
+      renderMisCursos();
+      showToast('No tienes inscripciones aún. ¡Busca un curso!', 'warn');
+      return;
+    }
+
+    // Tiene inscripciones
+    var nombre = MIS_INSCRIPCIONES[0].nombre_alumna || 'Alumna';
+    document.getElementById('h-nombre').textContent = nombre;
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-app').style.display = 'block';
+    renderMisCursos();
+
+  }catch(e){
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── RENDERIZAR MIS CURSOS ──
+async function renderMisCursos(){
+  var el = document.getElementById('mis-cursos');
+  if(!MIS_INSCRIPCIONES.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-school"></i><div class="empty-title">Sin cursos activos</div>Inscríbete a un curso desde la pestaña "Inscribirme"</div>';
+    return;
+  }
+
+  // Cargar datos del curso para cada inscripcion
+  var html = '<div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:10px;">'+MIS_INSCRIPCIONES.length+' '+(MIS_INSCRIPCIONES.length===1?'curso inscrito':'cursos inscritos')+'</div>';
+
+  for(var i = 0; i < MIS_INSCRIPCIONES.length; i++){
+    var reg = MIS_INSCRIPCIONES[i];
+    var curso = null;
+
+    // Buscar datos completos del curso
+    if(reg.curso_id){
+      try{
+        var doc = await DB.collection('catalogo_cursos').doc(reg.curso_id).get();
+        if(doc.exists) curso = Object.assign({id:doc.id}, doc.data());
+      }catch(e){}
+    }
+    if(!curso && reg.codigo_registro){
+      try{
+        var s = await DB.collection('catalogo_cursos').where('codigo_registro','==', String(reg.codigo_registro)).limit(1).get();
+        if(!s.empty) curso = Object.assign({id:s.docs[0].id}, s.docs[0].data());
+      }catch(e){}
+    }
+
+    var nombre = reg.nombre_curso || (curso?curso.nombre_curso:'Curso');
+    var prof = reg.profesora || (curso?curso.profesora:'');
+    var dist = reg.distrito || (curso?curso.distrito_nombre:'');
+    var mes = reg.mes || (curso?curso.mes:'');
+    var horario = reg.horario || (curso?curso.horario:'');
+    var lugar = reg.lugar || (curso?curso.lugar:'');
+    var codigo = reg.codigo_registro || reg.codigo_curso || '';
+    var fecha_ini = curso?curso.fecha_inicio:'';
+    var fecha_fin = curso?curso.fecha_fin:'';
+    var sesiones_total = curso?parseInt(curso.sesiones_total)||10:10;
+    var minimo = Math.ceil(sesiones_total * 0.7);
+
+    // Cargar asistencia de esta alumna en este curso
+    var presentes = 0, total_sesiones = 0;
+    if(curso){
+      try{
+        var snapAsis = await DB.collection('asistencia').where('curso_id','==', curso.id).get();
+        snapAsis.docs.forEach(function(d){
+          var regs = d.data().registros || [];
+          var mio = regs.find(function(r){ return r.ci === ALUMNA_CI; });
+          if(mio){
+            total_sesiones++;
+            if(mio.estado === 'presente' || mio.estado === 'justificada') presentes++;
+          }
+        });
+      }catch(e){}
+    }
+
+    var pct = sesiones_total > 0 ? Math.round(presentes/sesiones_total*100) : 0;
+    var faltantes = sesiones_total - total_sesiones;
+
+    var estadoBadge, barColor;
+    if(total_sesiones === 0){ estadoBadge = '<span class="badge badge-gray">Sin clases</span>'; barColor = '#E5E7EB'; }
+    else if(presentes >= minimo){ estadoBadge = '<span class="badge badge-g"><i class="ti ti-check"></i> Aprobada</span>'; barColor = 'var(--g)'; }
+    else if((presentes + faltantes) < minimo){ estadoBadge = '<span class="badge badge-re"><i class="ti ti-x"></i> Reprobada</span>'; barColor = 'var(--re)'; }
+    else { estadoBadge = '<span class="badge badge-am"><i class="ti ti-clock"></i> En curso</span>'; barColor = 'var(--am)'; }
+
+    html += '<div class="card">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">'
+      + '<div style="flex:1;"><div class="cc-name">'+nombre+'</div>'
+      + '<div class="cc-prof"><i class="ti ti-user-star" style="color:var(--g);font-size:14px;"></i> '+prof+'</div></div>'
+      + estadoBadge + '</div>'
+      // Detalles
+      + (dist?'<div class="kv"><i class="ti ti-map-pin"></i><div><div class="kv-lbl">Distrito</div>'+dist+'</div></div>':'')
+      + (mes?'<div class="kv"><i class="ti ti-calendar-month"></i><div><div class="kv-lbl">Mes</div>'+mes+'</div></div>':'')
+      + (horario?'<div class="kv"><i class="ti ti-clock"></i><div><div class="kv-lbl">Horario</div>'+horario+'</div></div>':'')
+      + (lugar?'<div class="kv"><i class="ti ti-home"></i><div><div class="kv-lbl">Lugar</div>'+lugar+'</div></div>':'')
+      + (fecha_ini?'<div class="kv"><i class="ti ti-calendar"></i><div><div class="kv-lbl">Periodo</div>'+fecha_ini+(fecha_fin?' al '+fecha_fin:'')+'</div></div>':'')
+      + (codigo?'<div class="kv"><i class="ti ti-qrcode"></i><div><div class="kv-lbl">Código</div><span class="cc-code">'+codigo+'</span></div></div>':'')
+      // Progreso de asistencia
+      + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">'
+      + '<span><i class="ti ti-checkbox" style="color:var(--g);"></i> Asistencia: '+presentes+' de '+sesiones_total+' clases</span>'
+      + '<span style="font-weight:700;color:'+barColor+';">'+pct+'%</span></div>'
+      + '<div class="prog-wrap"><div class="prog-fill" style="width:'+Math.min(100,pct)+'%;background:'+barColor+';"></div></div>'
+      + '<div style="font-size:11px;color:var(--tx3);margin-top:5px;">Mínimo para aprobar: '+minimo+' clases (70%)</div>'
+      + '</div>'
+      + (curso && (curso.estado==='finalizado' || presentes >= minimo)
+        ? '<div style="margin-top:10px;"><button onclick="abrirEncuesta(&quot;'+(curso?curso.id:'')+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)" style="width:100%;background:var(--in);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font);"><i class="ti ti-clipboard-check"></i> Responder encuesta de satisfaccion</button></div>'
+        : '')
+      + '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── BUSCAR CURSO POR CODIGO O PROFESORA ──
+var buscarTimeout = null;
+function buscarCursoPorTexto(texto){
+  clearTimeout(buscarTimeout);
+  buscarTimeout = setTimeout(function(){ ejecutarBusqueda(texto, 'buscar-resultados'); }, 400);
+}
+function buscarCursoPorTexto2(texto){
+  clearTimeout(buscarTimeout);
+  buscarTimeout = setTimeout(function(){ ejecutarBusqueda(texto, 'buscar-resultados-2'); }, 400);
+}
+
+async function ejecutarBusqueda(texto, containerId){
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  texto = (texto||'').trim();
+  if(texto.length < 2){ el.innerHTML = ''; return; }
+
+  // Cargar cursos si no estan cargados
+  if(!TODOS_CURSOS.length){
+    el.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--tx3);"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;"></i> Buscando...</div>';
+    try{
+      var snap = await DB.collection('catalogo_cursos').get();
+      TODOS_CURSOS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    }catch(e){
+      el.innerHTML = '<div style="color:var(--re);font-size:12px;padding:8px;">Error: '+e.message+'</div>';
+      return;
+    }
+  }
+
+  // Filtrar por texto (codigo, nombre de curso, profesora)
+  function norm(s){ return (s||'').toUpperCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  var textoN = norm(texto);
+
+  var resultados = TODOS_CURSOS.filter(function(c){
+    var cod = String(c.codigo_registro||'').toUpperCase();
+    var nombre = norm(c.nombre_curso||c.nombre||'');
+    var prof = norm(c.profesora||c.profesora_nombre||'');
+    return cod.includes(textoN) || nombre.includes(textoN) || prof.includes(textoN);
+  }).slice(0, 10);
+
+  if(!resultados.length){
+    el.innerHTML = '<div style="text-align:center;padding:14px;font-size:12.5px;color:var(--tx3);">No se encontraron cursos para "'+texto+'"</div>';
+    return;
+  }
+
+  el.innerHTML = resultados.map(function(c){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var prof = c.profesora||c.profesora_nombre||'Sin asignar';
+    var codigo = c.codigo_registro||'—';
+    var mes = c.mes||'';
+    return '<div class="curso-card" onclick="irAInscripcion(&quot;'+codigo+'&quot;)">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;">'
+      +'<div><div class="cc-name">'+nombre+'</div>'
+      +'<div class="cc-prof"><i class="ti ti-user-star" style="color:var(--g);"></i> '+prof+'</div></div>'
+      +'<span class="cc-code">'+codigo+'</span></div>'
+      +'<div class="cc-meta">'
+      +(mes?'<span><i class="ti ti-calendar-month"></i> '+mes+'</span>':'')
+      +(c.distrito_num?'<span><i class="ti ti-map-pin"></i> Distrito '+c.distrito_num+'</span>':'')
+      +(c.horario?'<span><i class="ti ti-clock"></i> '+c.horario+'</span>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function irAInscripcion(codigo){
+  window.location.href = 'sigpaf_registro.html?curso='+codigo;
+}
+
+// ── HISTORIAL ──
+function renderHistorial(){
+  var el = document.getElementById('mi-historial');
+  if(!MIS_INSCRIPCIONES.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-history"></i><div class="empty-title">Sin historial</div>Aún no te has inscrito a ningún curso.</div>';
+    return;
+  }
+
+  // Agrupar por mes
+  var porMes = {};
+  MIS_INSCRIPCIONES.forEach(function(r){
+    var mes = r.mes || 'Sin mes';
+    if(!porMes[mes]) porMes[mes] = [];
+    porMes[mes].push(r);
+  });
+
+  var html = '';
+  Object.keys(porMes).sort().reverse().forEach(function(mes){
+    html += '<div style="font-size:12px;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;padding-left:4px;">'+mes+'</div>';
+    porMes[mes].forEach(function(r){
+      var fecha = (r.fecha_registro||'').slice(0,10);
+      html += '<div class="card" style="padding:12px 14px;">'
+        +'<div style="display:flex;align-items:center;gap:10px;">'
+        +'<div style="width:36px;height:36px;background:var(--gl);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-certificate" style="color:var(--g);"></i></div>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(r.nombre_curso||'Curso')+'</div>'
+        +'<div style="font-size:11px;color:var(--tx3);">'+(r.profesora||'—')+' · '+fecha+'</div></div>'
+        +'<span class="badge '+(r.es_nueva?'badge-in':'badge-g')+'">'+(r.es_nueva?'Nueva':'SIGECOOP')+'</span>'
+        +'</div></div>';
+    });
+  });
+
+  el.innerHTML = html;
+}
+
+
+// ── ENCUESTA DE SATISFACCIÓN ──
+var PREGUNTAS = [
+  {id:'p1', texto:'Como califica el contenido del curso?', tipo:'escala'},
+  {id:'p2', texto:'Como califica a la profesora?', tipo:'escala'},
+  {id:'p3', texto:'El horario fue conveniente?', tipo:'escala'},
+  {id:'p4', texto:'El lugar de clases fue adecuado?', tipo:'escala'},
+  {id:'p5', texto:'Recomendaria este curso?', tipo:'sino'},
+  {id:'p6', texto:'Que mejoraria del curso?', tipo:'texto'},
+];
+
+function abrirEncuesta(cursoId, nombreCurso){
+  DB.collection('encuestas').where('curso_id','==',cursoId).where('ci_alumna','==',ALUMNA_CI).limit(1).get()
+    .then(function(snap){
+      if(!snap.empty){ showToast('Ya respondiste esta encuesta','warn'); return; }
+      mostrarFormEncuesta(cursoId, nombreCurso);
+    });
+}
+
+function mostrarFormEncuesta(cursoId, nombreCurso){
+  var overlay = document.createElement('div');
+  overlay.id = 'encuesta-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  var html = '<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;">'
+    + '<div style="text-align:center;margin-bottom:16px;">'
+    + '<i class="ti ti-clipboard-check" style="font-size:32px;color:var(--in);"></i>'
+    + '<div style="font-size:16px;font-weight:700;margin-top:8px;">Encuesta de satisfaccion</div>'
+    + '<div style="font-size:12px;color:var(--tx3);">'+nombreCurso+'</div></div>';
+
+  PREGUNTAS.forEach(function(p){
+    html += '<div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">'+p.texto+'</div>';
+    if(p.tipo==='escala'){
+      html += '<div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">';
+      for(var i=1;i<=5;i++){
+        html += '<span onclick="selEstrella(&quot;'+p.id+'&quot;,'+i+')" id="star-'+p.id+'-'+i+'" style="font-size:28px;cursor:pointer;color:#D1D5DB;">&#9733;</span>';
+      }
+      html += '</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px;"><span>Malo</span><span>Excelente</span></div>';
+    } else if(p.tipo==='sino'){
+      html += '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">'
+        + '<button onclick="selSiNo(&quot;'+p.id+'&quot;,&quot;si&quot;)" id="sino-'+p.id+'-si" style="padding:8px 20px;border-radius:8px;border:2px solid #D1D5DB;background:#fff;cursor:pointer;font-size:14px;font-weight:600;">Si</button>'
+        + '<button onclick="selSiNo(&quot;'+p.id+'&quot;,&quot;no&quot;)" id="sino-'+p.id+'-no" style="padding:8px 20px;border-radius:8px;border:2px solid #D1D5DB;background:#fff;cursor:pointer;font-size:14px;font-weight:600;">No</button></div>';
+    } else {
+      html += '<textarea id="enc-'+p.id+'" rows="2" placeholder="Tu opinion..." style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:13px;font-family:var(--font);outline:none;"></textarea>';
+    }
+    html += '</div>';
+  });
+
+  html += '<div style="display:flex;gap:8px;">'
+    + '<button onclick="enviarEncuesta(&quot;'+cursoId+'&quot;)" style="flex:1;background:var(--in);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;"><i class="ti ti-send"></i> Enviar</button>'
+    + '<button onclick="document.getElementById(&quot;encuesta-overlay&quot;).remove()" style="padding:12px 16px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;cursor:pointer;font-weight:600;">Cancelar</button></div></div>';
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+var ENC_DATA = {};
+
+function selEstrella(pid, val){
+  ENC_DATA[pid] = val;
+  for(var i=1;i<=5;i++){
+    var s = document.getElementById('star-'+pid+'-'+i);
+    if(s) s.style.color = i<=val ? '#F59E0B' : '#D1D5DB';
+  }
+}
+
+function selSiNo(pid, val){
+  ENC_DATA[pid] = val;
+  var si = document.getElementById('sino-'+pid+'-si');
+  var no = document.getElementById('sino-'+pid+'-no');
+  if(si){ si.style.background=val==='si'?'var(--g)':'#fff'; si.style.color=val==='si'?'#fff':'#111'; si.style.borderColor=val==='si'?'var(--g)':'#D1D5DB'; }
+  if(no){ no.style.background=val==='no'?'var(--re)':'#fff'; no.style.color=val==='no'?'#fff':'#111'; no.style.borderColor=val==='no'?'var(--re)':'#D1D5DB'; }
+}
+
+async function enviarEncuesta(cursoId){
+  PREGUNTAS.forEach(function(p){
+    if(p.tipo==='texto'){ var ta=document.getElementById('enc-'+p.id); if(ta) ENC_DATA[p.id]=ta.value.trim(); }
+  });
+  var faltantes = PREGUNTAS.filter(function(p){return p.tipo==='escala'&&!ENC_DATA[p.id];});
+  if(faltantes.length>0){ showToast('Responde todas las preguntas con estrellas','warn'); return; }
+  try{
+    await DB.collection('encuestas').add({
+      curso_id:cursoId, ci_alumna:ALUMNA_CI,
+      p1:ENC_DATA.p1||0, p2:ENC_DATA.p2||0, p3:ENC_DATA.p3||0,
+      p4:ENC_DATA.p4||0, p5:ENC_DATA.p5||'', p6:ENC_DATA.p6||'',
+      fecha:new Date().toISOString(),
+    });
+    document.getElementById('encuesta-overlay').remove();
+    ENC_DATA = {};
+    showToast('Gracias! Encuesta enviada','success');
+  }catch(e){ showToast('Error: '+e.message,'error'); }
+}
+
+function cerrarSesion(){
+  ALUMNA_CI = '';
+  MIS_INSCRIPCIONES = [];
+  document.getElementById('page-app').style.display = 'none';
+  document.getElementById('page-login').style.display = 'flex';
+  document.getElementById('ci-login').value = '';
+}
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -468,6 +469,9 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       </div>
 
       <div class="sb-section">Análisis</div>
+      <div class="sb-item" data-screen="asignacion" onclick="navTo('asignacion',this)">
+        <i class="ti ti-user-plus"></i> Asignar profesoras
+      </div>
       <div class="sb-item" data-screen="supervision" onclick="navTo('supervision',this)" style="display:none;">
         <i class="ti ti-eye-check"></i> Supervisión de profesoras
       </div>
@@ -545,6 +549,12 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:var(--re);"></i></div>
             <div class="kpi-val" id="kpi-observados">—</div>
             <div class="kpi-lbl">Observados</div>
+          </div>
+          <div class="kpi" style="--kpi-color:#F97316;--kpi-bg:#FFF7ED;">
+            <div class="kpi-icon"><i class="ti ti-clock-pause" style="color:#F97316;"></i></div>
+            <div class="kpi-val" id="kpi-atrasados">—</div>
+            <div class="kpi-lbl">Sin actividad</div>
+            <div class="kpi-delta" style="font-size:10px;"><i class="ti ti-info-circle"></i> Cursos activos sin sesiones</div>
           </div>
           <div class="kpi" style="--kpi-color:var(--am);--kpi-bg:var(--aml);">
             <div class="kpi-icon"><i class="ti ti-send" style="color:var(--am);"></i></div>
@@ -624,7 +634,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
               <div class="card-title" style="margin-bottom:4px;"><i class="ti ti-search" style="color:var(--g);"></i> Búsqueda por CI</div>
               <div class="card-sub">Busca en el historial SIGECOOP y Firestore</div>
               <div style="position:relative;">
-                <input class="form-control" id="ci-input" placeholder="Ej: 7854321" style="padding-right:52px;" onkeydown="if(event.key==='Enter')window.buscarCI()">
+                <input class="form-control" id="ci-input" placeholder="Ej: 7854321" inputmode="numeric" pattern="[0-9]*" maxlength="12" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="padding-right:52px;" onkeydown="if(event.key==='Enter')window.buscarCI()">
                 <button onclick="window.buscarCI()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--g);color:#fff;border:none;border-radius:var(--radius-xs);padding:6px 11px;cursor:pointer;font-size:15px;display:flex;align-items:center;">
                   <i class="ti ti-search"></i>
                 </button>
@@ -754,7 +764,112 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       <div class="screen" id="screen-reportes">
         <!-- Tabs Reportes -->
         <div class="tabs">
-          <div class="tab-item active" id="tab-rep-general" onclick="window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
+          <div class="tab-item active" id="tab-rep-general" onclick="
+// ── CONFIGURACIÓN REAL (guarda en Firestore) ──
+window.guardarConfiguracion = async function(){
+  try{
+    var data = {
+      anio_activo: document.querySelector('#screen-configuracion select').value || '2026',
+      pct_minimo_asistencia: parseInt(document.querySelector('#screen-configuracion input[type="number"]').value) || 70,
+      cupo_default: parseInt(document.querySelectorAll('#screen-configuracion input[type="number"]')[1].value) || 30,
+      actualizado_en: new Date().toISOString(),
+      actualizado_por: G.user ? G.user.email : 'admin',
+    };
+    await DB.collection('configuracion').doc('parametros').set(data, {merge: true});
+    showToast('Configuración guardada en Firebase ✓', 'success');
+  }catch(e){
+    showToast('Error: ' + e.message, 'error');
+  }
+};
+
+// Cargar configuración al inicio
+window.cargarConfiguracion = async function(){
+  try{
+    var doc = await DB.collection('configuracion').doc('parametros').get();
+    if(doc.exists){
+      var d = doc.data();
+      var selects = document.querySelectorAll('#screen-configuracion select');
+      var inputs = document.querySelectorAll('#screen-configuracion input[type="number"]');
+      if(selects[0] && d.anio_activo) selects[0].value = d.anio_activo;
+      if(inputs[0] && d.pct_minimo_asistencia) inputs[0].value = d.pct_minimo_asistencia;
+      if(inputs[1] && d.cupo_default) inputs[1].value = d.cupo_default;
+    }
+  }catch(e){ console.error('Config:', e); }
+};
+
+
+// ── NOTIFICACIONES BASADAS EN DATOS REALES ──
+window.generarNotificaciones = function(){
+  var notifs = [];
+  var hoy = new Date();
+  var hoyStr = hoy.toISOString().split('T')[0];
+
+  // 1. Cursos sin profesora asignada
+  var sinProf = (G.cursos||[]).filter(function(c){
+    return !c.profesora && !c.profesora_nombre && c.estado !== 'finalizado';
+  });
+  if(sinProf.length > 0){
+    notifs.push({icon:'ti-user-off', color:'var(--re)', title:sinProf.length+' cursos sin profesora asignada', sub:'Requieren asignación inmediata', time:'Ahora', unread:true});
+  }
+
+  // 2. Cursos sin código SIGECOOP
+  var sinCodigo = (G.cursos||[]).filter(function(c){ return !c.codigo_registro; });
+  if(sinCodigo.length > 0){
+    notifs.push({icon:'ti-qrcode-off', color:'var(--am)', title:sinCodigo.length+' cursos sin código del SIGECOOP', sub:'No podrán generar QR funcional', time:'Ahora', unread:true});
+  }
+
+  // 3. Cursos próximos a iniciar (fecha_inicio dentro de 7 días)
+  var proximos = (G.cursos||[]).filter(function(c){
+    if(!c.fecha_inicio || c.estado === 'finalizado') return false;
+    var diff = (new Date(c.fecha_inicio) - hoy) / (1000*60*60*24);
+    return diff >= 0 && diff <= 7;
+  });
+  if(proximos.length > 0){
+    notifs.push({icon:'ti-calendar-event', color:'var(--te)', title:proximos.length+' cursos inician esta semana', sub:proximos.map(function(c){return c.nombre_curso||c.nombre;}).slice(0,3).join(', '), time:'Próximos 7 días', unread:true});
+  }
+
+  // 4. Cursos finalizados (fecha pasada) que siguen "en ejecución"
+  var sinCerrar = (G.cursos||[]).filter(function(c){
+    if(!c.fecha_fin) return false;
+    return new Date(c.fecha_fin) < hoy && c.estado !== 'finalizado' && c.estado !== 'aprobado';
+  });
+  if(sinCerrar.length > 0){
+    notifs.push({icon:'ti-alert-triangle', color:'var(--am)', title:sinCerrar.length+' cursos pasaron su fecha fin sin cerrar', sub:'Requieren cambio de estado a Finalizado', time:'Pendiente', unread:true});
+  }
+
+  // 5. Inscripciones recientes (las últimas 5)
+  // Se cargará desde Firestore si hay registros
+
+  // 6. Mensaje informativo si todo está en orden
+  if(notifs.length === 0){
+    notifs.push({icon:'ti-check', color:'var(--g)', title:'Todo en orden', sub:'No hay alertas pendientes en el sistema', time:'Ahora', unread:false});
+  }
+
+  // Render
+  var el = document.getElementById('notifs-list');
+  if(!el) return;
+
+  el.innerHTML = notifs.map(function(n){
+    return '<div class="notif-item'+(n.unread?' unread':'')+'">'
+      +(n.unread?'<div class="notif-dot"></div>':'<div style="width:8px;flex-shrink:0;"></div>')
+      +'<div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:'+n.color+'15;display:flex;align-items:center;justify-content:center;"><i class="ti '+n.icon+'" style="color:'+n.color+';font-size:18px;"></i></div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">'+n.title+'</div><div style="font-size:12px;color:var(--tx3);margin-top:2px;">'+n.sub+'</div></div>'
+      +'<div style="font-size:11px;color:var(--tx3);white-space:nowrap;">'+n.time+'</div>'
+      +'</div>';
+  }).join('');
+
+  // Actualizar badge
+  var unreadCount = notifs.filter(function(n){ return n.unread; }).length;
+  var badge = document.getElementById('badge-notif');
+  var dot = document.getElementById('notif-dot');
+  if(badge){
+    if(unreadCount > 0){ badge.style.display=''; badge.textContent=unreadCount; }
+    else { badge.style.display='none'; }
+  }
+  if(dot){ dot.style.display = unreadCount > 0 ? '' : 'none'; }
+};
+
+window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
           <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual ejecutivo</div>
         </div>
 
@@ -1036,6 +1151,53 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         </div>
       </div>
 
+      <!-- ═══ ASIGNACIÓN DE PROFESORAS ═══ -->
+      <div class="screen" id="screen-asignacion">
+        <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--aml),#fff);border-color:rgba(245,158,11,.2);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="background:var(--am);color:#fff;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-user-plus" style="font-size:20px;"></i></div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#78350F;">Asignación de profesoras a cursos</div>
+              <div style="font-size:12px;color:var(--tx2);margin-top:2px;">Selecciona el mes, revisa los cursos sin profesora y asigna del listado de 40 profesoras registradas.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de mes -->
+        <div class="card" style="margin-bottom:14px;padding:14px 16px;">
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+            <div>
+              <label class="form-label">Mes</label>
+              <select class="filter-select" id="asig-mes-sel" onchange="window.renderAsignacion()" style="min-width:160px;">
+                <option value="MAYO 2026" selected>Mayo 2026</option>
+                <option value="JUNIO 2026">Junio 2026</option>
+                <option value="JULIO 2026">Julio 2026</option>
+                <option value="AGOSTO 2026">Agosto 2026</option>
+                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
+                <option value="OCTUBRE 2026">Octubre 2026</option>
+                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
+                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Filtrar</label>
+              <select class="filter-select" id="asig-filtro" onchange="window.renderAsignacion()" style="min-width:160px;">
+                <option value="">Todos los cursos</option>
+                <option value="sinProf">Solo sin profesora asignada</option>
+                <option value="conProf">Solo con profesora asignada</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="window.renderAsignacion()"><i class="ti ti-refresh"></i> Actualizar</button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" id="asig-kpis" style="margin-bottom:14px;"></div>
+
+        <!-- Lista de cursos para asignar -->
+        <div id="asig-lista"><div class="empty-state"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;"></i></div></div>
+      </div>
+
       <!-- ═══ SUPERVISIÓN (Jefa Fundación) ═══ -->
       <div class="screen" id="screen-supervision">
         <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--inl),#fff);border-color:rgba(99,102,241,.3);">
@@ -1082,7 +1244,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <div style="font-size:13px;font-weight:600;color:var(--tx);">Notificaciones del sistema</div>
             <button class="btn btn-sm btn-ghost" onclick="showToast('Marcadas como leídas ✓','success');document.getElementById('badge-notif').style.display='none';">Marcar leídas</button>
           </div>
-          <div id="notifs-list"><div class="empty-state">Cargando...</div></div>
+          <div id="notifs-list"><div class="empty-state">Analizando datos...</div></div>
         </div>
       </div>
 
@@ -1103,7 +1265,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
               <div class="form-group"><label class="form-label">Año activo</label><select class="form-control"><option>2026</option><option>2025</option></select></div>
               <div class="form-group"><label class="form-label">% mínimo asistencia</label><input class="form-control" value="70" type="number"></div>
               <div class="form-group"><label class="form-label">Cupo máximo por defecto</label><input class="form-control" value="30" type="number"></div>
-              <button class="btn btn-primary btn-sm" onclick="showToast('Configuración guardada ✓','success')"><i class="ti ti-check"></i> Guardar</button>
+              <button class="btn btn-primary btn-sm" onclick="window.guardarConfiguracion()"><i class="ti ti-check"></i> Guardar cambios</button>
             </div>
           </div>
           <div class="card">
@@ -1249,6 +1411,7 @@ window.compartirEnlaceProf = function(profCi, profNombre, cursoNombre){
     + '📋 Tu número de CI: *'+profCi+'*\n\n'
     + '_Programa Apoyo a la Familia · CRE R.L._';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  showToast('WhatsApp abierto — envía el mensaje al contacto','success');
 };
 
 window.copiarEnlaceProf = function(profCi){
@@ -1268,6 +1431,7 @@ window.compartirQRCursoWA = function(codigo, nombre, prof, dist){
     + '🔗 '+link+'\n\n'
     + '_Programa Apoyo a la Familia · CRE R.L._';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  showToast('WhatsApp abierto — envía el mensaje al contacto','success');
 };
 
 
@@ -1356,6 +1520,7 @@ function navTo(screen, el){
     dashboard:'Dashboard', cursos:'Programación de cursos',
     importar:'Importar Programación del SIGECOOP',
     supervision:'Supervisión de profesoras',
+    asignacion:'Asignar profesoras a cursos',
     alumnas:'Registro de alumnas', asistencia:'Control de asistencia',
     profesoras:'Profesoras', reportes:'Reportes institucionales',
     notificaciones:'Notificaciones', configuracion:'Configuración'
@@ -1539,6 +1704,7 @@ function initApp(){
     try { poblarSelectorAsistencia(); } catch(e){}
     G.registros  = snapToArray(results[4]);
     renderDashboard();
+      try { generarNotificaciones(); } catch(e){}
     renderCursos(G.cursos);
     poblarFiltroProfesorasCursos();
     try { poblarSelectorAsistencia(); } catch(e){}
@@ -1914,9 +2080,14 @@ window.verDetalleCurso = function(id){
     // Footer buttons
     +'<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">'
     +'<button id="btn-det-estado" class="btn btn-primary" style="flex:1;justify-content:center;min-width:130px;"><i class="ti ti-refresh"></i> Cambiar estado</button>'
-    +'<button id="btn-det-inscripciones" class="btn" style="flex:1;justify-content:center;min-width:130px;"><i class="ti ti-users"></i> Ver inscripciones</button>'
+    +'<button id="btn-det-inscripciones" class="btn" style="flex:1;justify-content:center;min-width:130px;"><i class="ti ti-users"></i> Inscripciones</button>'
     +'<button id="btn-det-editar" class="btn" style="justify-content:center;"><i class="ti ti-edit"></i> Editar</button>'
     +'<button class="btn btn-ghost" onclick="closeModal(&quot;modal-detalle-curso&quot;)"><i class="ti ti-x"></i></button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;">'
+    +'<button id="btn-det-certificados" class="btn btn-sm" style="flex:1;"><i class="ti ti-certificate"></i> Certificados PDF</button>'
+    +'<button id="btn-det-cerrar" class="btn btn-sm" style="flex:1;color:var(--am);border-color:var(--am);"><i class="ti ti-lock"></i> Cerrar curso + Acta</button>'
+    +'<button id="btn-det-encuestas" class="btn btn-sm" style="flex:1;"><i class="ti ti-clipboard-check"></i> Ver encuestas</button>'
     +'</div>';
 
   openModal('modal-detalle-curso');
@@ -1976,6 +2147,20 @@ window.verDetalleCurso = function(id){
     if(btnEdt) btnEdt.onclick = function(){
       closeModal('modal-detalle-curso');
       abrirModalEditarCurso(id);
+    };
+    var btnCert = document.getElementById('btn-det-certificados');
+    if(btnCert) btnCert.onclick = function(){
+      closeModal('modal-detalle-curso');
+      window.generarCertificadosLote(id);
+    };
+    var btnCerrar = document.getElementById('btn-det-cerrar');
+    if(btnCerrar) btnCerrar.onclick = function(){
+      closeModal('modal-detalle-curso');
+      window.cerrarCursoConActa(id);
+    };
+    var btnEnc = document.getElementById('btn-det-encuestas');
+    if(btnEnc) btnEnc.onclick = function(){
+      window.verEncuestasCurso(id, nombre);
     };
   }, 80);
 };
@@ -3336,15 +3521,18 @@ function aplicarRol(){
   document.body.setAttribute('data-role', ROLE);
 
   // Items del sidebar que solo ve el admin
-  var itemsAdminOnly = ['importar','configuracion'];
+  var itemsAdminOnly = ['importar','configuracion']; // Solo admin
   itemsAdminOnly.forEach(function(s){
     var el = document.querySelector('[data-screen="'+s+'"]');
     if(el) el.style.display = ROLE==='admin' ? '' : 'none';
   });
 
   // Pantalla de supervisión solo para jefa
+  // Supervisión y asignación: visibles para admin Y jefa
   var supervItem = document.querySelector('[data-screen="supervision"]');
-  if(supervItem) supervItem.style.display = ROLE==='jefa' ? '' : 'none';
+  if(supervItem) supervItem.style.display = (ROLE==='jefa'||ROLE==='admin') ? '' : 'none';
+  var asigItem = document.querySelector('[data-screen="asignacion"]');
+  if(asigItem) asigItem.style.display = (ROLE==='jefa'||ROLE==='admin') ? '' : 'none';
 
   // Botón "Nuevo curso" solo admin
   document.querySelectorAll('[onclick*="abrirModalNuevoCurso"]').forEach(function(b){
@@ -3379,6 +3567,174 @@ window.addEventListener('sigpaf:login', function(e){
     setTimeout(aplicarRol, 200);
   }
 });
+
+
+
+// ══════════════════════════════════════════════════════
+//  ASIGNACIÓN DE PROFESORAS A CURSOS
+// ══════════════════════════════════════════════════════
+window.renderAsignacion = function(){
+  var mes = (document.getElementById('asig-mes-sel')||{value:'MAYO 2026'}).value;
+  var filtro = (document.getElementById('asig-filtro')||{value:''}).value;
+
+  function norm(s){ return (s||'').toUpperCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  var mesBase = mes.toUpperCase().split(' ')[0].trim();
+
+  var cursosMes = (G.cursos||[]).filter(function(c){
+    var cMes = (c.mes||'').toUpperCase().split(' ')[0].trim();
+    return cMes === mesBase || (c.mes||'').toUpperCase().includes(mesBase);
+  });
+
+  var sinProf = cursosMes.filter(function(c){ return !c.profesora && !c.profesora_nombre; });
+  var conProf = cursosMes.filter(function(c){ return c.profesora || c.profesora_nombre; });
+
+  // Filtrar segun selector
+  var lista = cursosMes;
+  if(filtro === 'sinProf') lista = sinProf;
+  else if(filtro === 'conProf') lista = conProf;
+
+  // KPIs
+  var kpis = document.getElementById('asig-kpis');
+  if(kpis){
+    kpis.innerHTML =
+      kpiAsig(cursosMes.length, 'Cursos del mes', 'ti-calendar-event', 'var(--g)', 'var(--gl)')
+      + kpiAsig(sinProf.length, 'Sin profesora', 'ti-user-off', 'var(--re)', 'var(--rel)')
+      + kpiAsig(conProf.length, 'Con profesora', 'ti-user-check', 'var(--te)', 'var(--tel)')
+      + kpiAsig((G.profesoras||[]).length, 'Profesoras disponibles', 'ti-users', 'var(--in)', 'var(--inl)');
+  }
+
+  // Construir lista de profesoras para los selects
+  var profsOpts = '<option value="">— Seleccionar profesora —</option>';
+  (G.profesoras||[]).sort(function(a,b){
+    return (a.nombre||a.nombre_completo||'').localeCompare(b.nombre||b.nombre_completo||'');
+  }).forEach(function(p){
+    var n = p.nombre||p.nombre_completo||'';
+    var ci = p.ci||p.id||'';
+    profsOpts += '<option value="'+n+'" data-ci="'+ci+'">'+n+' (CI: '+ci+')</option>';
+  });
+
+  // Render lista
+  var el = document.getElementById('asig-lista');
+  if(!lista.length){
+    el.innerHTML = '<div class="empty-state"><i class="ti ti-check"></i><div class="empty-state-title">'
+      + (filtro==='sinProf'?'Todos los cursos ya tienen profesora asignada':'No hay cursos para este mes')
+      + '</div></div>';
+    return;
+  }
+
+  var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+  el.innerHTML = lista.map(function(c, i){
+    var nombre = c.nombre_curso||c.nombre||'Sin nombre';
+    var prof = c.profesora||c.profesora_nombre||'';
+    var codigo = c.codigo_registro||'—';
+    var dist = c.distrito_num?'Distrito '+c.distrito_num:'—';
+    var tieneProf = !!prof;
+    var cid = c.id;
+
+    return '<div class="card" style="border-left:4px solid '+(tieneProf?'var(--g)':'var(--re)')+';margin-bottom:10px;">'
+      // Header
+      + '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:14px;font-weight:700;">'+nombre+'</div>'
+      + '<div style="font-size:12px;color:var(--tx3);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      + '<span><i class="ti ti-map-pin"></i> '+dist+'</span>'
+      + '<span><i class="ti ti-clock"></i> '+(c.horario||'—')+'</span>'
+      + '<span class="cc-code">'+codigo+'</span>'
+      + '</div></div>'
+      + (tieneProf
+        ? '<span class="badge badge-g"><i class="ti ti-check"></i> Asignada</span>'
+        : '<span class="badge badge-re"><i class="ti ti-alert-triangle"></i> Sin profesora</span>')
+      + '</div>'
+      // Selector de profesora
+      + '<div style="display:flex;gap:8px;align-items:center;">'
+      + '<select class="form-control" id="asig-prof-'+cid+'" style="flex:1;font-size:13px;" onchange="window.previewAsignacion(&quot;'+cid+'&quot;)">'
+      + profsOpts.replace('value="'+prof+'"', 'value="'+prof+'" selected')
+      + '</select>'
+      + '<button class="btn btn-primary btn-sm" onclick="window.guardarAsignacion(&quot;'+cid+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)"><i class="ti ti-check"></i> Asignar</button>'
+      + (tieneProf
+        ? '<button class="btn btn-sm" style="color:var(--g);" onclick="window.enviarWhatsAppProf(&quot;'+cid+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)" title="Enviar link a la profesora"><i class="ti ti-brand-whatsapp"></i></button>'
+        : '')
+      + '</div>'
+      // Profesora actual
+      + (tieneProf
+        ? '<div style="margin-top:8px;padding:8px 10px;background:var(--gl);border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px;">'
+        + '<i class="ti ti-user-star" style="color:var(--g);"></i>'
+        + '<span>Asignada a: <strong>'+prof+'</strong>'+(c.profesora_ci?' (CI: '+c.profesora_ci+')':'')+'</span></div>'
+        : '')
+      + '</div>';
+  }).join('');
+};
+
+function kpiAsig(val, lbl, icon, color, bg){
+  return '<div class="kpi" style="--kpi-color:'+color+';--kpi-bg:'+bg+';">'
+    +'<div class="kpi-icon"><i class="ti '+icon+'" style="color:'+color+';"></i></div>'
+    +'<div class="kpi-val">'+val+'</div>'
+    +'<div class="kpi-lbl">'+lbl+'</div></div>';
+}
+
+window.previewAsignacion = function(cursoId){
+  // Feedback visual cuando cambia el select
+  var sel = document.getElementById('asig-prof-'+cursoId);
+  if(sel && sel.value) sel.style.borderColor = 'var(--g)';
+  else if(sel) sel.style.borderColor = '';
+};
+
+window.guardarAsignacion = async function(cursoId, nombreCurso){
+  var sel = document.getElementById('asig-prof-'+cursoId);
+  if(!sel){ showToast('Error interno','error'); return; }
+  var profNombre = sel.value;
+  if(!profNombre){ showToast('Selecciona una profesora primero','warn'); return; }
+
+  // Buscar CI de la profesora
+  var opt = sel.options[sel.selectedIndex];
+  var profCi = opt.getAttribute('data-ci') || '';
+
+  try{
+    await DB.collection(COL.cursos).doc(cursoId).update({
+      profesora:       profNombre,
+      profesora_ci:    profCi,
+      asignada_en:     new Date().toISOString(),
+      asignada_por:    G.user ? G.user.email : 'admin',
+    });
+
+    // Actualizar datos locales
+    var curso = G.cursos.find(function(c){ return c.id === cursoId; });
+    if(curso){
+      curso.profesora = profNombre;
+      curso.profesora_ci = profCi;
+    }
+
+    showToast(profNombre+' asignada a '+nombreCurso+' \u2713','success');
+    window.renderAsignacion(); // Re-render
+
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+window.enviarWhatsAppProf = function(cursoId, nombreCurso){
+  var curso = G.cursos.find(function(c){ return c.id === cursoId; });
+  if(!curso){ showToast('Curso no encontrado','error'); return; }
+
+  var prof = curso.profesora||'';
+  var profCi = curso.profesora_ci||'';
+  var link = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
+
+  var msg = 'Hola *'+prof+'*,'
+    + '\n\nSe te ha asignado el curso:'
+    + '\n\n*'+nombreCurso+'*'
+    + '\n Distrito: '+(curso.distrito_nombre||'Distrito '+(curso.distrito_num||'—'))
+    + '\n Horario: '+(curso.horario||'—')
+    + '\n Mes: '+(curso.mes||'—')
+    + '\n Codigo: '+(curso.codigo_registro||'—')
+    + '\n\n Ingresa a tu portal con tu CI (*'+profCi+'*):'
+    + '\n '+link
+    + '\n\n_Programa Apoyo a la Familia - CRE R.L._';
+
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  showToast('WhatsApp abierto — envía el mensaje','success');
+};
+
 
 // ══════════════════════════════════════════════════════
 //  SUPERVISIÓN — Pantalla para la Jefa de Fundación
@@ -4140,6 +4496,471 @@ window.imprimirResumenMensual = function(){
     }, 500);
   }, 100);
 };
+
+
+
+// ══════════════════════════════════════════════════════
+//  CERTIFICADO DIGITAL PDF
+// ══════════════════════════════════════════════════════
+window.generarCertificado = function(alumna, curso){
+  if(typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined'){
+    showToast('Cargando librería PDF...','warn'); return;
+  }
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
+  var W = doc.internal.pageSize.getWidth();
+  var H = doc.internal.pageSize.getHeight();
+
+  // Fondo
+  doc.setFillColor(240, 244, 241);
+  doc.rect(0, 0, W, H, 'F');
+
+  // Marco verde
+  doc.setDrawColor(0, 112, 60);
+  doc.setLineWidth(2);
+  doc.rect(10, 10, W-20, H-20);
+  doc.setLineWidth(0.5);
+  doc.rect(13, 13, W-26, H-26);
+
+  // Línea superior decorativa
+  doc.setFillColor(0, 112, 60);
+  doc.rect(10, 10, W-20, 4, 'F');
+
+  // Header institucional
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.setTextColor(0, 112, 60);
+  doc.text('CRE R.L.', W/2, 30, {align:'center'});
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Cooperativa Rural de Electrificacion R.L.', W/2, 36, {align:'center'});
+  doc.text('Gerencia de Asistencia y Comunicacion al Consumidor', W/2, 41, {align:'center'});
+
+  // Titulo
+  doc.setFontSize(8);
+  doc.setTextColor(0, 112, 60);
+  doc.text('PROGRAMA', W/2, 52, {align:'center'});
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(22);
+  doc.text('APOYO A LA FAMILIA', W/2, 60, {align:'center'});
+
+  // Certificado
+  doc.setFontSize(12);
+  doc.setTextColor(60, 60, 60);
+  doc.text('CERTIFICADO DE APROBACION', W/2, 72, {align:'center'});
+
+  // Línea decorativa
+  doc.setDrawColor(0, 112, 60);
+  doc.setLineWidth(0.5);
+  doc.line(W/2-40, 75, W/2+40, 75);
+
+  // Contenido
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(11);
+  doc.setTextColor(30, 30, 30);
+  doc.text('Se certifica que:', W/2, 86, {align:'center'});
+
+  // Nombre de la alumna
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(20);
+  doc.setTextColor(0, 112, 60);
+  var nombreAlumna = (alumna.nombre_alumna||alumna.nombre||'ALUMNA').toUpperCase();
+  doc.text(nombreAlumna, W/2, 98, {align:'center'});
+
+  // CI
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(80, 80, 80);
+  doc.text('C.I. '+(alumna.ci_alumna||alumna.ci||''), W/2, 105, {align:'center'});
+
+  // Detalles del curso
+  doc.setFontSize(11);
+  doc.setTextColor(30, 30, 30);
+  var nombreCurso = (curso.nombre_curso||curso.nombre||'CURSO').toUpperCase();
+  doc.text('Ha completado satisfactoriamente el curso de:', W/2, 116, {align:'center'});
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0, 90, 50);
+  doc.text(nombreCurso, W/2, 126, {align:'center'});
+
+  // Profesora y detalles
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  var prof = curso.profesora||curso.profesora_nombre||'';
+  var dist = curso.distrito_nombre||('Distrito '+(curso.distrito_num||''));
+  var mes = curso.mes||'';
+  doc.text('Profesora: '+prof, W/2, 136, {align:'center'});
+  doc.text(dist+' - '+mes, W/2, 142, {align:'center'});
+
+  // Asistencia
+  var asistencia = alumna.asistencia_pct || 0;
+  doc.text('Asistencia: '+asistencia+'%  -  Resultado: APROBADA', W/2, 150, {align:'center'});
+
+  // Fecha
+  var hoy = new Date().toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
+  doc.text('Santa Cruz de la Sierra, '+hoy, W/2, 162, {align:'center'});
+
+  // Firmas
+  doc.setDrawColor(100, 100, 100);
+  doc.line(45, 175, 115, 175);
+  doc.line(W-115, 175, W-45, 175);
+
+  doc.setFontSize(8);
+  doc.setTextColor(80, 80, 80);
+  doc.text('Jefa de Fundacion CRE', 80, 180, {align:'center'});
+  doc.text('Gerencia de Asistencia al Consumidor', W-80, 180, {align:'center'});
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Documento generado por SIGPAF - Sistema de Gestion del Programa Apoyo a la Familia', W/2, H-16, {align:'center'});
+  doc.text('CRE R.L. - '+hoy, W/2, H-12, {align:'center'});
+
+  // Guardar
+  var filename = 'Certificado_'+nombreAlumna.replace(/\s/g,'_')+'_'+nombreCurso.replace(/\s/g,'_')+'.pdf';
+  doc.save(filename);
+  showToast('Certificado generado: '+filename, 'success');
+};
+
+// Generar certificados en lote para todas las aprobadas de un curso
+window.generarCertificadosLote = async function(cursoId){
+  var curso = G.cursos.find(function(c){return c.id===cursoId;});
+  if(!curso){ showToast('Curso no encontrado','error'); return; }
+
+  var sesionesTotales = parseInt(curso.sesiones_total)||10;
+  var minimo = Math.ceil(sesionesTotales * 0.7);
+
+  // Cargar alumnas y asistencia
+  showLoading(true);
+  try{
+    var [snapAlumnas, snapAsis] = await Promise.all([
+      DB.collection('registros').where('curso_id','==',cursoId).get(),
+      DB.collection('asistencia').where('curso_id','==',cursoId).get()
+    ]);
+
+    var alumnas = snapAlumnas.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    var stats = {};
+    snapAsis.docs.forEach(function(d){
+      (d.data().registros||[]).forEach(function(r){
+        if(!stats[r.ci]) stats[r.ci] = {presentes:0,justificadas:0,total:0};
+        stats[r.ci].total++;
+        if(r.estado==='presente') stats[r.ci].presentes++;
+        if(r.estado==='justificada') stats[r.ci].justificadas++;
+      });
+    });
+
+    var aprobadas = alumnas.filter(function(a){
+      var s = stats[a.ci_alumna]||{presentes:0,justificadas:0};
+      return (s.presentes+s.justificadas) >= minimo;
+    });
+
+    if(!aprobadas.length){
+      showToast('No hay alumnas aprobadas en este curso','warn');
+      showLoading(false);
+      return;
+    }
+
+    showLoading(false);
+    if(!confirm('Se generaran '+aprobadas.length+' certificados PDF. Continuar?')) return;
+
+    aprobadas.forEach(function(a){
+      var s = stats[a.ci_alumna]||{presentes:0,justificadas:0};
+      a.asistencia_pct = Math.round((s.presentes+s.justificadas)/sesionesTotales*100);
+      window.generarCertificado(a, curso);
+    });
+
+    showToast(aprobadas.length+' certificados generados','success');
+  }catch(e){
+    showLoading(false);
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+// ══════════════════════════════════════════════════════
+//  CERRAR CURSO + ACTA FINAL
+// ══════════════════════════════════════════════════════
+window.cerrarCursoConActa = async function(cursoId){
+  var curso = G.cursos.find(function(c){return c.id===cursoId;});
+  if(!curso){ showToast('Curso no encontrado','error'); return; }
+
+  if(!confirm('Vas a cerrar el curso "'+( curso.nombre_curso||curso.nombre)+'". Se generara el acta final. Continuar?')) return;
+
+  var sesionesTotales = parseInt(curso.sesiones_total)||10;
+  var minimo = Math.ceil(sesionesTotales * 0.7);
+
+  showLoading(true);
+  try{
+    // Cargar datos
+    var [snapAlumnas, snapAsis] = await Promise.all([
+      DB.collection('registros').where('curso_id','==',cursoId).get(),
+      DB.collection('asistencia').where('curso_id','==',cursoId).get()
+    ]);
+
+    var alumnas = snapAlumnas.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    var sesiones = snapAsis.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+
+    var stats = {};
+    sesiones.forEach(function(s){
+      (s.registros||[]).forEach(function(r){
+        if(!stats[r.ci]) stats[r.ci] = {presentes:0,ausentes:0,justificadas:0,total:0};
+        stats[r.ci].total++;
+        if(r.estado==='presente') stats[r.ci].presentes++;
+        else if(r.estado==='ausente') stats[r.ci].ausentes++;
+        else if(r.estado==='justificada') stats[r.ci].justificadas++;
+      });
+    });
+
+    var aprobadas = 0, reprobadas = 0;
+    alumnas.forEach(function(a){
+      var s = stats[a.ci_alumna]||{presentes:0,justificadas:0};
+      if((s.presentes+s.justificadas) >= minimo) aprobadas++;
+      else reprobadas++;
+    });
+
+    // Actualizar estado del curso a finalizado
+    await DB.collection(COL.cursos).doc(cursoId).update({
+      estado: 'finalizado',
+      fecha_cierre: new Date().toISOString(),
+      cerrado_por: G.user?G.user.email:'admin',
+      resultado: {
+        total_alumnas: alumnas.length,
+        aprobadas: aprobadas,
+        reprobadas: reprobadas,
+        sesiones_registradas: sesiones.length,
+        tasa_aprobacion: alumnas.length>0?Math.round(aprobadas/alumnas.length*100):0,
+      }
+    });
+
+    // Actualizar localmente
+    curso.estado = 'finalizado';
+
+    // Generar acta PDF
+    generarActaPDF(curso, alumnas, sesiones, stats, sesionesTotales, minimo, aprobadas, reprobadas);
+
+    showLoading(false);
+    showToast('Curso cerrado y acta generada','success');
+    renderCursos(G.cursos);
+    renderDashboard();
+
+  }catch(e){
+    showLoading(false);
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+function generarActaPDF(curso, alumnas, sesiones, stats, sesionesTotales, minimo, aprobadas, reprobadas){
+  if(typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') return;
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({unit:'mm', format:'letter'});
+  var W = doc.internal.pageSize.getWidth();
+  var y = 20;
+
+  // Header
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(0, 112, 60);
+  doc.text('CRE R.L.', W/2, y, {align:'center'}); y += 5;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('Gerencia de Asistencia y Comunicacion al Consumidor', W/2, y, {align:'center'}); y += 4;
+  doc.text('Programa Apoyo a la Familia', W/2, y, {align:'center'}); y += 8;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.setTextColor(0, 60, 30);
+  doc.text('ACTA DE CIERRE DE CURSO', W/2, y, {align:'center'}); y += 8;
+
+  doc.setDrawColor(0, 112, 60);
+  doc.setLineWidth(0.5);
+  doc.line(20, y, W-20, y); y += 8;
+
+  // Datos del curso
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(30);
+  var datos = [
+    ['Curso:', (curso.nombre_curso||curso.nombre||'').toUpperCase()],
+    ['Codigo SIGECOOP:', curso.codigo_registro||'—'],
+    ['Profesora:', curso.profesora||'—'],
+    ['Distrito:', curso.distrito_nombre||('Distrito '+(curso.distrito_num||'—'))],
+    ['Periodo:', (curso.fecha_inicio||'—')+' al '+(curso.fecha_fin||'—')],
+    ['Horario:', curso.horario||'—'],
+    ['Lugar:', curso.lugar||'—'],
+    ['Mes:', curso.mes||'—'],
+  ];
+  datos.forEach(function(d){
+    doc.setFont('helvetica','bold');
+    doc.text(d[0], 25, y);
+    doc.setFont('helvetica','normal');
+    doc.text(d[1], 65, y);
+    y += 5;
+  });
+  y += 5;
+
+  // Resultados
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('RESULTADOS', 25, y); y += 6;
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.text('Total alumnas inscritas: '+alumnas.length, 25, y); y += 5;
+  doc.text('Sesiones registradas: '+sesiones.length+' de '+sesionesTotales, 25, y); y += 5;
+  doc.text('Minimo para aprobar: '+minimo+' clases (70%)', 25, y); y += 5;
+  doc.setTextColor(0, 112, 60);
+  doc.setFont('helvetica','bold');
+  doc.text('Aprobadas: '+aprobadas, 25, y);
+  doc.setTextColor(200, 0, 0);
+  doc.text('Reprobadas: '+reprobadas, 100, y);
+  var tasa = alumnas.length>0?Math.round(aprobadas/alumnas.length*100):0;
+  doc.setTextColor(30);
+  doc.text('Tasa de aprobacion: '+tasa+'%', 170, y);
+  y += 8;
+
+  // Tabla de alumnas
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(255);
+  doc.setFillColor(0, 112, 60);
+  doc.rect(20, y, W-40, 6, 'F');
+  doc.text('No.', 22, y+4);
+  doc.text('CI', 32, y+4);
+  doc.text('Nombre', 55, y+4);
+  doc.text('Pres.', 130, y+4);
+  doc.text('Aus.', 145, y+4);
+  doc.text('Just.', 158, y+4);
+  doc.text('%', 170, y+4);
+  doc.text('Estado', 180, y+4);
+  y += 7;
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  alumnas.forEach(function(a, i){
+    if(y > 250){ doc.addPage(); y = 20; }
+    var s = stats[a.ci_alumna]||{presentes:0,ausentes:0,justificadas:0,total:0};
+    var pres = s.presentes + s.justificadas;
+    var pct = Math.round(pres/sesionesTotales*100);
+    var estado = pres >= minimo ? 'APROBADA' : 'REPROBADA';
+
+    if(i%2===0){ doc.setFillColor(245,248,245); doc.rect(20,y-3,W-40,5,'F'); }
+    doc.setTextColor(30);
+    doc.text(String(i+1), 22, y);
+    doc.text(a.ci_alumna||'—', 32, y);
+    doc.text((a.nombre_alumna||'—').substring(0,40), 55, y);
+    doc.text(String(s.presentes), 132, y);
+    doc.text(String(s.ausentes), 147, y);
+    doc.text(String(s.justificadas), 160, y);
+    doc.text(pct+'%', 170, y);
+    doc.setTextColor(estado==='APROBADA'?0:200, estado==='APROBADA'?100:0, estado==='APROBADA'?50:0);
+    doc.text(estado, 180, y);
+    y += 5;
+  });
+  y += 10;
+
+  // Firmas
+  if(y > 240){ doc.addPage(); y = 30; }
+  doc.setDrawColor(100);
+  doc.line(30, y+15, 90, y+15);
+  doc.line(W-90, y+15, W-30, y+15);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(80);
+  doc.text('Profesora', 60, y+20, {align:'center'});
+  doc.text(curso.profesora||'', 60, y+24, {align:'center'});
+  doc.text('Administracion GU', W-60, y+20, {align:'center'});
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(150);
+  var hoy = new Date().toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
+  doc.text('Acta generada por SIGPAF - '+hoy, W/2, 270, {align:'center'});
+
+  var filename = 'Acta_Cierre_'+(curso.nombre_curso||'curso').replace(/\s/g,'_')+'_'+(curso.mes||'')+'.pdf';
+  doc.save(filename);
+}
+
+// ══════════════════════════════════════════════════════
+//  SISTEMA DE ENCUESTAS DE SATISFACCIÓN
+// ══════════════════════════════════════════════════════
+// Preguntas predefinidas del programa
+var ENCUESTA_PREGUNTAS = [
+  {id:'p1', texto:'¿Como califica al contenido del curso?', tipo:'escala'},
+  {id:'p2', texto:'¿Como califica a la profesora?', tipo:'escala'},
+  {id:'p3', texto:'¿El horario fue conveniente para usted?', tipo:'escala'},
+  {id:'p4', texto:'¿El lugar de clases fue adecuado?', tipo:'escala'},
+  {id:'p5', texto:'¿Recomendaria este curso a otras personas?', tipo:'sino'},
+  {id:'p6', texto:'¿Que mejoraria del curso?', tipo:'texto'},
+];
+
+window.verEncuestasCurso = async function(cursoId, nombreCurso){
+  var cont = document.getElementById('modal-detalle-content');
+  var tit = document.getElementById('modal-detalle-titulo');
+  if(tit) tit.textContent = 'Encuestas: '+(nombreCurso||'Curso');
+  if(!cont) return;
+
+  cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+  openModal('modal-detalle-curso');
+
+  try{
+    var snap = await DB.collection('encuestas').where('curso_id','==',cursoId).get();
+    var respuestas = snap.docs.map(function(d){return d.data();});
+
+    if(!respuestas.length){
+      cont.innerHTML = '<div class="empty-state"><i class="ti ti-clipboard-off"></i><div class="empty-state-title">Sin respuestas</div><div class="empty-state-sub">Ninguna alumna ha respondido la encuesta de este curso aun.<br><br>El link de la encuesta es:<br><strong style="font-family:monospace;color:var(--g);">sigpaf_registro.html?encuesta='+cursoId+'</strong></div></div>'
+        +'<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button></div>';
+      return;
+    }
+
+    // Calcular promedios
+    var promedios = {};
+    ENCUESTA_PREGUNTAS.forEach(function(p){
+      if(p.tipo==='escala'){
+        var vals = respuestas.map(function(r){return parseInt(r[p.id])||0;}).filter(function(v){return v>0;});
+        promedios[p.id] = vals.length>0?(vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1):0;
+      } else if(p.tipo==='sino'){
+        var si = respuestas.filter(function(r){return r[p.id]==='si';}).length;
+        promedios[p.id] = respuestas.length>0?Math.round(si/respuestas.length*100):0;
+      }
+    });
+
+    var html = '<div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:14px;">'+respuestas.length+' respuestas recibidas</div>';
+
+    ENCUESTA_PREGUNTAS.forEach(function(p){
+      if(p.tipo==='escala'){
+        var prom = parseFloat(promedios[p.id])||0;
+        var pct = prom/5*100;
+        var color = pct>=80?'var(--g)':pct>=60?'var(--te)':pct>=40?'var(--am)':'var(--re)';
+        html += '<div style="margin-bottom:12px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;"><span>'+p.texto+'</span><span style="font-weight:700;color:'+color+';">'+prom+'/5</span></div>'
+          +'<div class="prog-wrap"><div class="prog-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
+      } else if(p.tipo==='sino'){
+        html += '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
+          +'<span style="font-size:12.5px;">'+p.texto+'</span>'
+          +'<span class="badge badge-g">'+promedios[p.id]+'% Si</span></div>';
+      } else if(p.tipo==='texto'){
+        var textos = respuestas.map(function(r){return r[p.id];}).filter(Boolean);
+        if(textos.length){
+          html += '<div style="margin-bottom:12px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">'+p.texto+'</div>';
+          textos.forEach(function(t){
+            html += '<div style="background:var(--bg);border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:4px;font-style:italic;">"'+t+'"</div>';
+          });
+          html += '</div>';
+        }
+      }
+    });
+
+    html += '<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button></div>';
+    cont.innerHTML = html;
+
+  }catch(e){
+    cont.innerHTML = '<div class="empty-state"><div class="empty-state-title">Error</div><div class="empty-state-sub">'+e.message+'</div></div>';
+  }
+};
+
 
 // ══════════════════════════════════════════════════════
 //  IMPORTADOR SIGECOOP — INTEGRADO EN EL PANEL
