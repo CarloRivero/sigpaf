@@ -283,7 +283,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
       <div class="form-group">
         <label class="form-label">Carnet de identidad <span class="req">*</span></label>
-        <input class="form-input prefilled" id="nf-ci" type="tel" readonly>
+        <input class="form-input prefilled" id="nf-ci" inputmode="numeric" pattern="[0-9]*" maxlength="12" oninput="this.value=this.value.replace(/[^0-9]/g,'')" type="tel" readonly>
       </div>
       <div class="form-group">
         <label class="form-label">Nombre completo <span class="req">*</span></label>

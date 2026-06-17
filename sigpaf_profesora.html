@@ -174,7 +174,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="auth-sub">CRE R.L. · Gerencia de Asistencia al Consumidor</div>
     <div class="fg">
       <label class="fl">Número de CI</label>
-      <input class="fi" id="ci-login" type="number" placeholder="Ej: 5123456" onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="fi" id="ci-login" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 5123456" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     </div>
     <div class="auth-err" id="auth-err"></div>
     <button class="btn btn-g" id="btn-login" onclick="doLogin()">
@@ -380,6 +380,13 @@ var COLORS = ['#00703C','#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6','#0D94
 
 // ── LOGIN por CI de profesora ──
 function doLogin(){
+  // Validar CI
+  var ciRaw = document.getElementById('ci-login').value.trim().replace(/[^0-9]/g, '');
+  document.getElementById('ci-login').value = ciRaw;
+  if(!ciRaw || ciRaw.length < 4){
+    showToast('Ingresa un CI válido (mínimo 4 dígitos)', 'warn');
+    return;
+  }
   var ci = (document.getElementById('ci-login').value||'').trim();
   var err = document.getElementById('auth-err');
   err.textContent = '';
@@ -740,7 +747,7 @@ function renderResumen(){
     } else if(sesionesCompletadas===0){
       msg = '<i class="ti ti-rocket"></i> ¡Listo para empezar! Cuando inicies la primera clase, marca asistencia desde la pestaña "Asistencia".';
     } else if(pct >= 100){
-      msg = '<i class="ti ti-trophy"></i> ¡Felicitaciones! Completaste todas las sesiones. ' + aprobadas + ' alumnas aprobaron el curso.';
+      msg = '<div style="text-align:center;padding:8px 0;"><div style="font-size:32px;margin-bottom:6px;">🎉</div><div style="font-size:16px;font-weight:800;color:var(--g);">¡Felicidades! Curso completado</div><div style="margin-top:6px;">'+aprobadas+' de '+ALUMNAS.length+' alumnas aprobaron el curso.<br>Puedes exportar el listado final desde la pestaña Alumnas.</div></div>';
     } else if(pct >= 70){
       msg = '<i class="ti ti-flame"></i> ¡Excelente avance! Vas en la recta final del curso.';
     } else if(pct >= 40){
@@ -978,6 +985,7 @@ function compartirWA(){
   var nombre = CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—';
   var msg    = 'Hola! Te invito a inscribirte al curso:\n\n*'+nombre+'*\nDistrito: '+dist+'\n\nEscanea el QR o ingresa aqui:\n'+link+'\n\n_Programa Apoyo a la Familia - CRE R.L._';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  showToast('WhatsApp abierto — envía el mensaje','success');
 }
 
 function descargarQR(){
@@ -1065,6 +1073,18 @@ function setTab(name){
   });
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
+}
+
+
+function cerrarSesionProf(){
+  if(confirm('¿Cerrar sesión del portal?')){
+    PROF = null; CURSOS = []; CURSO_SEL = null; ALUMNAS = []; ATT = {};
+    ASISTENCIAS_HIST = {}; SESIONES_REGISTRADAS = [];
+    document.getElementById('page-app').style.display = 'none';
+    document.getElementById('page-login').style.display = 'flex';
+    document.getElementById('ci-input').value = '';
+    showToast('Sesión cerrada', 'success');
+  }
 }
 
 function showToast(msg,tipo){

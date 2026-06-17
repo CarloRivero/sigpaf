@@ -581,6 +581,15 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <div id="dashboard-states"><div class="empty-state" style="padding:20px;">Cargando...</div></div>
           </div>
         </div>
+
+        <!-- Ranking profesoras -->
+        <div class="card" style="margin-top:16px;">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-trophy" style="color:var(--am);"></i> Ranking de profesoras</div>
+            <button class="btn btn-sm btn-ghost" onclick="navTo('supervision',null)">Detalle <i class="ti ti-arrow-right"></i></button>
+          </div>
+          <div id="dashboard-ranking"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+        </div>
       </div>
 
       <!-- ═══ CURSOS ═══ -->
@@ -764,112 +773,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       <div class="screen" id="screen-reportes">
         <!-- Tabs Reportes -->
         <div class="tabs">
-          <div class="tab-item active" id="tab-rep-general" onclick="
-// ── CONFIGURACIÓN REAL (guarda en Firestore) ──
-window.guardarConfiguracion = async function(){
-  try{
-    var data = {
-      anio_activo: document.querySelector('#screen-configuracion select').value || '2026',
-      pct_minimo_asistencia: parseInt(document.querySelector('#screen-configuracion input[type="number"]').value) || 70,
-      cupo_default: parseInt(document.querySelectorAll('#screen-configuracion input[type="number"]')[1].value) || 30,
-      actualizado_en: new Date().toISOString(),
-      actualizado_por: G.user ? G.user.email : 'admin',
-    };
-    await DB.collection('configuracion').doc('parametros').set(data, {merge: true});
-    showToast('Configuración guardada en Firebase ✓', 'success');
-  }catch(e){
-    showToast('Error: ' + e.message, 'error');
-  }
-};
-
-// Cargar configuración al inicio
-window.cargarConfiguracion = async function(){
-  try{
-    var doc = await DB.collection('configuracion').doc('parametros').get();
-    if(doc.exists){
-      var d = doc.data();
-      var selects = document.querySelectorAll('#screen-configuracion select');
-      var inputs = document.querySelectorAll('#screen-configuracion input[type="number"]');
-      if(selects[0] && d.anio_activo) selects[0].value = d.anio_activo;
-      if(inputs[0] && d.pct_minimo_asistencia) inputs[0].value = d.pct_minimo_asistencia;
-      if(inputs[1] && d.cupo_default) inputs[1].value = d.cupo_default;
-    }
-  }catch(e){ console.error('Config:', e); }
-};
-
-
-// ── NOTIFICACIONES BASADAS EN DATOS REALES ──
-window.generarNotificaciones = function(){
-  var notifs = [];
-  var hoy = new Date();
-  var hoyStr = hoy.toISOString().split('T')[0];
-
-  // 1. Cursos sin profesora asignada
-  var sinProf = (G.cursos||[]).filter(function(c){
-    return !c.profesora && !c.profesora_nombre && c.estado !== 'finalizado';
-  });
-  if(sinProf.length > 0){
-    notifs.push({icon:'ti-user-off', color:'var(--re)', title:sinProf.length+' cursos sin profesora asignada', sub:'Requieren asignación inmediata', time:'Ahora', unread:true});
-  }
-
-  // 2. Cursos sin código SIGECOOP
-  var sinCodigo = (G.cursos||[]).filter(function(c){ return !c.codigo_registro; });
-  if(sinCodigo.length > 0){
-    notifs.push({icon:'ti-qrcode-off', color:'var(--am)', title:sinCodigo.length+' cursos sin código del SIGECOOP', sub:'No podrán generar QR funcional', time:'Ahora', unread:true});
-  }
-
-  // 3. Cursos próximos a iniciar (fecha_inicio dentro de 7 días)
-  var proximos = (G.cursos||[]).filter(function(c){
-    if(!c.fecha_inicio || c.estado === 'finalizado') return false;
-    var diff = (new Date(c.fecha_inicio) - hoy) / (1000*60*60*24);
-    return diff >= 0 && diff <= 7;
-  });
-  if(proximos.length > 0){
-    notifs.push({icon:'ti-calendar-event', color:'var(--te)', title:proximos.length+' cursos inician esta semana', sub:proximos.map(function(c){return c.nombre_curso||c.nombre;}).slice(0,3).join(', '), time:'Próximos 7 días', unread:true});
-  }
-
-  // 4. Cursos finalizados (fecha pasada) que siguen "en ejecución"
-  var sinCerrar = (G.cursos||[]).filter(function(c){
-    if(!c.fecha_fin) return false;
-    return new Date(c.fecha_fin) < hoy && c.estado !== 'finalizado' && c.estado !== 'aprobado';
-  });
-  if(sinCerrar.length > 0){
-    notifs.push({icon:'ti-alert-triangle', color:'var(--am)', title:sinCerrar.length+' cursos pasaron su fecha fin sin cerrar', sub:'Requieren cambio de estado a Finalizado', time:'Pendiente', unread:true});
-  }
-
-  // 5. Inscripciones recientes (las últimas 5)
-  // Se cargará desde Firestore si hay registros
-
-  // 6. Mensaje informativo si todo está en orden
-  if(notifs.length === 0){
-    notifs.push({icon:'ti-check', color:'var(--g)', title:'Todo en orden', sub:'No hay alertas pendientes en el sistema', time:'Ahora', unread:false});
-  }
-
-  // Render
-  var el = document.getElementById('notifs-list');
-  if(!el) return;
-
-  el.innerHTML = notifs.map(function(n){
-    return '<div class="notif-item'+(n.unread?' unread':'')+'">'
-      +(n.unread?'<div class="notif-dot"></div>':'<div style="width:8px;flex-shrink:0;"></div>')
-      +'<div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:'+n.color+'15;display:flex;align-items:center;justify-content:center;"><i class="ti '+n.icon+'" style="color:'+n.color+';font-size:18px;"></i></div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">'+n.title+'</div><div style="font-size:12px;color:var(--tx3);margin-top:2px;">'+n.sub+'</div></div>'
-      +'<div style="font-size:11px;color:var(--tx3);white-space:nowrap;">'+n.time+'</div>'
-      +'</div>';
-  }).join('');
-
-  // Actualizar badge
-  var unreadCount = notifs.filter(function(n){ return n.unread; }).length;
-  var badge = document.getElementById('badge-notif');
-  var dot = document.getElementById('notif-dot');
-  if(badge){
-    if(unreadCount > 0){ badge.style.display=''; badge.textContent=unreadCount; }
-    else { badge.style.display='none'; }
-  }
-  if(dot){ dot.style.display = unreadCount > 0 ? '' : 'none'; }
-};
-
-window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
+          <div class="tab-item active" id="tab-rep-general" onclick="window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
           <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual ejecutivo</div>
         </div>
 
@@ -1029,6 +933,12 @@ window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes ge
               <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-trophy" style="color:var(--g);"></i> Cursos más demandados</div>
               <div id="rm-top-cursos"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
             </div>
+          </div>
+
+          <!-- Resultados de encuestas del mes -->
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-clipboard-check" style="color:var(--in);"></i> Encuestas de satisfacción del mes</div>
+            <div id="rm-encuestas"><div style="font-size:12.5px;color:var(--tx3);padding:10px;">Las encuestas se cargan al seleccionar un mes...</div></div>
           </div>
 
           <!-- Cursos pendientes de gestión -->
@@ -1705,6 +1615,7 @@ function initApp(){
     G.registros  = snapToArray(results[4]);
     renderDashboard();
       try { generarNotificaciones(); } catch(e){}
+      try { renderRankingProfesoras(); } catch(e){}
     renderCursos(G.cursos);
     poblarFiltroProfesorasCursos();
     try { poblarSelectorAsistencia(); } catch(e){}
@@ -2085,9 +1996,9 @@ window.verDetalleCurso = function(id){
     +'<button class="btn btn-ghost" onclick="closeModal(&quot;modal-detalle-curso&quot;)"><i class="ti ti-x"></i></button>'
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
-    +'<button id="btn-det-certificados" class="btn btn-sm" style="flex:1;"><i class="ti ti-certificate"></i> Certificados PDF</button>'
-    +'<button id="btn-det-cerrar" class="btn btn-sm" style="flex:1;color:var(--am);border-color:var(--am);"><i class="ti ti-lock"></i> Cerrar curso + Acta</button>'
-    +'<button id="btn-det-encuestas" class="btn btn-sm" style="flex:1;"><i class="ti ti-clipboard-check"></i> Ver encuestas</button>'
+    +'<button class="btn btn-sm" style="flex:1;" onclick="closeModal(&quot;modal-detalle-curso&quot;);window.generarCertificadosLote(&quot;'+id+'&quot;)"><i class="ti ti-certificate"></i> Certificados PDF</button>'
+    +'<button class="btn btn-sm" style="flex:1;color:var(--am);border-color:var(--am);" onclick="closeModal(&quot;modal-detalle-curso&quot;);window.cerrarCursoConActa(&quot;'+id+'&quot;)"><i class="ti ti-lock"></i> Cerrar curso + Acta</button>'
+    +'<button class="btn btn-sm" style="flex:1;" onclick="window.verEncuestasCurso(&quot;'+id+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)"><i class="ti ti-clipboard-check"></i> Ver encuestas</button>'
     +'</div>';
 
   openModal('modal-detalle-curso');
@@ -2148,20 +2059,7 @@ window.verDetalleCurso = function(id){
       closeModal('modal-detalle-curso');
       abrirModalEditarCurso(id);
     };
-    var btnCert = document.getElementById('btn-det-certificados');
-    if(btnCert) btnCert.onclick = function(){
-      closeModal('modal-detalle-curso');
-      window.generarCertificadosLote(id);
-    };
-    var btnCerrar = document.getElementById('btn-det-cerrar');
-    if(btnCerrar) btnCerrar.onclick = function(){
-      closeModal('modal-detalle-curso');
-      window.cerrarCursoConActa(id);
-    };
-    var btnEnc = document.getElementById('btn-det-encuestas');
-    if(btnEnc) btnEnc.onclick = function(){
-      window.verEncuestasCurso(id, nombre);
-    };
+    // Botones certificados/cerrar/encuestas usan onclick directo en HTML
   }, 80);
 };
 
@@ -2631,6 +2529,8 @@ window.buscarCI = function(){
           }).join(''):'<div style="font-size:12px;color:var(--tx3);">Sin historial de cursos registrado</div>')
         +'<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;margin-top:14px;" onclick="inscribirAlumna(\''+ci+'\',\''+encodeURIComponent(alumna.nombre||'')+'\')">'
         +'<i class="ti ti-user-plus"></i> Inscribir a curso actual</button></div>';
+      // Cargar historial academico completo
+      setTimeout(function(){ try{ window.cargarHistorialCompleto(ci, alumna.nombre||alumna.nombre_completo||''); }catch(e){} }, 300);
     } else {
       stat.innerHTML='<span style="color:var(--am);font-weight:600;"><i class="ti ti-user-plus"></i> CI no encontrado – Nueva alumna</span>';
       res.innerHTML='<div class="ci-new-card">'
@@ -2653,6 +2553,164 @@ window.buscarCI = function(){
     }
   }).catch(function(e){ stat.innerHTML='<span style="color:var(--re);">Error: '+e.message+'</span>'; });
 };
+
+
+// ── HISTORIAL ACADÉMICO COMPLETO POR CI ──
+window.cargarHistorialCompleto = async function(ci, nombre){
+  var res = document.getElementById('ci-resultado');
+  if(!res) return;
+
+  res.innerHTML += '<div class="card" style="margin-top:12px;"><div class="card-title" style="margin-bottom:10px;"><i class="ti ti-history" style="color:var(--in);"></i> Historial académico completo</div><div id="historial-loading" style="text-align:center;padding:16px;"><div class="loader-spin" style="margin:0 auto;width:24px;height:24px;border-width:2px;"></div><div style="margin-top:8px;font-size:12px;color:var(--tx3);">Cargando historial...</div></div></div>';
+
+  try{
+    // Cargar todas las inscripciones de esta alumna
+    var snap = await DB.collection('registros').where('ci_alumna','==', ci).get();
+    var inscripciones = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+
+    // Para cada inscripción, buscar datos del curso y asistencia
+    var historial = [];
+    for(var i=0; i<inscripciones.length; i++){
+      var reg = inscripciones[i];
+      var curso = null;
+
+      // Buscar datos del curso
+      if(reg.curso_id){
+        try{
+          var docCurso = await DB.collection(COL.cursos).doc(reg.curso_id).get();
+          if(docCurso.exists) curso = Object.assign({id:docCurso.id}, docCurso.data());
+        }catch(e){}
+      }
+      if(!curso && reg.codigo_registro){
+        try{
+          var s = await DB.collection(COL.cursos).where('codigo_registro','==',String(reg.codigo_registro)).limit(1).get();
+          if(!s.empty) curso = Object.assign({id:s.docs[0].id}, s.docs[0].data());
+        }catch(e){}
+      }
+
+      // Cargar asistencia
+      var presentes = 0, ausentes = 0, justificadas = 0, totalSes = 0;
+      var sesionesTotales = (curso?parseInt(curso.sesiones_total):10)||10;
+      if(curso){
+        try{
+          var snapAsis = await DB.collection('asistencia').where('curso_id','==',curso.id).get();
+          snapAsis.docs.forEach(function(d){
+            var regs = d.data().registros||[];
+            var mio = regs.find(function(r){ return r.ci === ci; });
+            if(mio){
+              totalSes++;
+              if(mio.estado==='presente') presentes++;
+              else if(mio.estado==='ausente') ausentes++;
+              else if(mio.estado==='justificada') justificadas++;
+            }
+          });
+        }catch(e){}
+      }
+
+      var pres = presentes + justificadas;
+      var minimo = Math.ceil(sesionesTotales * 0.7);
+      var estado;
+      if(totalSes===0) estado = 'Sin registros';
+      else if(pres >= minimo) estado = 'Aprobada';
+      else if((pres + (sesionesTotales - totalSes)) < minimo) estado = 'Reprobada';
+      else estado = 'En curso';
+
+      historial.push({
+        nombre_curso: reg.nombre_curso||(curso?curso.nombre_curso:'Curso desconocido'),
+        profesora: reg.profesora||(curso?curso.profesora:''),
+        distrito: reg.distrito||(curso?curso.distrito_nombre:''),
+        mes: reg.mes||(curso?curso.mes:''),
+        fecha_registro: reg.fecha_registro||'',
+        presentes: presentes,
+        ausentes: ausentes,
+        justificadas: justificadas,
+        total_sesiones: totalSes,
+        sesiones_totales: sesionesTotales,
+        pct: sesionesTotales>0?Math.round(pres/sesionesTotales*100):0,
+        estado: estado,
+        codigo: reg.codigo_registro||reg.codigo_curso||'',
+      });
+    }
+
+    // Renderizar historial
+    var container = document.querySelector('#ci-resultado .card:last-child');
+    if(!container) return;
+
+    if(!historial.length){
+      container.innerHTML = '<div class="card-title" style="margin-bottom:10px;"><i class="ti ti-history" style="color:var(--in);"></i> Historial académico</div><div class="empty-state" style="padding:14px;"><i class="ti ti-school"></i><div class="empty-state-title">Sin historial</div><div class="empty-state-sub">Esta persona no tiene inscripciones registradas</div></div>';
+      return;
+    }
+
+    // Stats resumen
+    var totalCursos = historial.length;
+    var aprobados = historial.filter(function(h){return h.estado==='Aprobada';}).length;
+    var reprobados = historial.filter(function(h){return h.estado==='Reprobada';}).length;
+    var enCurso = historial.filter(function(h){return h.estado==='En curso';}).length;
+
+    var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)'];
+    var ECLS = {Aprobada:'badge-g','En curso':'badge-am',Reprobada:'badge-re','Sin registros':'badge-gray'};
+
+    var html = '<div class="card-title" style="margin-bottom:14px;"><i class="ti ti-history" style="color:var(--in);"></i> Historial académico de '+(nombre||ci)+'</div>';
+
+    // KPIs mini
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--in);">'+totalCursos+'</div><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">Cursos</div></div>';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--g);">'+aprobados+'</div><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">Aprobados</div></div>';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--am);">'+enCurso+'</div><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">En curso</div></div>';
+    html += '<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--re);">'+reprobados+'</div><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;">Reprobados</div></div>';
+    html += '</div>';
+
+    // Lista de cursos
+    html += '<div class="table-wrap"><table><thead><tr><th>Curso</th><th>Profesora</th><th>Mes</th><th>Asistencia</th><th>Estado</th></tr></thead><tbody>';
+    historial.sort(function(a,b){ return (b.fecha_registro||'').localeCompare(a.fecha_registro||''); });
+    historial.forEach(function(h,i){
+      var barColor = h.estado==='Aprobada'?'var(--g)':h.estado==='Reprobada'?'var(--re)':h.estado==='En curso'?'var(--am)':'#E5E7EB';
+      html += '<tr>'
+        + '<td class="td-bold">'+h.nombre_curso+'</td>'
+        + '<td style="font-size:12px;">'+h.profesora+'</td>'
+        + '<td><span class="badge badge-am">'+h.mes+'</span></td>'
+        + '<td><div style="width:100px;"><div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">'+(h.presentes+h.justificadas)+'/'+h.sesiones_totales+' ('+h.pct+'%)</div><div class="prog-wrap" style="height:5px;"><div class="prog-fill" style="height:5px;width:'+Math.min(100,h.pct)+'%;background:'+barColor+';"></div></div></div></td>'
+        + '<td><span class="badge '+ECLS[h.estado]+'">'+h.estado+'</span></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // Botón exportar
+    html += '<div style="margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="window.exportarHistorialCI(&quot;'+ci+'&quot;,&quot;'+(nombre||'').replace(/"/g,'')+'&quot;)"><i class="ti ti-download"></i> Exportar historial Excel</button></div>';
+
+    container.innerHTML = html;
+    window.__HISTORIAL_CI = {ci:ci, nombre:nombre, historial:historial};
+
+  }catch(e){
+    var container = document.querySelector('#ci-resultado .card:last-child');
+    if(container) container.innerHTML = '<div style="color:var(--re);font-size:13px;">Error cargando historial: '+e.message+'</div>';
+  }
+};
+
+window.exportarHistorialCI = function(ci, nombre){
+  if(!window.__HISTORIAL_CI || typeof XLSX==='undefined') return;
+  var rows = window.__HISTORIAL_CI.historial.map(function(h){
+    return {
+      'Curso': h.nombre_curso,
+      'Profesora': h.profesora,
+      'Distrito': h.distrito,
+      'Mes': h.mes,
+      'Fecha inscripcion': (h.fecha_registro||'').slice(0,10),
+      'Presentes': h.presentes,
+      'Ausentes': h.ausentes,
+      'Justificadas': h.justificadas,
+      'Asistencia %': h.pct,
+      'Estado': h.estado,
+      'Codigo': h.codigo,
+    };
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:25},{wch:20},{wch:12},{wch:12},{wch:8},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+  XLSX.writeFile(wb, 'Historial_'+ci+'_'+(nombre||'alumna').replace(/\s/g,'_')+'.xlsx');
+  showToast('Historial exportado', 'success');
+};
+
 
 window.inscribirAlumna = function(ci, nombreEnc){
   var nombre = decodeURIComponent(nombreEnc);
@@ -3836,10 +3894,11 @@ window.renderSupervision = async function(){
           + '</div>'
 
           // Stats row
-          + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">'
+          + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">'
           + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--g);">'+p.cursos.length+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Cursos</div></div>'
           + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--in);">'+p.total_alumnas+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Alumnas</div></div>'
           + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--te);">'+p.sesiones+'</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Sesiones</div></div>'
+          + '<div style="background:var(--bg);padding:8px;border-radius:6px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--am);" id="enc-prom-'+i+'">&mdash;</div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;">Calif. alumnas</div></div>'
           + '</div>'
 
           // Lista compacta de cursos
@@ -3853,6 +3912,9 @@ window.renderSupervision = async function(){
                 + '</div>';
             }).join('')
           + '</div></details>'
+          + '<div style="display:flex;gap:6px;margin-top:8px;margin-bottom:8px;">'
+          + '<button class="btn btn-sm" style="flex:1;" onclick="window.verEncuestasProfesora(&quot;'+p.nombre.replace(/"/g,'')+'&quot;,'+JSON.stringify(p.cursos.map(function(c){return c.id;}))+')"><i class="ti ti-clipboard-check"></i> Ver encuestas de sus cursos</button>'
+          + '</div>'
 
           // Comentario
           + '<div style="background:var(--inl);border-radius:6px;padding:10px;margin-top:8px;">'
@@ -3871,10 +3933,131 @@ window.renderSupervision = async function(){
 
     cont.innerHTML = html;
     window.__SUP_DATA = {profsArr:profsArr, mes:mes};
+    // Cargar calificaciones de encuestas en background
+    try { window.cargarPromediosEncuestas(profsArr); } catch(e){}
 
   }catch(e){
     cont.innerHTML = '<div class="empty-state"><i class="ti ti-alert-triangle" style="color:var(--re);"></i><div class="empty-state-title">Error</div><div class="empty-state-sub">'+e.message+'</div></div>';
     console.error(e);
+  }
+};
+
+
+
+// ── VER ENCUESTAS DE UNA PROFESORA (todos sus cursos) ──
+window.verEncuestasProfesora = async function(profNombre, cursoIds){
+  var cont = document.getElementById('modal-detalle-content');
+  var tit = document.getElementById('modal-detalle-titulo');
+  if(tit) tit.textContent = 'Encuestas: '+profNombre;
+  if(!cont) return;
+  cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+  openModal('modal-detalle-curso');
+
+  try{
+    // Cargar todas las encuestas de todos los cursos de esta profesora
+    var todasRespuestas = [];
+    for(var i=0; i<cursoIds.length; i++){
+      var snap = await DB.collection('encuestas').where('curso_id','==',cursoIds[i]).get();
+      snap.docs.forEach(function(d){ todasRespuestas.push(Object.assign({cursoId:cursoIds[i]}, d.data())); });
+    }
+
+    if(!todasRespuestas.length){
+      cont.innerHTML = '<div class="empty-state"><i class="ti ti-clipboard-off"></i><div class="empty-state-title">Sin encuestas</div><div class="empty-state-sub">Las alumnas de '+profNombre+' aun no han respondido encuestas</div></div>'
+        + '<div style="margin-top:14px;"><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button></div>';
+      return;
+    }
+
+    // Calcular promedios
+    var pregs = [
+      {id:'p1', texto:'Contenido del curso'},
+      {id:'p2', texto:'Calificacion a la profesora'},
+      {id:'p3', texto:'Horario conveniente'},
+      {id:'p4', texto:'Lugar adecuado'},
+    ];
+
+    var html = '<div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:14px;">'+todasRespuestas.length+' respuestas de '+cursoIds.length+' cursos</div>';
+
+    // Promedio general de la profesora
+    var promedioGeneral = 0;
+    var totalVals = 0;
+    pregs.forEach(function(p){
+      var vals = todasRespuestas.map(function(r){return parseInt(r[p.id])||0;}).filter(function(v){return v>0;});
+      var prom = vals.length>0?(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+      promedioGeneral += prom;
+      totalVals++;
+      var pct = prom/5*100;
+      var color = pct>=80?'var(--g)':pct>=60?'var(--te)':pct>=40?'var(--am)':'var(--re)';
+      html += '<div style="margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px;"><span>'+p.texto+'</span><span style="font-weight:700;color:'+color+';">'+prom.toFixed(1)+'/5</span></div>'
+        + '<div class="prog-wrap"><div class="prog-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
+    });
+
+    var promFinal = totalVals>0?(promedioGeneral/totalVals):0;
+    var colorFinal = promFinal>=4?'var(--g)':promFinal>=3?'var(--te)':promFinal>=2?'var(--am)':'var(--re)';
+
+    // Header con nota general
+    html = '<div style="text-align:center;margin-bottom:16px;padding:14px;background:var(--bg);border-radius:12px;">'
+      + '<div style="font-size:36px;font-weight:800;color:'+colorFinal+';">'+promFinal.toFixed(1)+'</div>'
+      + '<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-top:4px;">Calificacion general de '+profNombre+'</div>'
+      + '<div style="font-size:12px;color:var(--tx3);margin-top:4px;">'+todasRespuestas.length+' respuestas de '+cursoIds.length+' cursos</div>'
+      + '</div>' + html;
+
+    // Recomendacion
+    var siCount = todasRespuestas.filter(function(r){return r.p5==='si';}).length;
+    var pctSi = todasRespuestas.length>0?Math.round(siCount/todasRespuestas.length*100):0;
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:10px;">'
+      + '<span style="font-size:12.5px;">Recomendarian el curso?</span>'
+      + '<span class="badge badge-g" style="font-size:12px;">'+pctSi+'% Si</span></div>';
+
+    // Comentarios
+    var comentarios = todasRespuestas.map(function(r){return r.p6;}).filter(Boolean);
+    if(comentarios.length){
+      html += '<div style="margin-top:10px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">Que mejorarian las alumnas:</div>';
+      comentarios.slice(0,10).forEach(function(c){
+        html += '<div style="background:var(--bg);border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:4px;font-style:italic;border-left:3px solid var(--in);">"'+c+'"</div>';
+      });
+      if(comentarios.length>10) html += '<div style="font-size:11px;color:var(--tx3);margin-top:4px;">...y '+(comentarios.length-10)+' comentarios mas</div>';
+      html += '</div>';
+    }
+
+    html += '<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button></div>';
+    cont.innerHTML = html;
+
+  }catch(e){
+    cont.innerHTML = '<div class="empty-state"><div class="empty-state-title">Error</div><div class="empty-state-sub">'+e.message+'</div></div>';
+  }
+};
+
+// Cargar promedios de encuestas para la supervisión (en background)
+window.cargarPromediosEncuestas = async function(profsArr){
+  for(var i=0; i<profsArr.length; i++){
+    var p = profsArr[i];
+    if(!p.cursos.length) continue;
+    try{
+      var totalProm = 0;
+      var totalResp = 0;
+      for(var j=0; j<p.cursos.length; j++){
+        var snap = await DB.collection('encuestas').where('curso_id','==',p.cursos[j].id).get();
+        snap.docs.forEach(function(d){
+          var r = d.data();
+          var vals = [parseInt(r.p1)||0, parseInt(r.p2)||0, parseInt(r.p3)||0, parseInt(r.p4)||0].filter(function(v){return v>0;});
+          if(vals.length>0){
+            totalProm += vals.reduce(function(a,b){return a+b;},0)/vals.length;
+            totalResp++;
+          }
+        });
+      }
+      var el = document.getElementById('enc-prom-'+i);
+      if(el){
+        if(totalResp>0){
+          var prom = (totalProm/totalResp).toFixed(1);
+          el.textContent = prom+'/5';
+          el.style.color = prom>=4?'var(--g)':prom>=3?'var(--am)':'var(--re)';
+        } else {
+          el.textContent = '—';
+        }
+      }
+    }catch(e){}
   }
 };
 
@@ -4281,6 +4464,39 @@ window.aplicarFiltrosAsistencia = function(){
   }
 };
 
+
+
+// ── CONFIGURACIÓN REAL (guarda en Firestore) ──
+window.guardarConfiguracion = async function(){
+  try{
+    var selects = document.querySelectorAll('#screen-configuracion select');
+    var inputs = document.querySelectorAll('#screen-configuracion input[type="number"]');
+    var data = {
+      anio_activo: selects[0]?selects[0].value:'2026',
+      pct_minimo_asistencia: inputs[0]?parseInt(inputs[0].value)||70:70,
+      cupo_default: inputs[1]?parseInt(inputs[1].value)||30:30,
+      actualizado_en: new Date().toISOString(),
+      actualizado_por: G.user?G.user.email:'admin',
+    };
+    await DB.collection('configuracion').doc('parametros').set(data, {merge:true});
+    showToast('Configuracion guardada en Firebase', 'success');
+  }catch(e){ showToast('Error: '+e.message, 'error'); }
+};
+
+window.cargarConfiguracion = async function(){
+  try{
+    var doc = await DB.collection('configuracion').doc('parametros').get();
+    if(doc.exists){
+      var d = doc.data();
+      var selects = document.querySelectorAll('#screen-configuracion select');
+      var inputs = document.querySelectorAll('#screen-configuracion input[type="number"]');
+      if(selects[0] && d.anio_activo) selects[0].value = d.anio_activo;
+      if(inputs[0] && d.pct_minimo_asistencia) inputs[0].value = d.pct_minimo_asistencia;
+      if(inputs[1] && d.cupo_default) inputs[1].value = d.cupo_default;
+    }
+  }catch(e){}
+};
+
 window.cambiarTabReporte = function(tab){
   document.getElementById('tab-rep-general').classList.toggle('active', tab==='general');
   document.getElementById('tab-rep-mensual').classList.toggle('active', tab==='mensual');
@@ -4421,6 +4637,43 @@ window.actualizarResumenMensual = function(){
           +'<div class="prog-wrap"><div class="prog-fill" style="width:'+w+'%;"></div></div>'
           +'</div>';
       }).join('');
+
+  // Encuestas del mes
+  var elEnc = document.getElementById('rm-encuestas');
+  if(elEnc && cursosMes.length > 0){
+    (async function(){
+      try{
+        var totalResp = 0;
+        var promedios = {p1:[], p2:[], p3:[], p4:[]};
+        for(var ci=0; ci<Math.min(cursosMes.length, 20); ci++){
+          var snapEnc = await DB.collection('encuestas').where('curso_id','==',cursosMes[ci].id).get();
+          snapEnc.docs.forEach(function(d){
+            var r = d.data();
+            totalResp++;
+            if(r.p1) promedios.p1.push(parseInt(r.p1));
+            if(r.p2) promedios.p2.push(parseInt(r.p2));
+            if(r.p3) promedios.p3.push(parseInt(r.p3));
+            if(r.p4) promedios.p4.push(parseInt(r.p4));
+          });
+        }
+        if(totalResp === 0){
+          elEnc.innerHTML = '<div style="font-size:12.5px;color:var(--tx3);padding:8px;text-align:center;"><i class="ti ti-clipboard-off"></i> Sin respuestas de encuestas este mes</div>';
+        } else {
+          var labels = {p1:'Contenido', p2:'Profesora', p3:'Horario', p4:'Lugar'};
+          var h = '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">'+totalResp+' respuestas recibidas</div>';
+          ['p1','p2','p3','p4'].forEach(function(k){
+            var vals = promedios[k].filter(function(v){return v>0;});
+            var prom = vals.length>0?(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+            var pct = prom/5*100;
+            var color = pct>=80?'var(--g)':pct>=60?'var(--te)':pct>=40?'var(--am)':'var(--re)';
+            h += '<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span>'+labels[k]+'</span><span style="font-weight:700;color:'+color+';">'+prom.toFixed(1)+'/5</span></div>'
+              + '<div class="prog-wrap"><div class="prog-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
+          });
+          elEnc.innerHTML = h;
+        }
+      }catch(e){ elEnc.innerHTML = '<div style="font-size:12px;color:var(--tx3);">Error cargando encuestas</div>'; }
+    })();
+  }
 
   // Alertas
   var sinProf = cursosMes.filter(function(c){return !c.profesora && !c.profesora_nombre;}).length;
@@ -4897,21 +5150,43 @@ var ENCUESTA_PREGUNTAS = [
 ];
 
 window.verEncuestasCurso = async function(cursoId, nombreCurso){
+  console.log('[SIGPAF] verEncuestasCurso:', cursoId, nombreCurso);
   var cont = document.getElementById('modal-detalle-content');
   var tit = document.getElementById('modal-detalle-titulo');
-  if(tit) tit.textContent = 'Encuestas: '+(nombreCurso||'Curso');
-  if(!cont) return;
 
-  cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
-  openModal('modal-detalle-curso');
+  if(!cont){
+    console.error('[SIGPAF] modal-detalle-content no encontrado');
+    showToast('Error: modal no encontrado','error');
+    return;
+  }
+
+  // Actualizar título y contenido
+  if(tit) tit.textContent = 'Encuestas: '+(nombreCurso||'Curso');
+  cont.innerHTML = '<div style="text-align:center;padding:24px;"><div class="loader-spin" style="margin:0 auto;"></div><div style="margin-top:10px;font-size:13px;color:var(--tx3);">Cargando encuestas...</div></div>';
+
+  // Asegurar que el modal esté abierto
+  var modal = document.getElementById('modal-detalle-curso');
+  if(modal) modal.classList.add('open');
 
   try{
     var snap = await DB.collection('encuestas').where('curso_id','==',cursoId).get();
+    console.log('[SIGPAF] Encuestas encontradas:', snap.docs.length);
     var respuestas = snap.docs.map(function(d){return d.data();});
 
     if(!respuestas.length){
-      cont.innerHTML = '<div class="empty-state"><i class="ti ti-clipboard-off"></i><div class="empty-state-title">Sin respuestas</div><div class="empty-state-sub">Ninguna alumna ha respondido la encuesta de este curso aun.<br><br>El link de la encuesta es:<br><strong style="font-family:monospace;color:var(--g);">sigpaf_registro.html?encuesta='+cursoId+'</strong></div></div>'
-        +'<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button></div>';
+      cont.innerHTML = '<div style="text-align:center;padding:30px;">'
+        +'<i class="ti ti-clipboard-off" style="font-size:40px;color:var(--tx3);display:block;margin-bottom:12px;"></i>'
+        +'<div style="font-size:15px;font-weight:700;margin-bottom:6px;">Sin respuestas de encuesta</div>'
+        +'<div style="font-size:13px;color:var(--tx3);margin-bottom:16px;line-height:1.6;">Las alumnas pueden responder la encuesta desde su portal (<strong>sigpaf_alumna.html</strong>) cuando el curso este finalizado o hayan aprobado.</div>'
+        +'<div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;color:var(--tx2);margin-bottom:16px;text-align:left;">'
+        +'<div style="font-weight:600;margin-bottom:6px;"><i class="ti ti-info-circle" style="color:var(--g);"></i> Como funciona:</div>'
+        +'<div>1. La alumna entra a su portal con su CI</div>'
+        +'<div>2. Ve su curso con boton &quot;Responder encuesta&quot;</div>'
+        +'<div>3. Califica con estrellas y escribe comentarios</div>'
+        +'<div>4. Tu ves los resultados aqui automaticamente</div>'
+        +'</div>'
+        +'<button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)" style="margin-top:8px;">Cerrar</button>'
+        +'</div>';
       return;
     }
 
