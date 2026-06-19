@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIGPAF – Portal Profesora</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -904,6 +904,26 @@ function guardarAsistencia(){
   if(!CURSO_SEL){ showToast('Sin curso seleccionado','warn'); return; }
   if(!ALUMNAS.length){ showToast('Sin alumnas para registrar','warn'); return; }
 
+  var hoyStr = new Date().toISOString().split('T')[0];
+
+  // Validar sesión duplicada: verificar si ya se registró asistencia HOY para este curso
+  var duplicada = SESIONES_REGISTRADAS.find(function(s){
+    return (s.fecha||'').split('T')[0] === hoyStr;
+  });
+  if(duplicada){
+    if(!confirm('Ya registraste asistencia hoy ('+hoyStr+') para este curso.\n\n¿Deseas registrar otra sesión de todos modos?\n\n(Esto puede ocurrir si el curso tiene doble horario)')){
+      return;
+    }
+  }
+
+  // Validar máximo de sesiones
+  var sesionesTotales = parseInt(CURSO_SEL.sesiones_total)||10;
+  if(SESIONES_REGISTRADAS.length >= sesionesTotales){
+    if(!confirm('Este curso ya tiene '+SESIONES_REGISTRADAS.length+' de '+sesionesTotales+' sesiones registradas.\n\n¿Registrar una sesión adicional?')){
+      return;
+    }
+  }
+
   var sesion = {
     curso_id:   CURSO_SEL.id,
     nombre_curso: CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—',
@@ -1105,6 +1125,23 @@ if('serviceWorker' in navigator){
       .catch(function(err){ console.log('SW error:', err); });
   });
 }
+
+// Timeout de sesion (20 min inactividad)
+(function(){
+  var TIMEOUT_MS = 20*60*1000;
+  var timer = null;
+  function resetTimer(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      alert('Tu sesion ha expirado por inactividad.');
+      location.reload();
+    }, TIMEOUT_MS);
+  }
+  ['click','mousemove','keydown','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, resetTimer, {passive:true});
+  });
+  resetTimer();
+})();
 </script>
 </body>
 </html>

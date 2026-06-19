@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIGPAF · Mi Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 <style>
@@ -551,6 +551,23 @@ function cerrarSesion(){
   document.getElementById('page-login').style.display = 'flex';
   document.getElementById('ci-login').value = '';
 }
+
+// Timeout de sesion (20 min inactividad)
+(function(){
+  var TIMEOUT_MS = 20*60*1000;
+  var timer = null;
+  function resetTimer(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      alert('Tu sesion ha expirado por inactividad.');
+      location.reload();
+    }, TIMEOUT_MS);
+  }
+  ['click','mousemove','keydown','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, resetTimer, {passive:true});
+  });
+  resetTimer();
+})();
 </script>
 </body>
 </html>

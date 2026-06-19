@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#00703C">
 <title>SIGPAF – Inscripción al curso</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
 
 <!-- Firebase Compat -->
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
@@ -412,6 +412,13 @@ function getCodigoCurso(){
   if(match) return decodeURIComponent(match[1]);
   // 2. Intentar desde query string (?curso=...)
   var params = new URLSearchParams(window.location.search);
+  // Soporte para token futuro: ?token=ABC123 (más seguro que ?curso=8228)
+  var tokenParam = params.get('token');
+  if(tokenParam){
+    // Futuro: buscar curso por token público en vez de código SIGECOOP
+    // Por ahora, tratar token como código de curso
+    params.set('curso', tokenParam);
+  }
   if(params.get('curso')) return params.get('curso');
   // 3. Para pruebas: usar el hash (#CODIGO)
   if(window.location.hash) return window.location.hash.replace('#','');
@@ -701,11 +708,26 @@ async function mostrarAlumnaEncontrada(alumna, ci){
 
 // ── CONFIRMAR INSCRIPCIÓN (alumna encontrada) ──
 async function confirmarInscripcion(){
+  // Verificar curso activo
+  if(CURSO && (CURSO.estado==='finalizado'||CURSO.estado==='aprobado'||CURSO.estado==='cancelado')){
+    toast('Este curso ya finalizó y no acepta inscripciones','error');
+    return;
+  }
   if(!ALUMNA){ toast('Error: no hay alumna seleccionada',''); return; }
   var ci   = ALUMNA.ci||ALUMNA.id;
   var nombre = ALUMNA.nombre||ALUMNA.nombre_completo||'—';
   var codigocurso = CURSO?(CURSO.codigo_curso||generarCodigo(CURSO)):CODIGO_CURSO;
   var nombreCurso = CURSO?(CURSO.nombre_curso||CURSO.nombre||'Curso'):'Curso';
+
+  // Verificar cupo máximo del curso
+  if(CURSO){
+    var cupoMax = parseInt(CURSO.cupo_maximo)||30;
+    var inscritas = parseInt(CURSO.alumnas_count)||0;
+    if(inscritas >= cupoMax){
+      setMsgCI('<i class="ti ti-alert-triangle" style="color:var(--re);"></i> Este curso ya alcanzó su cupo máximo ('+inscritas+'/'+cupoMax+' alumnas). No es posible inscribirse.','error');
+      return;
+    }
+  }
 
   // Verificar si ya está inscrita en este curso
   mostrarLoader('Verificando inscripción...');
@@ -775,8 +797,13 @@ function mostrarNuevaAlumna(ci){
 // ── REGISTRAR NUEVA ALUMNA ──
 async function registrarNuevaAlumna(){
   var ci     = document.getElementById('nf-ci').value.trim();
-  var nombre = document.getElementById('nf-nombre').value.trim();
-  var tel    = document.getElementById('nf-tel').value.trim();
+  var nombre = document.getElementById('nf-nombre').value.trim()
+      .replace(/</g, '').replace(/>/g, '').replace(/"/g, '').replace(/'/g, '');
+  var tel    = document.getElementById('nf-tel').value.trim().replace(/[^0-9]/g, '');
+  if(tel && (tel.length < 7 || tel.length > 12)){
+    toast('Teléfono: entre 7 y 12 dígitos','warn');
+    return;
+  }
   var nac    = document.getElementById('nf-nac').value;
   var distSel= document.getElementById('nf-distrito');
   var distId = distSel.value;
@@ -847,6 +874,7 @@ async function registrarNuevaAlumna(){
       distrito: distNombre,
       telefono: tel,
       fecha_registro: new Date().toISOString(),
+      fecha_registro_local: new Date().toLocaleDateString('es-BO') + ' ' + new Date().toLocaleTimeString('es-BO'),
       estado: 'inscrita', origen_registro: 'QR', es_nueva: true,
     });
 

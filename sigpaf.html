@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIGPAF · CRE R.L.</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
@@ -487,6 +487,9 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       <div class="sb-item" data-screen="configuracion" onclick="navTo('configuracion',this)">
         <i class="ti ti-settings"></i> Configuración
       </div>
+      <div class="sb-item" data-screen="acerca" onclick="navTo('acerca',this)">
+        <i class="ti ti-info-circle"></i> Acerca de
+      </div>
     </nav>
 
     <div class="sb-footer">
@@ -699,14 +702,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
                 <option value="FEBRERO 2026">Febrero 2026</option>
                 <option value="MARZO 2026">Marzo 2026</option>
                 <option value="ABRIL 2026">Abril 2026</option>
-                <option value="MAYO 2026" selected>Mayo 2026</option>
-                <option value="JUNIO 2026">Junio 2026</option>
-                <option value="JULIO 2026">Julio 2026</option>
-                <option value="AGOSTO 2026">Agosto 2026</option>
-                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
-                <option value="OCTUBRE 2026">Octubre 2026</option>
-                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
-                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+                <option value="">Seleccionar mes...</option>
               </select>
             </div>
             <div>
@@ -774,7 +770,8 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         <!-- Tabs Reportes -->
         <div class="tabs">
           <div class="tab-item active" id="tab-rep-general" onclick="window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
-          <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual ejecutivo</div>
+          <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual</div>
+          <div class="tab-item" id="tab-rep-encuestas" onclick="window.cambiarTabReporte('encuestas')"><i class="ti ti-clipboard-check"></i> Encuestas</div>
         </div>
 
         <!-- ─── TAB GENERAL ─── -->
@@ -958,6 +955,56 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
           </div>
 
         </div><!-- /rep-tab-mensual -->
+
+        <!-- ─── TAB ENCUESTAS ─── -->
+        <div id="rep-tab-encuestas" style="display:none;">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title"><i class="ti ti-clipboard-check" style="color:var(--in);"></i> Reporte de Encuestas de Satisfacción</div>
+                <div class="card-sub" style="margin-bottom:0;">Calificaciones de alumnas a profesoras y cursos del programa</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:end;">
+                <div>
+                  <label class="form-label">Mes</label>
+                  <select class="filter-select" id="enc-rep-mes" onchange="window.cargarReporteEncuestas()" style="min-width:150px;">
+                    <option value="">Todos los meses</option>
+                    <option value="">Seleccionar mes...</option>
+                    <option value="JULIO">Julio 2026</option>
+                    <option value="AGOSTO">Agosto 2026</option>
+                    <option value="SEPTIEMBRE">Septiembre 2026</option>
+                    <option value="OCTUBRE">Octubre 2026</option>
+                    <option value="NOVIEMBRE">Noviembre 2026</option>
+                    <option value="DICIEMBRE">Diciembre 2026</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="window.exportarReporteEncuestas()"><i class="ti ti-download"></i> Excel</button>
+                <button class="btn btn-sm" onclick="window.imprimirReporteEncuestas()"><i class="ti ti-printer"></i> Imprimir</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPIs encuestas -->
+          <div class="kpi-grid" id="enc-rep-kpis" style="margin-bottom:14px;"></div>
+
+          <!-- Ranking de profesoras por calificación -->
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-trophy" style="color:var(--am);"></i> Ranking de profesoras por calificación</div>
+            <div id="enc-rep-ranking"><div class="empty-state" style="padding:14px;">Selecciona un mes o espera...</div></div>
+          </div>
+
+          <!-- Tabla detallada -->
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-table" style="color:var(--g);"></i> Detalle por profesora y curso</div>
+            <div id="enc-rep-tabla"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+          </div>
+
+          <!-- Comentarios de alumnas -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px;"><i class="ti ti-message-circle" style="color:var(--te);"></i> Comentarios de las alumnas</div>
+            <div id="enc-rep-comentarios"><div class="empty-state" style="padding:14px;">—</div></div>
+          </div>
+        </div><!-- /rep-tab-encuestas -->
       </div>
 
       <!-- ═══ IMPORTAR ═══ -->
@@ -1079,14 +1126,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <div>
               <label class="form-label">Mes</label>
               <select class="filter-select" id="asig-mes-sel" onchange="window.renderAsignacion()" style="min-width:160px;">
-                <option value="MAYO 2026" selected>Mayo 2026</option>
-                <option value="JUNIO 2026">Junio 2026</option>
-                <option value="JULIO 2026">Julio 2026</option>
-                <option value="AGOSTO 2026">Agosto 2026</option>
-                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
-                <option value="OCTUBRE 2026">Octubre 2026</option>
-                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
-                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+                <option value="">Seleccionar mes...</option>
               </select>
             </div>
             <div>
@@ -1130,14 +1170,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
                 <option value="FEBRERO 2026">Febrero 2026</option>
                 <option value="MARZO 2026">Marzo 2026</option>
                 <option value="ABRIL 2026">Abril 2026</option>
-                <option value="MAYO 2026" selected>Mayo 2026</option>
-                <option value="JUNIO 2026">Junio 2026</option>
-                <option value="JULIO 2026">Julio 2026</option>
-                <option value="AGOSTO 2026">Agosto 2026</option>
-                <option value="SEPTIEMBRE 2026">Septiembre 2026</option>
-                <option value="OCTUBRE 2026">Octubre 2026</option>
-                <option value="NOVIEMBRE 2026">Noviembre 2026</option>
-                <option value="DICIEMBRE 2026">Diciembre 2026</option>
+                <option value="">Seleccionar mes...</option>
               </select>
             </div>
             <button class="btn btn-primary" onclick="window.renderSupervision()"><i class="ti ti-refresh"></i> Actualizar</button>
@@ -1155,6 +1188,78 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <button class="btn btn-sm btn-ghost" onclick="showToast('Marcadas como leídas ✓','success');document.getElementById('badge-notif').style.display='none';">Marcar leídas</button>
           </div>
           <div id="notifs-list"><div class="empty-state">Analizando datos...</div></div>
+        </div>
+      </div>
+
+      <!-- ═══ ACERCA DE ═══ -->
+      <div class="screen" id="screen-acerca">
+        <div class="card" style="text-align:center;padding:32px;">
+          <img src="data:image/png;base64,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" alt="CRE" style="width:80px;height:80px;border-radius:18px;background:#fff;padding:8px;margin:0 auto 14px;display:block;box-shadow:0 8px 28px rgba(0,112,60,.35);">
+      <div style="font-size:10.5px;font-weight:700;color:var(--g);letter-spacing:.18em;margin-bottom:4px;">PROGRAMA</div>
+      <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.5px;line-height:1;">APOYO A LA FAMILIA</div>
+      <div style="font-size:12px;color:var(--tx3);margin-top:8px;">Sistema de Gestión · SIGPAF</div>
+      <div style="font-size:11px;color:var(--tx3);">CRE R.L. · Gerencia de Asistencia al Consumidor</div>
+    </div>
+
+    <!-- SDK Status -->
+    <div id="sdk-status" style="background:var(--gl);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--gd);text-align:center;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span id="sdk-dot" style="width:7px;height:7px;border-radius:50%;background:var(--tx3);display:inline-block;animation:pulse 1.5s infinite;"></span>
+      <span id="sdk-msg">Verificando conexión...</span>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:20px;"></div>
+
+    <div class="form-group">
+      <label class="form-label">Correo institucional</label>
+      <input class="form-control" type="email" id="login-email" placeholder="usuario@cre.com.bo" onkeydown="if(event.key===" alt="CRE" style="width:72px;height:72px;border-radius:16px;margin:0 auto 14px;display:block;background:#fff;padding:6px;box-shadow:0 4px 16px rgba(0,0,0,.1);">
+          <div style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:.2em;">PROGRAMA</div>
+          <div style="font-size:22px;font-weight:800;color:var(--g);letter-spacing:-.5px;">APOYO A LA FAMILIA</div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:4px;">Sistema Integral de Gestión · SIGPAF</div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title" style="margin-bottom:14px;"><i class="ti ti-code" style="color:var(--in);"></i> Información del sistema</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Versión</div><div style="font-size:15px;font-weight:700;">1.0.0</div></div>
+            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Última actualización</div><div style="font-size:15px;font-weight:700;">Junio 2026</div></div>
+            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Firebase</div><div style="font-size:15px;font-weight:700;">sigpaf-cre</div></div>
+            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Portales públicos</div><div style="font-size:15px;font-weight:700;">GitHub Pages</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-stack" style="color:var(--te);"></i> Tecnologías</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="badge badge-g">HTML5/CSS3/JS</span>
+            <span class="badge badge-am">Firebase Firestore</span>
+            <span class="badge badge-in">Firebase Auth</span>
+            <span class="badge badge-te">Chart.js</span>
+            <span class="badge badge-gray">SheetJS (XLSX)</span>
+            <span class="badge badge-gray">jsPDF</span>
+            <span class="badge badge-gray">QRCode.js</span>
+            <span class="badge badge-gray">Tabler Icons</span>
+            <span class="badge badge-gray">Outfit Font</span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-users" style="color:var(--am);"></i> Perfiles de usuario</div>
+          <div style="font-size:13px;line-height:2;">
+            <div><span class="badge badge-g">Admin (GU)</span> Acceso total · 13 pantallas · Importar, configurar, reportes</div>
+            <div><span class="badge badge-am">Jefa Fundación</span> Supervisión · Asignar profesoras · Reportes</div>
+            <div><span class="badge badge-in">Profesora</span> Portal público · Asistencia · QR · Resumen</div>
+            <div><span class="badge badge-te">Alumna</span> Portal público · Mis cursos · Encuestas · Historial</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div class="card-title" style="margin-bottom:10px;"><i class="ti ti-building" style="color:var(--g);"></i> Organización</div>
+          <div style="font-size:13px;color:var(--tx2);line-height:1.8;">
+            <strong>CRE R.L.</strong> · Cooperativa Rural de Electrificación<br>
+            Gerencia de Asistencia y Comunicación al Consumidor<br>
+            Santa Cruz de la Sierra, Bolivia<br>
+            <a href="https://www.cre.com.bo" target="_blank" style="color:var(--g);">www.cre.com.bo</a>
+          </div>
         </div>
       </div>
 
@@ -1176,6 +1281,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
               <div class="form-group"><label class="form-label">% mínimo asistencia</label><input class="form-control" value="70" type="number"></div>
               <div class="form-group"><label class="form-label">Cupo máximo por defecto</label><input class="form-control" value="30" type="number"></div>
               <button class="btn btn-primary btn-sm" onclick="window.guardarConfiguracion()"><i class="ti ti-check"></i> Guardar cambios</button>
+          <button class="btn btn-sm" style="margin-left:8px;" onclick="window.exportarBackupCompleto()"><i class="ti ti-database-export"></i> Exportar backup completo</button>
             </div>
           </div>
           <div class="card">
@@ -1306,6 +1412,63 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
 
 <script>
+// ── MESES DINÁMICOS ──
+window.poblarSelectoresMes = function(){
+  var MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  var MESES_LABEL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var anio = new Date().getFullYear();
+  
+  // Detectar meses con datos reales
+  var mesesConDatos = new Set();
+  (G.cursos||[]).forEach(function(c){
+    var m = (c.mes||'').toUpperCase().split(' ')[0].trim();
+    if(m) mesesConDatos.add(m);
+  });
+  
+  // Poblar todos los selectores de mes
+  var selects = document.querySelectorAll('#att-mes-sel, #asig-mes-sel, #enc-rep-mes, #rm-mes-sel');
+  selects.forEach(function(sel){
+    if(!sel) return;
+    var val = sel.value;
+    var incluirTodos = sel.id === 'enc-rep-mes';
+    sel.innerHTML = incluirTodos ? '<option value="">Todos los meses</option>' : '';
+    MESES.forEach(function(m, i){
+      var tiene = mesesConDatos.has(m);
+      var label = MESES_LABEL[i] + ' ' + anio;
+      var value = m + ' ' + anio;
+      sel.innerHTML += '<option value="'+value+'"'+(tiene?' style="font-weight:600;"':'')+(value===val?' selected':'')+'>'+label+(tiene?' ('+contarCursosMes(m)+')':'')+'</option>';
+    });
+  });
+};
+
+function contarCursosMes(mesBase){
+  return (G.cursos||[]).filter(function(c){
+    return (c.mes||'').toUpperCase().split(' ')[0] === mesBase;
+  }).length;
+}
+
+
+
+// LOG DE AUDITORÍA (solo usuarios autenticados)
+window.registrarAuditoria = function(accion, detalle, modulo){
+  if(!G || !G.user || !G.user.uid) return;
+  try{
+    DB.collection('audit_log').add({
+      accion:      accion || 'desconocida',
+      detalle:     String(detalle || '').substring(0, 500),
+      modulo:      modulo || 'sistema',
+      usuario:     G.user.email || 'admin',
+      usuario_uid: G.user.uid || '',
+      rol:         window.ROLE || 'admin',
+      timestamp:   new Date().toISOString(),
+      fecha:       new Date().toLocaleDateString('es-BO'),
+      hora:        new Date().toLocaleTimeString('es-BO'),
+      tipo:        (accion||'').indexOf('login')>=0?'acceso':(accion||'').indexOf('error')>=0?'error':'operacion',
+    });
+  }catch(e){}
+};
+
+
 
 
 // ══════════════════════════════════════════════════════
@@ -1543,6 +1706,7 @@ window.doLogin = function(){
     }
     // Login exitoso - guardar token y continuar
     G.user = { email: data.email, uid: data.localId, token: data.idToken };
+      try{ registrarAuditoria('login', 'Inicio de sesion: '+data.email, 'autenticacion'); }catch(e){}
     // Disparar evento de login para sistema de roles
     try { window.dispatchEvent(new CustomEvent('sigpaf:login',{detail:{email:data.email}})); } catch(e){}
     // Configurar Firestore con el token
@@ -1614,6 +1778,7 @@ function initApp(){
     try { poblarSelectorAsistencia(); } catch(e){}
     G.registros  = snapToArray(results[4]);
     renderDashboard();
+      try { poblarSelectoresMes(); } catch(e){}
       try { generarNotificaciones(); } catch(e){}
       try { renderRankingProfesoras(); } catch(e){}
     renderCursos(G.cursos);
@@ -2122,13 +2287,32 @@ window.cambiarEstadoCurso = function(id){
   var flujo = ['registradoGU','enviadoFundacion','enEjecucion','finalizado','aprobado'];
   var actual = normEstado(c.estado);
   var idx    = flujo.indexOf(actual);
-  var siguiente = flujo[(idx+1)%flujo.length];
-  DB.collection(COL.cursos).doc(id).update({estado:siguiente}).then(function(){
+  if(idx < 0) idx = 0;
+  var siguiente = flujo[Math.min(idx+1, flujo.length-1)];
+
+  if(actual === siguiente){
+    showToast('El curso ya esta en el ultimo estado ('+ESTADO_MAP[actual].label+')','warn');
+    return;
+  }
+
+  // No permitir retroceder ni saltar estados
+  var labelActual = ESTADO_MAP[actual] ? ESTADO_MAP[actual].label : actual;
+  var labelSig = ESTADO_MAP[siguiente] ? ESTADO_MAP[siguiente].label : siguiente;
+
+  if(!confirm('Cambiar estado del curso:\n\n"'+(c.nombre_curso||c.nombre)+'"\n\nDe: '+labelActual+'\nA: '+labelSig+'\n\nEsta accion no se puede deshacer.')) return;
+
+  DB.collection(COL.cursos).doc(id).update({
+    estado: siguiente,
+    estado_anterior: actual,
+    estado_cambiado_en: new Date().toISOString(),
+    estado_cambiado_por: G.user ? G.user.email : 'admin',
+  }).then(function(){
     c.estado = siguiente;
     renderCursos(G.cursos);
     renderDashboard();
     closeModal('modal-detalle-curso');
-    showToast('Estado actualizado: '+ESTADO_MAP[siguiente].label,'success');
+    showToast('Estado actualizado: '+labelSig,'success');
+    registrarAuditoria('cambio_estado', 'Curso: '+(c.nombre_curso||c.nombre)+' de '+labelActual+' a '+labelSig);
   }).catch(function(e){ showToast('Error: '+e.message,'error'); });
 };
 
@@ -3762,6 +3946,7 @@ window.guardarAsignacion = async function(cursoId, nombreCurso){
       curso.profesora_ci = profCi;
     }
 
+    registrarAuditoria('asignar_profesora', profNombre+' asignada a '+nombreCurso);
     showToast(profNombre+' asignada a '+nombreCurso+' \u2713','success');
     window.renderAsignacion(); // Re-render
 
@@ -4480,6 +4665,7 @@ window.guardarConfiguracion = async function(){
     };
     await DB.collection('configuracion').doc('parametros').set(data, {merge:true});
     showToast('Configuracion guardada en Firebase', 'success');
+    registrarAuditoria('configuracion', 'Parametros actualizados', 'configuracion');
   }catch(e){ showToast('Error: '+e.message, 'error'); }
 };
 
@@ -4498,11 +4684,14 @@ window.cargarConfiguracion = async function(){
 };
 
 window.cambiarTabReporte = function(tab){
-  document.getElementById('tab-rep-general').classList.toggle('active', tab==='general');
-  document.getElementById('tab-rep-mensual').classList.toggle('active', tab==='mensual');
-  document.getElementById('rep-tab-general').style.display = tab==='general'?'block':'none';
-  document.getElementById('rep-tab-mensual').style.display = tab==='mensual'?'block':'none';
+  ['general','mensual','encuestas'].forEach(function(t){
+    var tabEl = document.getElementById('tab-rep-'+t);
+    var panEl = document.getElementById('rep-tab-'+t);
+    if(tabEl) tabEl.classList.toggle('active', tab===t);
+    if(panEl) panEl.style.display = tab===t?'block':'none';
+  });
   if(tab==='mensual') window.actualizarResumenMensual();
+  if(tab==='encuestas') window.cargarReporteEncuestas();
 };
 
 window.actualizarResumenMensual = function(){
@@ -4996,6 +5185,7 @@ window.cerrarCursoConActa = async function(cursoId){
 
     showLoading(false);
     showToast('Curso cerrado y acta generada','success');
+    registrarAuditoria('cerrar_curso', 'Curso: '+(curso.nombre_curso||curso.nombre)+' - '+aprobadas+' aprobadas, '+reprobadas+' reprobadas');
     renderCursos(G.cursos);
     renderDashboard();
 
@@ -5236,6 +5426,293 @@ window.verEncuestasCurso = async function(cursoId, nombreCurso){
   }
 };
 
+
+
+
+// ══════════════════════════════════════════════════════
+//  REPORTE COMPLETO DE ENCUESTAS
+// ══════════════════════════════════════════════════════
+window.cargarReporteEncuestas = async function(){
+  var mesFilter = (document.getElementById('enc-rep-mes')||{value:''}).value.toUpperCase();
+
+  // Filtrar cursos por mes
+  var cursosFiltrados = (G.cursos||[]);
+  if(mesFilter){
+    cursosFiltrados = cursosFiltrados.filter(function(c){
+      return (c.mes||'').toUpperCase().split(' ')[0] === mesFilter;
+    });
+  }
+
+  var kpis = document.getElementById('enc-rep-kpis');
+  var ranking = document.getElementById('enc-rep-ranking');
+  var tabla = document.getElementById('enc-rep-tabla');
+  var comentarios = document.getElementById('enc-rep-comentarios');
+
+  if(ranking) ranking.innerHTML = '<div style="text-align:center;padding:16px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+
+  try{
+    // Cargar TODAS las encuestas
+    var allEncuestas = [];
+    var batchSize = 20;
+    for(var i=0; i<Math.min(cursosFiltrados.length, 100); i++){
+      var snap = await DB.collection('encuestas').where('curso_id','==',cursosFiltrados[i].id).get();
+      snap.docs.forEach(function(d){
+        var data = d.data();
+        var curso = cursosFiltrados.find(function(c){return c.id===data.curso_id;});
+        allEncuestas.push(Object.assign({}, data, {
+          nombre_curso: curso?curso.nombre_curso||curso.nombre:'',
+          profesora: curso?curso.profesora||curso.profesora_nombre:'',
+          distrito: curso?curso.distrito_nombre||('Distrito '+(curso.distrito_num||'')):'',
+        }));
+      });
+    }
+
+    // KPIs globales
+    var totalResp = allEncuestas.length;
+    var promGeneral = 0;
+    if(totalResp > 0){
+      var sumAll = allEncuestas.reduce(function(s,e){
+        var vals = [parseInt(e.p1)||0,parseInt(e.p2)||0,parseInt(e.p3)||0,parseInt(e.p4)||0].filter(function(v){return v>0;});
+        return s + (vals.length>0 ? vals.reduce(function(a,b){return a+b;},0)/vals.length : 0);
+      }, 0);
+      promGeneral = (sumAll/totalResp).toFixed(1);
+    }
+    var siCount = allEncuestas.filter(function(e){return e.p5==='si';}).length;
+    var pctSi = totalResp>0?Math.round(siCount/totalResp*100):0;
+    var profsConEncuesta = new Set(allEncuestas.map(function(e){return e.profesora;}).filter(Boolean)).size;
+
+    if(kpis){
+      kpis.innerHTML =
+        kpiEnc(totalResp, 'Respuestas totales', 'ti-clipboard-check', 'var(--in)', 'var(--inl)')
+        + kpiEnc(promGeneral+'/5', 'Calificacion general', 'ti-star', 'var(--am)', 'var(--aml)')
+        + kpiEnc(pctSi+'%', 'Recomendarian el curso', 'ti-thumb-up', 'var(--g)', 'var(--gl)')
+        + kpiEnc(profsConEncuesta, 'Profesoras evaluadas', 'ti-user-star', 'var(--te)', 'var(--tel)');
+    }
+
+    if(totalResp === 0){
+      if(ranking) ranking.innerHTML = '<div class="empty-state"><i class="ti ti-clipboard-off"></i><div class="empty-state-title">Sin encuestas</div><div class="empty-state-sub">Las alumnas aun no han respondido encuestas'+(mesFilter?' en '+mesFilter:'')+'</div></div>';
+      if(tabla) tabla.innerHTML = '';
+      if(comentarios) comentarios.innerHTML = '';
+      return;
+    }
+
+    // Agrupar por profesora
+    var porProf = {};
+    allEncuestas.forEach(function(e){
+      var prof = e.profesora||'Sin asignar';
+      if(!porProf[prof]) porProf[prof] = {nombre:prof, respuestas:0, p1:[], p2:[], p3:[], p4:[], si:0, comentarios:[], cursos:new Set()};
+      porProf[prof].respuestas++;
+      if(e.p1) porProf[prof].p1.push(parseInt(e.p1));
+      if(e.p2) porProf[prof].p2.push(parseInt(e.p2));
+      if(e.p3) porProf[prof].p3.push(parseInt(e.p3));
+      if(e.p4) porProf[prof].p4.push(parseInt(e.p4));
+      if(e.p5==='si') porProf[prof].si++;
+      if(e.p6) porProf[prof].comentarios.push({texto:e.p6, curso:e.nombre_curso});
+      if(e.nombre_curso) porProf[prof].cursos.add(e.nombre_curso);
+    });
+
+    // Calcular promedios
+    var profsArr = Object.values(porProf).map(function(p){
+      var avg = function(arr){ var f=arr.filter(function(v){return v>0;}); return f.length>0?(f.reduce(function(a,b){return a+b;},0)/f.length):0; };
+      p.prom_contenido = avg(p.p1);
+      p.prom_profesora = avg(p.p2);
+      p.prom_horario = avg(p.p3);
+      p.prom_lugar = avg(p.p4);
+      p.prom_general = (p.prom_contenido+p.prom_profesora+p.prom_horario+p.prom_lugar)/4;
+      p.pct_recomendacion = p.respuestas>0?Math.round(p.si/p.respuestas*100):0;
+      p.num_cursos = p.cursos.size;
+      return p;
+    });
+
+    // Ordenar por calificación general descendente
+    profsArr.sort(function(a,b){ return b.prom_general - a.prom_general; });
+
+    // RANKING VISUAL
+    var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','var(--re)','#8B5CF6','#06B6D4','#F97316'];
+    if(ranking){
+      ranking.innerHTML = profsArr.map(function(p,i){
+        var ini = p.nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+        var color = p.prom_general>=4?'var(--g)':p.prom_general>=3?'var(--am)':'var(--re)';
+        var medal = i===0?'<span style="font-size:20px;">&#x1F947;</span>':i===1?'<span style="font-size:20px;">&#x1F948;</span>':i===2?'<span style="font-size:20px;">&#x1F949;</span>':'<span style="font-size:14px;font-weight:800;color:var(--tx3);">'+(i+1)+'</span>';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:6px;'+(i<3?'border-left:4px solid '+color+';':'')+'">'
+          + medal
+          + '<div class="av av-sm" style="background:'+COLS[i%8]+';">'+ini+'</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:700;">'+p.nombre+'</div>'
+          + '<div style="font-size:11px;color:var(--tx3);">'+p.num_cursos+' cursos · '+p.respuestas+' respuestas · '+p.pct_recomendacion+'% recomendacion</div></div>'
+          + '<div style="text-align:center;min-width:50px;">'
+          + '<div style="font-size:22px;font-weight:800;color:'+color+';">'+p.prom_general.toFixed(1)+'</div>'
+          + '<div style="font-size:9px;color:var(--tx3);">de 5</div></div>'
+          + '</div>';
+      }).join('');
+    }
+
+    // TABLA DETALLADA
+    if(tabla){
+      tabla.innerHTML = '<div class="table-wrap"><table><thead><tr>'
+        + '<th>Profesora</th><th>Cursos</th><th>Resp.</th>'
+        + '<th style="text-align:center;">Contenido</th>'
+        + '<th style="text-align:center;">Profesora</th>'
+        + '<th style="text-align:center;">Horario</th>'
+        + '<th style="text-align:center;">Lugar</th>'
+        + '<th style="text-align:center;">General</th>'
+        + '<th style="text-align:center;">Recom.</th>'
+        + '</tr></thead><tbody>'
+        + profsArr.map(function(p){
+            var colorCell = function(v){ return v>=4?'color:var(--g);font-weight:700':v>=3?'color:var(--am)':'color:var(--re);font-weight:700'; };
+            return '<tr>'
+              + '<td class="td-bold">'+p.nombre+'</td>'
+              + '<td>'+p.num_cursos+'</td>'
+              + '<td>'+p.respuestas+'</td>'
+              + '<td style="text-align:center;'+colorCell(p.prom_contenido)+'">'+p.prom_contenido.toFixed(1)+'</td>'
+              + '<td style="text-align:center;'+colorCell(p.prom_profesora)+'">'+p.prom_profesora.toFixed(1)+'</td>'
+              + '<td style="text-align:center;'+colorCell(p.prom_horario)+'">'+p.prom_horario.toFixed(1)+'</td>'
+              + '<td style="text-align:center;'+colorCell(p.prom_lugar)+'">'+p.prom_lugar.toFixed(1)+'</td>'
+              + '<td style="text-align:center;font-size:14px;font-weight:800;'+colorCell(p.prom_general)+'">'+p.prom_general.toFixed(1)+'</td>'
+              + '<td style="text-align:center;"><span class="badge '+(p.pct_recomendacion>=80?'badge-g':p.pct_recomendacion>=50?'badge-am':'badge-re')+'">'+p.pct_recomendacion+'%</span></td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody></table></div>';
+    }
+
+    // COMENTARIOS
+    if(comentarios){
+      var todosComentarios = [];
+      profsArr.forEach(function(p){
+        p.comentarios.forEach(function(c){
+          todosComentarios.push({profesora:p.nombre, texto:c.texto, curso:c.curso});
+        });
+      });
+
+      if(todosComentarios.length===0){
+        comentarios.innerHTML = '<div style="font-size:12.5px;color:var(--tx3);text-align:center;padding:10px;">Sin comentarios escritos por las alumnas</div>';
+      } else {
+        comentarios.innerHTML = '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">'+todosComentarios.length+' comentarios recibidos</div>'
+          + todosComentarios.slice(0,20).map(function(c){
+              return '<div style="padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:5px;border-left:3px solid var(--in);">'
+                + '<div style="font-size:12.5px;font-style:italic;color:var(--tx);">"'+c.texto+'"</div>'
+                + '<div style="font-size:10.5px;color:var(--tx3);margin-top:4px;">'+c.profesora+' · '+c.curso+'</div></div>';
+            }).join('')
+          + (todosComentarios.length>20?'<div style="font-size:11px;color:var(--tx3);margin-top:6px;">...y '+(todosComentarios.length-20)+' comentarios mas</div>':'');
+      }
+    }
+
+    // Guardar para exportar
+    window.__ENC_REPORT = {profsArr:profsArr, allEncuestas:allEncuestas, mes:mesFilter};
+
+  }catch(e){
+    if(ranking) ranking.innerHTML = '<div style="color:var(--re);padding:10px;">Error: '+e.message+'</div>';
+  }
+};
+
+function kpiEnc(val, lbl, icon, color, bg){
+  return '<div class="kpi" style="--kpi-color:'+color+';--kpi-bg:'+bg+';"><div class="kpi-icon"><i class="ti '+icon+'" style="color:'+color+';"></i></div><div class="kpi-val" style="font-size:'+(String(val).length>4?'18px':'26px')+';">'+val+'</div><div class="kpi-lbl">'+lbl+'</div></div>';
+}
+
+window.exportarReporteEncuestas = function(){
+  if(!window.__ENC_REPORT || typeof XLSX==='undefined'){ showToast('Sin datos para exportar','warn'); return; }
+  var rows = window.__ENC_REPORT.profsArr.map(function(p){
+    return {
+      'Profesora': p.nombre,
+      'Cursos evaluados': p.num_cursos,
+      'Respuestas': p.respuestas,
+      'Contenido (1-5)': p.prom_contenido.toFixed(1),
+      'Calif. Profesora (1-5)': p.prom_profesora.toFixed(1),
+      'Horario (1-5)': p.prom_horario.toFixed(1),
+      'Lugar (1-5)': p.prom_lugar.toFixed(1),
+      'PROMEDIO GENERAL': p.prom_general.toFixed(1),
+      '% Recomendacion': p.pct_recomendacion,
+      'Comentarios': p.comentarios.map(function(c){return c.texto;}).join(' | '),
+    };
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:12},{wch:10},{wch:12},{wch:16},{wch:10},{wch:10},{wch:14},{wch:12},{wch:50}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Encuestas');
+  XLSX.writeFile(wb, 'Reporte_Encuestas'+(window.__ENC_REPORT.mes?'_'+window.__ENC_REPORT.mes:'')+'.xlsx');
+  showToast('Reporte exportado','success');
+};
+
+window.imprimirReporteEncuestas = function(){
+  window.print();
+};
+
+
+
+// ── DESMATRICULAR ALUMNA DE UN CURSO ──
+window.desmatricularAlumna = async function(registroId, nombre, cursoNombre){
+  if(!confirm('¿Desmatricular a '+nombre+' del curso "'+cursoNombre+'"?\n\nSe eliminara su inscripcion. Sus registros de asistencia se mantendran.')) return;
+
+  try{
+    await DB.collection('registros').doc(registroId).delete();
+    showToast(nombre+' desmatriculada del curso','success');
+    registrarAuditoria('desmatricular', nombre+' desmatriculada de '+cursoNombre);
+    // Recargar la vista
+    window.verInscripcionesCurso(window.__LAST_INSCRIPCIONES_CURSO_ID, cursoNombre);
+  }catch(e){
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+
+
+// ══════════════════════════════════════════════════════
+//  EXPORTAR BACKUP COMPLETO DE FIRESTORE
+// ══════════════════════════════════════════════════════
+window.exportarBackupCompleto = async function(){
+  if(!confirm('Exportar backup completo de todas las colecciones de Firestore?\n\nEsto puede tardar unos segundos.')) return;
+
+  showLoading(true);
+  try{
+    var colecciones = ['catalogo_cursos','alumnas','profesoras','registros','asistencia','encuestas','comentarios_supervision','configuracion','distritos','audit_log'];
+    var wb = XLSX.utils.book_new();
+    var resumen = [];
+
+    for(var i = 0; i < colecciones.length; i++){
+      var col = colecciones[i];
+      try{
+        var snap = await DB.collection(col).get();
+        var docs = snap.docs.map(function(d){
+          var data = d.data();
+          data._id = d.id;
+          // Aplanar objetos anidados
+          Object.keys(data).forEach(function(k){
+            if(typeof data[k] === 'object' && data[k] !== null && !Array.isArray(data[k])){
+              data[k] = JSON.stringify(data[k]);
+            }
+            if(Array.isArray(data[k])){
+              data[k] = JSON.stringify(data[k]);
+            }
+          });
+          return data;
+        });
+        if(docs.length > 0){
+          var ws = XLSX.utils.json_to_sheet(docs);
+          var sheetName = col.substring(0,31); // Excel max 31 chars
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+        resumen.push({coleccion: col, documentos: docs.length});
+      }catch(e){
+        resumen.push({coleccion: col, documentos: 'ERROR: '+e.message});
+      }
+    }
+
+    // Hoja de resumen
+    var wsRes = XLSX.utils.json_to_sheet(resumen);
+    XLSX.utils.book_append_sheet(wb, wsRes, 'RESUMEN');
+
+    var fecha = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, 'SIGPAF_Backup_'+fecha+'.xlsx');
+
+    showLoading(false);
+    showToast('Backup exportado: '+resumen.reduce(function(s,r){return s+(typeof r.documentos==="number"?r.documentos:0);},0)+' documentos en '+colecciones.length+' colecciones','success');
+    registrarAuditoria('backup', 'Backup completo exportado', 'sistema');
+
+  }catch(e){
+    showLoading(false);
+    showToast('Error: '+e.message,'error');
+  }
+};
 
 // ══════════════════════════════════════════════════════
 //  IMPORTADOR SIGECOOP — INTEGRADO EN EL PANEL
@@ -5543,7 +6020,8 @@ function impMostrarResultado(ok,upd,skip,err,errores){
       +errores.map(function(e){ return '• '+e.curso+': '+e.error; }).join('<br>')+'</div>';
   }
 
-  showToast('Importación completada: '+ok+' nuevos, '+upd+' actualizados','success');
+  registrarAuditoria('importar_sigecoop', 'Importación completada');
+      showToast('Importación completada: '+ok+' nuevos, '+upd+' actualizados','success');
 }
 
 function impSetPaso(n){
@@ -5595,6 +6073,31 @@ document.addEventListener('keydown', function(e){
     if(lp && document.activeElement===lp) window.doLogin();
   }
 });
+
+
+
+// ══════════════════════════════════════════════════════
+//  TIMEOUT DE SESIÓN (30 min inactividad)
+// ══════════════════════════════════════════════════════
+(function(){
+  var TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
+  var timer = null;
+  function resetTimer(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if(G.user){
+        alert('Tu sesion ha expirado por inactividad (30 minutos).\nSerás redirigido al login.');
+        firebase.auth().signOut().then(function(){
+          location.reload();
+        });
+      }
+    }, TIMEOUT_MS);
+  }
+  ['click','mousemove','keydown','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, resetTimer, {passive:true});
+  });
+  resetTimer();
+})();
 
 </script>
 
