@@ -163,6 +163,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 </head>
 <body>
 <div class="toast" id="toast"></div>
+<input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none;" onchange="procesarFotoEvidencia(this)">
+<input type="file" id="foto-galeria" accept="image/*" style="display:none;" onchange="procesarFotoEvidencia(this)">
 
 <!-- ═══ LOGIN ═══ -->
 <div id="page-login" class="auth-page">
@@ -429,6 +431,111 @@ function reintentarBusqueda(){
   document.getElementById('lista-cursos-prof').innerHTML =
     '<div style="text-align:center;padding:20px;"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:24px;color:var(--g);"></i></div>';
   iniciarApp();
+}
+
+
+
+// ══════════════════════════════════════════════════════
+//  FOTO DE EVIDENCIA DEL CURSO
+// ══════════════════════════════════════════════════════
+function tomarFotoEvidencia(){
+  if(!CURSO_SEL){showToast('Selecciona un curso primero','warn');return;}
+
+  // Crear overlay con opciones
+  var overlay = document.createElement('div');
+  overlay.id = 'foto-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center;">'
+    + '<i class="ti ti-camera" style="font-size:36px;color:var(--te);display:block;margin-bottom:12px;"></i>'
+    + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">Foto de evidencia</div>'
+    + '<div style="font-size:12px;color:var(--tx3);margin-bottom:18px;">Toma una foto del curso como respaldo institucional</div>'
+    + '<div style="display:flex;flex-direction:column;gap:10px;">'
+    + '<button onclick="document.getElementById(&quot;foto-input&quot;).click();document.getElementById(&quot;foto-overlay&quot;).remove();" style="width:100%;padding:12px;border-radius:10px;background:var(--te);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;"><i class="ti ti-camera"></i> Tomar foto con camara</button>'
+    + '<button onclick="document.getElementById(&quot;foto-galeria&quot;).click();document.getElementById(&quot;foto-overlay&quot;).remove();" style="width:100%;padding:12px;border-radius:10px;background:var(--in);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;"><i class="ti ti-photo"></i> Elegir de galeria</button>'
+    + '<button onclick="document.getElementById(&quot;foto-overlay&quot;).remove();" style="width:100%;padding:10px;border-radius:10px;background:none;border:1px solid #D1D5DB;color:var(--tx2);font-size:13px;cursor:pointer;font-family:inherit;">Cancelar</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function procesarFotoEvidencia(input){
+  if(!input.files||!input.files[0]) return;
+  var file = input.files[0];
+  if(file.size > 10*1024*1024){showToast('La imagen es muy grande (max 10 MB)','error');return;}
+
+  showToast('Procesando imagen...','warn');
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      // Comprimir a miniatura (max 800px, calidad 60%)
+      var canvas = document.createElement('canvas');
+      var maxW = 800, maxH = 600;
+      var w = img.width, h = img.height;
+      if(w > maxW){ h = h*(maxW/w); w = maxW; }
+      if(h > maxH){ w = w*(maxH/h); h = maxH; }
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var base64 = canvas.toDataURL('image/jpeg', 0.6);
+      var sizeKB = Math.round(base64.length * 0.75 / 1024);
+
+      if(sizeKB > 500){
+        // Comprimir más
+        base64 = canvas.toDataURL('image/jpeg', 0.3);
+        sizeKB = Math.round(base64.length * 0.75 / 1024);
+      }
+
+      // Mostrar preview y confirmar
+      mostrarPreviewFoto(base64, sizeKB);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // Reset para permitir re-seleccionar
+}
+
+function mostrarPreviewFoto(base64, sizeKB){
+  var overlay = document.createElement('div');
+  overlay.id = 'foto-preview-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;text-align:center;">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:10px;">Vista previa ('+sizeKB+' KB)</div>'
+    + '<img src="'+base64+'" style="width:100%;border-radius:10px;margin-bottom:12px;max-height:300px;object-fit:cover;">'
+    + '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;">'+(CURSO_SEL?CURSO_SEL.nombre_curso||CURSO_SEL.nombre:'Curso')+' - '+new Date().toLocaleDateString('es-BO')+'</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button id="btn-guardar-foto" style="flex:1;padding:11px;border-radius:10px;background:var(--g);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="ti ti-check"></i> Guardar</button>'
+    + '<button onclick="document.getElementById(&quot;foto-preview-overlay&quot;).remove();" style="padding:11px 16px;border-radius:10px;background:none;border:1px solid #D1D5DB;color:var(--tx2);cursor:pointer;font-family:inherit;">Cancelar</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('btn-guardar-foto').onclick = function(){
+    guardarFotoEvidencia(base64, sizeKB);
+  };
+}
+
+async function guardarFotoEvidencia(base64, sizeKB){
+  if(!CURSO_SEL||!PROF){showToast('Error: sin curso o profesora','error');return;}
+  try{
+    await DB.collection('evidencias_curso').add({
+      curso_id: CURSO_SEL.id,
+      curso_nombre: CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'',
+      profesora: PROF.nombre||'',
+      profesora_ci: PROF.id||'',
+      fecha: new Date().toISOString().split('T')[0],
+      hora: new Date().toLocaleTimeString('es-BO'),
+      timestamp: new Date().toISOString(),
+      imagen: base64,
+      tamano_kb: sizeKB,
+      sesion_num: SESIONES_REGISTRADAS.length,
+    });
+    var overlay = document.getElementById('foto-preview-overlay');
+    if(overlay) overlay.remove();
+    showToast('Foto guardada como evidencia del curso','success');
+  }catch(e){
+    showToast('Error al guardar: '+e.message,'error');
+  }
 }
 
 function doLogout(){

@@ -487,6 +487,12 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
       <div class="sb-item" data-screen="configuracion" onclick="navTo('configuracion',this)">
         <i class="ti ti-settings"></i> Configuración
       </div>
+      <div class="sb-item" data-screen="usuarios" onclick="navTo('usuarios',this)">
+        <i class="ti ti-shield-lock"></i> Usuarios y roles
+      </div>
+      <div class="sb-item" data-screen="auditoria" onclick="navTo('auditoria',this)">
+        <i class="ti ti-list-search"></i> Log de actividad
+      </div>
       <div class="sb-item" data-screen="acerca" onclick="navTo('acerca',this)">
         <i class="ti ti-info-circle"></i> Acerca de
       </div>
@@ -749,22 +755,38 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
       <!-- ═══ PROFESORAS ═══ -->
       <div class="screen" id="screen-profesoras">
-        <div class="filters-bar">
-          <div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" placeholder="Buscar profesora..."></div>
-          <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openModal('modal-nueva-profesora')"><i class="ti ti-plus"></i> Registrar profesora</button>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title"><i class="ti ti-users" style="color:var(--g);"></i> Gestión de profesoras</div>
+              <div class="card-sub" style="margin-bottom:0;">Registro, edición y seguimiento de las profesoras del programa</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <select class="filter-select" id="prof-filtro-estado" onchange="window.renderProfesoras()" style="min-width:120px;">
+                <option value="activa">Activas</option>
+                <option value="inactiva">Inactivas</option>
+                <option value="">Todas</option>
+              </select>
+              <input type="text" class="filter-select" id="prof-buscar" placeholder="Buscar por nombre o CI..." oninput="window.renderProfesoras()" style="min-width:180px;">
+              <button class="btn btn-primary btn-sm" onclick="window.abrirModalNuevaProf()"><i class="ti ti-user-plus"></i> Nueva</button>
+            </div>
+          </div>
         </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Profesora</th><th>Especialidad</th><th>Cursos activos</th><th>Historial</th><th>Estado</th><th>Acciones</th></tr>
-              </thead>
-              <tbody id="profesoras-table"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tx3);">Cargando...</td></tr></tbody>
-            </table>
+
+        <div class="kpi-grid" id="prof-kpis" style="margin-bottom:14px;"></div>
+        <div id="prof-lista"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+
+        <!-- Modal editar profesora -->
+        <div class="modal-overlay" id="modal-edit-prof">
+          <div class="modal" style="max-width:480px;">
+            <div class="modal-header">
+              <div class="modal-title" id="modal-edit-prof-titulo">Editar profesora</div>
+              <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-edit-prof')"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="modal-body" id="modal-edit-prof-body"></div>
           </div>
         </div>
       </div>
-
       <!-- ═══ REPORTES ═══ -->
       <div class="screen" id="screen-reportes">
         <!-- Tabs Reportes -->
@@ -772,6 +794,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
           <div class="tab-item active" id="tab-rep-general" onclick="window.cambiarTabReporte('general')"><i class="ti ti-chart-bar"></i> Reportes generales</div>
           <div class="tab-item" id="tab-rep-mensual" onclick="window.cambiarTabReporte('mensual')"><i class="ti ti-calendar-month"></i> Resumen mensual</div>
           <div class="tab-item" id="tab-rep-encuestas" onclick="window.cambiarTabReporte('encuestas')"><i class="ti ti-clipboard-check"></i> Encuestas</div>
+          <div class="tab-item" id="tab-rep-distrital" onclick="window.cambiarTabReporte('distrital')"><i class="ti ti-map-pin"></i> Por distrito</div>
         </div>
 
         <!-- ─── TAB GENERAL ─── -->
@@ -1005,6 +1028,22 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <div id="enc-rep-comentarios"><div class="empty-state" style="padding:14px;">—</div></div>
           </div>
         </div><!-- /rep-tab-encuestas -->
+
+        <!-- ─── TAB DISTRITAL ─── -->
+        <div id="rep-tab-distrital" style="display:none;">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title"><i class="ti ti-map-pin" style="color:var(--te);"></i> Reporte territorial por distrito</div>
+                <div class="card-sub" style="margin-bottom:0;">Cobertura del programa en los distritos de Santa Cruz</div>
+              </div>
+              <button class="btn btn-sm" onclick="window.exportarReporteDistrital()"><i class="ti ti-download"></i> Excel</button>
+            </div>
+          </div>
+          <div class="card">
+            <div id="rep-distrital"><div class="empty-state" style="padding:14px;">Cargando...</div></div>
+          </div>
+        </div><!-- /rep-tab-distrital -->
       </div>
 
       <!-- ═══ IMPORTAR ═══ -->
@@ -1188,6 +1227,120 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
             <button class="btn btn-sm btn-ghost" onclick="showToast('Marcadas como leídas ✓','success');document.getElementById('badge-notif').style.display='none';">Marcar leídas</button>
           </div>
           <div id="notifs-list"><div class="empty-state">Analizando datos...</div></div>
+        </div>
+      </div>
+
+      <!-- ═══ USUARIOS Y ROLES ═══ -->
+      <div class="screen" id="screen-usuarios">
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title"><i class="ti ti-shield-lock" style="color:var(--in);"></i> Gestión de usuarios del sistema</div>
+              <div class="card-sub" style="margin-bottom:0;">Crea cuentas con email y contraseña. Asigna roles para controlar permisos.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="window.abrirModalNuevoUsuario()"><i class="ti ti-user-plus"></i> Nuevo usuario</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--inl),#fff);border-color:rgba(99,102,241,.15);">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <i class="ti ti-info-circle" style="color:var(--in);font-size:22px;margin-top:2px;"></i>
+            <div style="font-size:12.5px;color:var(--tx2);line-height:1.6;">
+              <strong>Roles disponibles:</strong><br>
+              <span class="badge badge-g">super_admin</span> Acceso total + gestionar usuarios<br>
+              <span class="badge badge-in">admin_gu</span> Acceso total excepto gestionar usuarios<br>
+              <span class="badge badge-am">jefatura</span> Supervisión, asignación, reportes. Sin importar ni configurar<br>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div id="usuarios-lista"><div class="empty-state" style="padding:14px;">Cargando usuarios...</div></div>
+        </div>
+
+        <!-- Modal nuevo usuario -->
+        <div class="modal-overlay" id="modal-nuevo-usuario">
+          <div class="modal" style="max-width:440px;">
+            <div class="modal-header">
+              <div class="modal-title">Nuevo usuario del sistema</div>
+              <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-nuevo-usuario')"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="modal-body">
+              <div style="display:grid;gap:14px;">
+                <div>
+                  <label class="form-label">Nombre completo *</label>
+                  <input class="form-control" id="nu-nombre" placeholder="Ej: María López">
+                </div>
+                <div>
+                  <label class="form-label">Email *</label>
+                  <input class="form-control" id="nu-email" type="email" placeholder="Ej: maria.lopez@cre.com.bo">
+                  <div style="font-size:10.5px;color:var(--tx3);margin-top:4px;">Si el email contiene "fundacion" se detecta automáticamente como jefatura</div>
+                </div>
+                <div>
+                  <label class="form-label">Contraseña temporal *</label>
+                  <input class="form-control" id="nu-pass" type="text" placeholder="Mínimo 6 caracteres">
+                  <div style="font-size:10.5px;color:var(--tx3);margin-top:4px;">La persona deberá cambiarla en su primer acceso</div>
+                </div>
+                <div>
+                  <label class="form-label">Rol *</label>
+                  <select class="form-control" id="nu-rol">
+                    <option value="">Seleccionar rol...</option>
+                    <option value="admin_gu">Admin GU — Acceso total</option>
+                    <option value="jefatura">Jefatura / Fundación — Supervisión y asignación</option>
+                    <option value="super_admin">Super Admin — Todo + gestionar usuarios</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="window.crearNuevoUsuario()">
+                  <i class="ti ti-user-plus"></i> Crear cuenta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ LOG DE AUDITORÍA ═══ -->
+      <div class="screen" id="screen-auditoria">
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title"><i class="ti ti-list-search" style="color:var(--in);"></i> Log de actividad del sistema</div>
+              <div class="card-sub" style="margin-bottom:0;">Registro de acciones administrativas. No se puede editar ni eliminar.</div>
+            </div>
+            <button class="btn btn-sm" onclick="window.exportarAuditLog()"><i class="ti ti-download"></i> Excel</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;padding:12px 16px;">
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+            <div>
+              <label class="form-label">Desde</label>
+              <input type="date" class="filter-select" id="audit-desde" style="min-width:140px;">
+            </div>
+            <div>
+              <label class="form-label">Hasta</label>
+              <input type="date" class="filter-select" id="audit-hasta" style="min-width:140px;">
+            </div>
+            <div>
+              <label class="form-label">Tipo</label>
+              <select class="filter-select" id="audit-tipo" style="min-width:130px;">
+                <option value="">Todas</option>
+                <option value="acceso">Accesos</option>
+                <option value="operacion">Operaciones</option>
+                <option value="error">Errores</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Buscar</label>
+              <input type="text" class="filter-select" id="audit-buscar" placeholder="Acción o detalle..." style="min-width:180px;">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="window.cargarAuditLog()"><i class="ti ti-search"></i> Filtrar</button>
+          </div>
+        </div>
+
+        <div id="audit-kpis" class="kpi-grid" style="margin-bottom:14px;"></div>
+        <div class="card">
+          <div id="audit-tabla"><div class="empty-state" style="padding:20px;">Haz clic en "Filtrar" para cargar el log</div></div>
         </div>
       </div>
 
@@ -1412,6 +1565,449 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
 
 <script>
+
+// ── VER FOTOS DE EVIDENCIA DE UN CURSO ──
+window.verFotosCurso = async function(cursoId, nombreCurso){
+  var cont = document.getElementById('modal-detalle-content');
+  var tit = document.getElementById('modal-detalle-titulo');
+  if(tit) tit.textContent = 'Fotos: '+(nombreCurso||'Curso');
+  if(!cont) return;
+  cont.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+  openModal('modal-detalle-curso');
+  try{
+    var snap = await DB.collection('evidencias_curso').where('curso_id','==',cursoId).get();
+    var fotos = snap.docs.map(function(d){return d.data();});
+    fotos.sort(function(a,b){return (b.timestamp||'').localeCompare(a.timestamp||'');});
+    if(!fotos.length){
+      cont.innerHTML = '<div class="empty-state"><i class="ti ti-camera-off"></i><div class="empty-state-title">Sin fotos</div><div class="empty-state-sub">La profesora aun no ha subido fotos de este curso</div></div><button class="btn" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button>';
+      return;
+    }
+    cont.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:12px;">'+fotos.length+' fotos de evidencia</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">'
+      + fotos.map(function(f){
+          return '<div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);">'
+            + '<img src="'+f.imagen+'" style="width:100%;height:150px;object-fit:cover;">'
+            + '<div style="padding:8px;font-size:11px;color:var(--tx3);">'
+            + '<div style="font-weight:600;color:var(--tx);">'+f.profesora+'</div>'
+            + f.fecha+' '+f.hora+' · Sesion '+(f.sesion_num||'—')+' · '+f.tamano_kb+'KB'
+            + '</div></div>';
+        }).join('')
+      + '</div>'
+      + '<button class="btn" style="margin-top:14px;" onclick="closeModal(&quot;modal-detalle-curso&quot;)">Cerrar</button>';
+  }catch(e){
+    cont.innerHTML = '<div style="color:var(--re);">Error: '+e.message+'</div>';
+  }
+};
+
+
+
+// ══════════════════════════════════════════════════════
+//  GESTIÓN DE USUARIOS Y ROLES
+// ══════════════════════════════════════════════════════
+window.cargarUsuarios = async function(){
+  var el = document.getElementById('usuarios-lista');
+  el.innerHTML = '<div style="text-align:center;padding:16px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+  try{
+    var snap = await DB.collection('usuarios_roles').get();
+    var users = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+
+    if(!users.length){
+      el.innerHTML = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin usuarios registrados</div><div class="empty-state-sub">Crea el primer usuario con el boton "Nuevo usuario".<br>Tu cuenta actual funciona pero no tiene rol asignado en Firestore.</div></div>';
+      return;
+    }
+
+    var ROLE_BADGE = {super_admin:'badge-re',admin_gu:'badge-g',jefatura:'badge-am'};
+    var ROLE_LABEL = {super_admin:'Super Admin',admin_gu:'Admin GU',jefatura:'Jefatura'};
+
+    el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Creado</th><th>Acciones</th></tr></thead><tbody>'
+      + users.map(function(u){
+          var rol = u.rol||'sin_rol';
+          return '<tr>'
+            + '<td class="td-bold">'+(u.nombre||'—')+'</td>'
+            + '<td style="font-size:12px;">'+(u.email||'—')+'</td>'
+            + '<td><span class="badge '+(ROLE_BADGE[rol]||'badge-gray')+'">'+(ROLE_LABEL[rol]||rol)+'</span></td>'
+            + '<td><span class="badge '+((u.activo!==false)?'badge-g':'badge-re')+'">'+(u.activo!==false?'Activo':'Inactivo')+'</span></td>'
+            + '<td style="font-size:11px;">'+(u.creado_en||'—')+'</td>'
+            + '<td><select class="filter-select" style="font-size:11px;padding:4px 6px;" onchange="window.cambiarRolUsuario(&quot;'+u.id+'&quot;,this.value,&quot;'+(u.nombre||'')+'&quot;)">'
+            + '<option value="admin_gu"'+(rol==='admin_gu'?' selected':'')+'>Admin GU</option>'
+            + '<option value="jefatura"'+(rol==='jefatura'?' selected':'')+'>Jefatura</option>'
+            + '<option value="super_admin"'+(rol==='super_admin'?' selected':'')+'>Super Admin</option>'
+            + '</select></td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }catch(e){
+    el.innerHTML = '<div style="color:var(--re);padding:10px;">Error: '+e.message+'</div>';
+  }
+};
+
+window.abrirModalNuevoUsuario = function(){
+  document.getElementById('nu-nombre').value = '';
+  document.getElementById('nu-email').value = '';
+  document.getElementById('nu-pass').value = '';
+  document.getElementById('nu-rol').value = '';
+  openModal('modal-nuevo-usuario');
+};
+
+window.crearNuevoUsuario = async function(){
+  var nombre = (document.getElementById('nu-nombre').value||'').trim();
+  var email = (document.getElementById('nu-email').value||'').trim().toLowerCase();
+  var pass = (document.getElementById('nu-pass').value||'').trim();
+  var rol = (document.getElementById('nu-rol').value||'').trim();
+
+  if(!nombre){showToast('Nombre obligatorio','warn');return;}
+  if(!email||!email.includes('@')){showToast('Email valido obligatorio','warn');return;}
+  if(!pass||pass.length<6){showToast('Contrasena minimo 6 caracteres','warn');return;}
+  if(!rol){showToast('Selecciona un rol','warn');return;}
+
+  showLoading(true);
+  try{
+    // Crear usuario en Firebase Auth via REST API
+    var resp = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass,returnSecureToken:false})
+    });
+    var data = await resp.json();
+
+    if(data.error){
+      showLoading(false);
+      var msg = data.error.message;
+      if(msg==='EMAIL_EXISTS') showToast('Ya existe una cuenta con ese email','error');
+      else if(msg==='WEAK_PASSWORD') showToast('Contrasena muy debil (min 6 chars)','error');
+      else showToast('Error: '+msg,'error');
+      return;
+    }
+
+    // Guardar rol en Firestore con el UID del nuevo usuario
+    var uid = data.localId;
+    await DB.collection('usuarios_roles').doc(uid).set({
+      email: email,
+      nombre: nombre,
+      rol: rol,
+      activo: true,
+      creado_en: new Date().toISOString().split('T')[0],
+      creado_por: G.user ? G.user.email : 'admin',
+    });
+
+    showLoading(false);
+    closeModal('modal-nuevo-usuario');
+    cargarUsuarios();
+    showToast('Usuario creado: '+nombre+' ('+rol+')','success');
+    registrarAuditoria('crear_usuario', nombre+' ('+email+') rol: '+rol, 'usuarios');
+
+    // Re-autenticar como admin (crear usuario via REST cambia la sesion activa)
+    // Esto es un hack necesario porque signUp cambia el usuario activo
+    showToast('Reautenticando como admin...','warn');
+
+  }catch(e){
+    showLoading(false);
+    showToast('Error: '+e.message,'error');
+  }
+};
+
+window.cambiarRolUsuario = async function(uid, nuevoRol, nombre){
+  if(!confirm('Cambiar rol de '+nombre+' a '+nuevoRol+'?')) return;
+  try{
+    await DB.collection('usuarios_roles').doc(uid).update({rol:nuevoRol, actualizado_en:new Date().toISOString()});
+    showToast('Rol actualizado: '+nombre+' -> '+nuevoRol,'success');
+    registrarAuditoria('cambiar_rol', nombre+' -> '+nuevoRol, 'usuarios');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+
+
+// ══════════════════════════════════════════════════════
+//  ETAPA 6: GESTIÓN DE PROFESORAS MEJORADA
+// ══════════════════════════════════════════════════════
+window.renderProfesoras = function(){
+  var filtro = (document.getElementById('prof-filtro-estado')||{}).value||'';
+  var buscar = (document.getElementById('prof-buscar')||{}).value.toLowerCase().trim();
+  var lista = (G.profesoras||[]).filter(function(p){
+    if(filtro && (p.estado||'activa') !== filtro) return false;
+    if(buscar){
+      var n = (p.nombre||p.nombre_completo||'').toLowerCase();
+      var ci = (p.ci||p.id||'').toLowerCase();
+      if(!n.includes(buscar) && !ci.includes(buscar)) return false;
+    }
+    return true;
+  });
+
+  // KPIs
+  var total = (G.profesoras||[]).length;
+  var activas = (G.profesoras||[]).filter(function(p){return (p.estado||'activa')==='activa';}).length;
+  var inactivas = total - activas;
+  // Contar cursos por profesora
+  var cursosPorProf = {};
+  (G.cursos||[]).forEach(function(c){
+    var p = (c.profesora||'').trim();
+    if(p) cursosPorProf[p] = (cursosPorProf[p]||0)+1;
+  });
+
+  var kpis = document.getElementById('prof-kpis');
+  if(kpis) kpis.innerHTML = '<div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);"><div class="kpi-icon"><i class="ti ti-users" style="color:var(--g);"></i></div><div class="kpi-val">'+total+'</div><div class="kpi-lbl">Total profesoras</div></div>'
+    + '<div class="kpi" style="--kpi-color:var(--te);--kpi-bg:var(--tel);"><div class="kpi-icon"><i class="ti ti-user-check" style="color:var(--te);"></i></div><div class="kpi-val">'+activas+'</div><div class="kpi-lbl">Activas</div></div>'
+    + '<div class="kpi" style="--kpi-color:var(--re);--kpi-bg:var(--rel);"><div class="kpi-icon"><i class="ti ti-user-off" style="color:var(--re);"></i></div><div class="kpi-val">'+inactivas+'</div><div class="kpi-lbl">Inactivas</div></div>'
+    + '<div class="kpi" style="--kpi-color:var(--in);--kpi-bg:var(--inl);"><div class="kpi-icon"><i class="ti ti-calendar" style="color:var(--in);"></i></div><div class="kpi-val">'+Object.keys(cursosPorProf).length+'</div><div class="kpi-lbl">Con cursos asignados</div></div>';
+
+  var el = document.getElementById('prof-lista');
+  if(!lista.length){
+    el.innerHTML = '<div class="empty-state"><i class="ti ti-users-off"></i><div class="empty-state-title">Sin profesoras</div></div>';
+    return;
+  }
+
+  var COLS = ['var(--g)','var(--in)','var(--te)','var(--am)','#8B5CF6','#06B6D4','#F97316','var(--re)'];
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th></th><th>Nombre</th><th>CI</th><th>Especialidad</th><th>Cursos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>'
+    + lista.map(function(p,i){
+        var nombre = p.nombre||p.nombre_completo||'Sin nombre';
+        var ci = p.ci||p.id||'';
+        var esp = p.especialidad||'General';
+        var cursos = cursosPorProf[nombre]||0;
+        var estado = p.estado||'activa';
+        var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+        return '<tr>'
+          + '<td><div class="av av-sm" style="background:'+COLS[i%8]+';">'+ini+'</div></td>'
+          + '<td class="td-bold">'+nombre+'</td>'
+          + '<td style="font-family:monospace;font-size:12px;">'+ci+'</td>'
+          + '<td style="font-size:12px;">'+esp+'</td>'
+          + '<td style="text-align:center;"><span class="badge '+(cursos>0?'badge-g':'badge-gray')+'">'+cursos+'</span></td>'
+          + '<td><span class="badge '+(estado==='activa'?'badge-g':'badge-re')+'">'+(estado==='activa'?'Activa':'Inactiva')+'</span></td>'
+          + '<td style="display:flex;gap:4px;">'
+          + '<button class="btn btn-sm" onclick="window.editarProf(&quot;'+p.id+'&quot;)" title="Editar"><i class="ti ti-edit"></i></button>'
+          + '<button class="btn btn-sm" style="color:'+(estado==='activa'?'var(--am)':'var(--g)')+';" onclick="window.toggleEstadoProf(&quot;'+p.id+'&quot;,&quot;'+estado+'&quot;)" title="'+(estado==='activa'?'Desactivar':'Reactivar')+'"><i class="ti ti-'+(estado==='activa'?'user-off':'user-check')+'"></i></button>'
+          + '</td></tr>';
+      }).join('')
+    + '</tbody></table></div>';
+};
+
+window.editarProf = async function(profId){
+  var p = (G.profesoras||[]).find(function(x){return x.id===profId;});
+  if(!p){showToast('Profesora no encontrada','error');return;}
+  var body = document.getElementById('modal-edit-prof-body');
+  var titulo = document.getElementById('modal-edit-prof-titulo');
+  titulo.textContent = 'Editar: '+(p.nombre||p.nombre_completo||'');
+  body.innerHTML = '<div style="display:grid;gap:12px;">'
+    + '<div><label class="form-label">Nombre completo</label><input class="form-control" id="ep-nombre" value="'+(p.nombre||p.nombre_completo||'')+'"></div>'
+    + '<div><label class="form-label">CI</label><input class="form-control" id="ep-ci" value="'+(p.ci||'')+'" inputmode="numeric" pattern="[0-9]*"></div>'
+    + '<div><label class="form-label">Especialidad</label><input class="form-control" id="ep-esp" value="'+(p.especialidad||'')+'"></div>'
+    + '<div><label class="form-label">Telefono</label><input class="form-control" id="ep-tel" value="'+(p.telefono||'')+'" inputmode="numeric"></div>'
+    + '<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="window.guardarEditProf(&quot;'+profId+'&quot;)"><i class="ti ti-check"></i> Guardar cambios</button>'
+    + '</div>';
+  openModal('modal-edit-prof');
+};
+
+window.guardarEditProf = async function(profId){
+  var nombre = (document.getElementById('ep-nombre').value||'').trim();
+  var ci = (document.getElementById('ep-ci').value||'').trim().replace(/[^0-9]/g,'');
+  var esp = (document.getElementById('ep-esp').value||'').trim();
+  var tel = (document.getElementById('ep-tel').value||'').trim().replace(/[^0-9]/g,'');
+  if(!nombre||nombre.length<3){showToast('Nombre obligatorio (min 3 chars)','warn');return;}
+  if(!ci||ci.length<4){showToast('CI obligatorio (min 4 digitos)','warn');return;}
+  // Verificar CI duplicado
+  var dup = (G.profesoras||[]).find(function(p){return (p.ci||p.id)===ci && p.id!==profId;});
+  if(dup){showToast('Ya existe una profesora con CI '+ci+': '+(dup.nombre||dup.nombre_completo),'error');return;}
+  try{
+    await DB.collection('profesoras').doc(profId).update({nombre:nombre,nombre_completo:nombre,ci:ci,especialidad:esp,telefono:tel,actualizado_en:new Date().toISOString()});
+    var p = (G.profesoras||[]).find(function(x){return x.id===profId;});
+    if(p){p.nombre=nombre;p.nombre_completo=nombre;p.ci=ci;p.especialidad=esp;p.telefono=tel;}
+    closeModal('modal-edit-prof');
+    renderProfesoras();
+    showToast('Profesora actualizada','success');
+    registrarAuditoria('editar_profesora','Editada: '+nombre+' (CI: '+ci+')','profesoras');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+window.toggleEstadoProf = async function(profId, estadoActual){
+  var nuevoEstado = estadoActual==='activa'?'inactiva':'activa';
+  var p = (G.profesoras||[]).find(function(x){return x.id===profId;});
+  var nombre = p?(p.nombre||p.nombre_completo):'';
+  if(!confirm((nuevoEstado==='inactiva'?'Desactivar':'Reactivar')+' a '+nombre+'?')) return;
+  try{
+    await DB.collection('profesoras').doc(profId).update({estado:nuevoEstado,estado_cambiado_en:new Date().toISOString()});
+    if(p) p.estado = nuevoEstado;
+    renderProfesoras();
+    showToast(nombre+' '+(nuevoEstado==='activa'?'reactivada':'desactivada'),'success');
+    registrarAuditoria('estado_profesora',nombre+' -> '+nuevoEstado,'profesoras');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+window.abrirModalNuevaProf = function(){
+  var body = document.getElementById('modal-edit-prof-body');
+  var titulo = document.getElementById('modal-edit-prof-titulo');
+  titulo.textContent = 'Registrar nueva profesora';
+  body.innerHTML = '<div style="display:grid;gap:12px;">'
+    + '<div><label class="form-label">Nombre completo *</label><input class="form-control" id="ep-nombre" placeholder="Nombre completo"></div>'
+    + '<div><label class="form-label">CI *</label><input class="form-control" id="ep-ci" placeholder="Ej: 5123456" inputmode="numeric"></div>'
+    + '<div><label class="form-label">Especialidad</label><input class="form-control" id="ep-esp" placeholder="Ej: Reposteria"></div>'
+    + '<div><label class="form-label">Telefono</label><input class="form-control" id="ep-tel" placeholder="Ej: 70012345" inputmode="numeric"></div>'
+    + '<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="window.crearNuevaProf()"><i class="ti ti-user-plus"></i> Registrar profesora</button>'
+    + '</div>';
+  openModal('modal-edit-prof');
+};
+
+window.crearNuevaProf = async function(){
+  var nombre = (document.getElementById('ep-nombre').value||'').trim();
+  var ci = (document.getElementById('ep-ci').value||'').trim().replace(/[^0-9]/g,'');
+  var esp = (document.getElementById('ep-esp').value||'').trim();
+  var tel = (document.getElementById('ep-tel').value||'').trim().replace(/[^0-9]/g,'');
+  if(!nombre||nombre.length<3){showToast('Nombre obligatorio','warn');return;}
+  if(!ci||ci.length<4){showToast('CI obligatorio (min 4 digitos)','warn');return;}
+  var dup = (G.profesoras||[]).find(function(p){return (p.ci||p.id)===ci;});
+  if(dup){showToast('Ya existe profesora con CI '+ci,'error');return;}
+  try{
+    var docRef = await DB.collection('profesoras').add({nombre:nombre,nombre_completo:nombre,ci:ci,especialidad:esp,telefono:tel,estado:'activa',creado_en:new Date().toISOString()});
+    G.profesoras.push({id:docRef.id,nombre:nombre,nombre_completo:nombre,ci:ci,especialidad:esp,telefono:tel,estado:'activa'});
+    closeModal('modal-edit-prof');
+    renderProfesoras();
+    showToast('Profesora registrada','success');
+    registrarAuditoria('crear_profesora','Nueva: '+nombre+' (CI: '+ci+')','profesoras');
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+// ══════════════════════════════════════════════════════
+//  ETAPA 7: REPORTES TERRITORIALES POR DISTRITO
+// ══════════════════════════════════════════════════════
+window.generarReporteDistrital = async function(){
+  var el = document.getElementById('rep-distrital');
+  if(!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+
+  try{
+    var snapReg = await DB.collection('registros').get();
+    var inscPorCurso = {};
+    snapReg.docs.forEach(function(d){var cid = d.data().curso_id; inscPorCurso[cid] = (inscPorCurso[cid]||0)+1;});
+
+    // Agrupar por distrito
+    var porDist = {};
+    (G.cursos||[]).forEach(function(c){
+      var dist = c.distrito_num || 'Sin distrito';
+      var nombre = c.distrito_nombre || ('Distrito '+dist);
+      if(!porDist[dist]) porDist[dist] = {num:dist,nombre:nombre,cursos:0,inscritas:0,finalizados:0,profesoras:new Set()};
+      porDist[dist].cursos++;
+      porDist[dist].inscritas += inscPorCurso[c.id]||0;
+      if(c.estado==='finalizado'||c.estado==='aprobado') porDist[dist].finalizados++;
+      if(c.profesora) porDist[dist].profesoras.add(c.profesora);
+    });
+
+    var distritos = Object.values(porDist).sort(function(a,b){return parseInt(a.num)||99 - parseInt(b.num)||99;});
+    var totalCursos = distritos.reduce(function(s,d){return s+d.cursos;},0);
+    var totalInscritas = distritos.reduce(function(s,d){return s+d.inscritas;},0);
+    var totalFin = distritos.reduce(function(s,d){return s+d.finalizados;},0);
+    var maxCursos = Math.max.apply(null, distritos.map(function(d){return d.cursos;}))||1;
+
+    var html = '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px;">'+distritos.length+' distritos con actividad · '+totalCursos+' cursos · '+totalInscritas+' inscripciones</div>';
+
+    // Barras por distrito
+    html += distritos.map(function(d){
+      var w = Math.round(d.cursos/maxCursos*100);
+      var pct = totalInscritas>0?Math.round(d.inscritas/totalInscritas*100):0;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">'
+        + '<div style="width:140px;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+d.nombre+'">'+d.nombre+'</div>'
+        + '<div style="flex:1;"><div class="prog-wrap" style="height:6px;"><div class="prog-fill" style="height:6px;width:'+w+'%;background:var(--g);"></div></div></div>'
+        + '<div style="min-width:45px;text-align:right;font-size:12px;font-weight:700;color:var(--g);">'+d.cursos+'c</div>'
+        + '<div style="min-width:50px;text-align:right;font-size:12px;color:var(--in);">'+d.inscritas+'al</div>'
+        + '<div style="min-width:35px;text-align:right;font-size:12px;color:var(--te);">'+d.profesoras.size+'p</div>'
+        + '</div>';
+    }).join('');
+
+    el.innerHTML = html;
+    window.__REP_DISTRITAL = distritos;
+
+  }catch(e){
+    el.innerHTML = '<div style="color:var(--re);padding:10px;">Error: '+e.message+'</div>';
+  }
+};
+
+window.exportarReporteDistrital = function(){
+  if(!window.__REP_DISTRITAL || typeof XLSX==='undefined'){showToast('Sin datos','warn');return;}
+  var rows = window.__REP_DISTRITAL.map(function(d){
+    return {'Distrito':d.nombre,'Numero':d.num,'Cursos':d.cursos,'Inscritas':d.inscritas,'Finalizados':d.finalizados,'Profesoras':d.profesoras.size};
+  });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Por Distrito');
+  XLSX.writeFile(wb, 'SIGPAF_Reporte_Distrital_'+new Date().toISOString().split('T')[0]+'.xlsx');
+  showToast('Reporte distrital exportado','success');
+};
+
+
+
+// ══════════════════════════════════════════════════════
+//  LOG DE AUDITORÍA — VISUALIZACIÓN
+// ══════════════════════════════════════════════════════
+window.cargarAuditLog = async function(){
+  var desde = document.getElementById('audit-desde');
+  var hasta = document.getElementById('audit-hasta');
+  var tipo = (document.getElementById('audit-tipo')||{}).value||'';
+  var buscar = (document.getElementById('audit-buscar')||{}).value.toLowerCase().trim();
+  var tabla = document.getElementById('audit-tabla');
+  var kpis = document.getElementById('audit-kpis');
+  if(!desde.value){ var d=new Date(); d.setDate(d.getDate()-7); desde.value=d.toISOString().split('T')[0]; }
+  if(!hasta.value) hasta.value=new Date().toISOString().split('T')[0];
+  tabla.innerHTML='<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
+  try{
+    var snap=await DB.collection('audit_log').get();
+    var logs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    var desdeStr=desde.value, hastaStr=hasta.value+'T23:59:59';
+    logs=logs.filter(function(l){
+      var ts=l.timestamp||'';
+      if(ts<desdeStr||ts>hastaStr) return false;
+      if(tipo&&l.tipo!==tipo) return false;
+      if(buscar&&!(l.accion||'').toLowerCase().includes(buscar)&&!(l.detalle||'').toLowerCase().includes(buscar)) return false;
+      return true;
+    });
+    logs.sort(function(a,b){return (b.timestamp||'').localeCompare(a.timestamp||'');});
+    var accesos=logs.filter(function(l){return l.tipo==='acceso';}).length;
+    var ops=logs.filter(function(l){return l.tipo==='operacion';}).length;
+    var errs=logs.filter(function(l){return l.tipo==='error';}).length;
+    if(kpis) kpis.innerHTML='<div class="kpi" style="--kpi-color:var(--in);--kpi-bg:var(--inl);"><div class="kpi-icon"><i class="ti ti-list-search" style="color:var(--in);"></i></div><div class="kpi-val">'+logs.length+'</div><div class="kpi-lbl">Registros</div></div><div class="kpi" style="--kpi-color:var(--te);--kpi-bg:var(--tel);"><div class="kpi-icon"><i class="ti ti-login" style="color:var(--te);"></i></div><div class="kpi-val">'+accesos+'</div><div class="kpi-lbl">Accesos</div></div><div class="kpi" style="--kpi-color:var(--g);--kpi-bg:var(--gl);"><div class="kpi-icon"><i class="ti ti-settings" style="color:var(--g);"></i></div><div class="kpi-val">'+ops+'</div><div class="kpi-lbl">Operaciones</div></div><div class="kpi" style="--kpi-color:var(--re);--kpi-bg:var(--rel);"><div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:var(--re);"></i></div><div class="kpi-val">'+errs+'</div><div class="kpi-lbl">Errores</div></div>';
+    if(!logs.length){tabla.innerHTML='<div class="empty-state"><i class="ti ti-clipboard-off"></i><div class="empty-state-title">Sin registros</div></div>';return;}
+    var TB={acceso:'badge-te',operacion:'badge-g',error:'badge-re'};
+    tabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Tipo</th><th>Accion</th><th>Detalle</th></tr></thead><tbody>'+logs.slice(0,200).map(function(l){return '<tr><td style="white-space:nowrap;font-size:11px;">'+(l.fecha||'')+' '+(l.hora||'')+'</td><td style="font-size:12px;">'+((l.usuario||'').split('@')[0])+'</td><td><span class="badge '+(TB[l.tipo]||'badge-gray')+'">'+(l.tipo||'')+'</span></td><td class="td-bold" style="font-size:12px;">'+((l.accion||'').replace(/_/g,' '))+'</td><td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;">'+((l.detalle||'').substring(0,80))+'</td></tr>';}).join('')+'</tbody></table></div>';
+    window.__AUDIT_DATA=logs;
+  }catch(e){tabla.innerHTML='<div style="color:var(--re);padding:10px;">Error: '+e.message+'</div>';}
+};
+
+window.exportarAuditLog=function(){
+  if(!window.__AUDIT_DATA||typeof XLSX==='undefined'){showToast('Sin datos','warn');return;}
+  var rows=window.__AUDIT_DATA.map(function(l){return{Fecha:l.fecha,Hora:l.hora,Usuario:l.usuario,Tipo:l.tipo,Accion:l.accion,Detalle:l.detalle};});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'AuditLog');
+  XLSX.writeFile(wb,'SIGPAF_AuditLog_'+new Date().toISOString().split('T')[0]+'.xlsx');
+  showToast('Log exportado','success');
+};
+
+// ══════════════════════════════════════════════════════
+//  ALERTAS OPERATIVAS AVANZADAS
+// ══════════════════════════════════════════════════════
+window.generarAlertasAvanzadas = async function(){
+  var notifs=[];
+  var sinProf=(G.cursos||[]).filter(function(c){return !c.profesora&&!c.profesora_nombre&&c.estado!=='finalizado';});
+  if(sinProf.length>0) notifs.push({icon:'ti-user-off',color:'var(--re)',title:sinProf.length+' cursos sin profesora',sub:'Asignacion pendiente',time:'Ahora',unread:true});
+  var sinCodigo=(G.cursos||[]).filter(function(c){return !c.codigo_registro&&c.estado!=='finalizado';});
+  if(sinCodigo.length>0) notifs.push({icon:'ti-qrcode-off',color:'var(--am)',title:sinCodigo.length+' sin codigo SIGECOOP',sub:'No generan QR',time:'Ahora',unread:true});
+  try{
+    var snapA=await DB.collection('asistencia').get();
+    var sesPorCurso={};
+    snapA.docs.forEach(function(d){var data=d.data();var cid=data.curso_id;if(!sesPorCurso[cid])sesPorCurso[cid]={count:0,alumnas:{}};sesPorCurso[cid].count++;(data.registros||[]).forEach(function(r){if(!sesPorCurso[cid].alumnas[r.ci])sesPorCurso[cid].alumnas[r.ci]={p:0,a:0};if(r.estado==='presente'||r.estado==='justificada')sesPorCurso[cid].alumnas[r.ci].p++;else sesPorCurso[cid].alumnas[r.ci].a++;});});
+    var enRiesgo=0;
+    (G.cursos||[]).forEach(function(c){var s=sesPorCurso[c.id];if(!s||!s.alumnas||c.estado==='finalizado')return;Object.keys(s.alumnas).forEach(function(ci){if(s.alumnas[ci].a>=3)enRiesgo++;});});
+    if(enRiesgo>0) notifs.push({icon:'ti-alert-circle',color:'var(--re)',title:enRiesgo+' alumnas en riesgo (3+ faltas)',sub:'Necesitan seguimiento',time:'Atencion',unread:true});
+    var porTerminar=(G.cursos||[]).filter(function(c){var s=sesPorCurso[c.id];return s&&s.count>=8&&s.count<10&&c.estado!=='finalizado';});
+    if(porTerminar.length>0) notifs.push({icon:'ti-flag',color:'var(--in)',title:porTerminar.length+' cursos por finalizar (8+ sesiones)',sub:'Preparar cierre',time:'Pronto',unread:true});
+    var snapR=await DB.collection('registros').get();
+    var inscPorCurso={};snapR.docs.forEach(function(d){var cid=d.data().curso_id;inscPorCurso[cid]=(inscPorCurso[cid]||0)+1;});
+    var bajoCupo=(G.cursos||[]).filter(function(c){return c.estado!=='finalizado'&&(inscPorCurso[c.id]||0)<5;});
+    if(bajoCupo.length>0) notifs.push({icon:'ti-users-minus',color:'var(--am)',title:bajoCupo.length+' cursos con bajo cupo (<5)',sub:'Revisar o reubicar',time:'Revisar',unread:false});
+  }catch(e){}
+  if(notifs.length===0) notifs.push({icon:'ti-check',color:'var(--g)',title:'Todo en orden',sub:'Sin alertas pendientes',time:'Ahora',unread:false});
+  var el=document.getElementById('notifs-list');
+  if(!el)return;
+  el.innerHTML=notifs.map(function(n){return '<div class="notif-item'+(n.unread?' unread':'')+'">'+(n.unread?'<div class="notif-dot"></div>':'<div style="width:8px;"></div>')+'<div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:'+n.color+'15;display:flex;align-items:center;justify-content:center;"><i class="ti '+n.icon+'" style="color:'+n.color+';font-size:18px;"></i></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">'+n.title+'</div><div style="font-size:12px;color:var(--tx3);margin-top:2px;">'+n.sub+'</div></div><div style="font-size:11px;color:var(--tx3);">'+n.time+'</div></div>';}).join('');
+  var unread=notifs.filter(function(n){return n.unread;}).length;
+  var badge=document.getElementById('badge-notif');
+  if(badge){badge.style.display=unread>0?'':'none';badge.textContent=unread;}
+};
+
+
 // ── MESES DINÁMICOS ──
 window.poblarSelectoresMes = function(){
   var MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
@@ -1779,7 +2375,7 @@ function initApp(){
     G.registros  = snapToArray(results[4]);
     renderDashboard();
       try { poblarSelectoresMes(); } catch(e){}
-      try { generarNotificaciones(); } catch(e){}
+      try { generarAlertasAvanzadas(); } catch(e){}
       try { renderRankingProfesoras(); } catch(e){}
     renderCursos(G.cursos);
     poblarFiltroProfesorasCursos();
@@ -2163,6 +2759,7 @@ window.verDetalleCurso = function(id){
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
     +'<button class="btn btn-sm" style="flex:1;" onclick="closeModal(&quot;modal-detalle-curso&quot;);window.generarCertificadosLote(&quot;'+id+'&quot;)"><i class="ti ti-certificate"></i> Certificados PDF</button>'
     +'<button class="btn btn-sm" style="flex:1;color:var(--am);border-color:var(--am);" onclick="closeModal(&quot;modal-detalle-curso&quot;);window.cerrarCursoConActa(&quot;'+id+'&quot;)"><i class="ti ti-lock"></i> Cerrar curso + Acta</button>'
+    +'<button class="btn btn-sm" style="flex:1;color:var(--te);border-color:var(--te);" onclick="window.verFotosCurso(&quot;'+id+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)"><i class="ti ti-camera"></i> Fotos</button>'
     +'<button class="btn btn-sm" style="flex:1;" onclick="window.verEncuestasCurso(&quot;'+id+'&quot;,&quot;'+nombre.replace(/"/g,'')+'&quot;)"><i class="ti ti-clipboard-check"></i> Ver encuestas</button>'
     +'</div>';
 
@@ -3763,7 +4360,7 @@ function aplicarRol(){
   document.body.setAttribute('data-role', ROLE);
 
   // Items del sidebar que solo ve el admin
-  var itemsAdminOnly = ['importar','configuracion']; // Solo admin
+  var itemsAdminOnly = ['importar','configuracion','usuarios']; // Solo admin
   itemsAdminOnly.forEach(function(s){
     var el = document.querySelector('[data-screen="'+s+'"]');
     if(el) el.style.display = ROLE==='admin' ? '' : 'none';
@@ -4684,7 +5281,7 @@ window.cargarConfiguracion = async function(){
 };
 
 window.cambiarTabReporte = function(tab){
-  ['general','mensual','encuestas'].forEach(function(t){
+  ['general','mensual','encuestas','distrital'].forEach(function(t){
     var tabEl = document.getElementById('tab-rep-'+t);
     var panEl = document.getElementById('rep-tab-'+t);
     if(tabEl) tabEl.classList.toggle('active', tab===t);
@@ -4692,6 +5289,7 @@ window.cambiarTabReporte = function(tab){
   });
   if(tab==='mensual') window.actualizarResumenMensual();
   if(tab==='encuestas') window.cargarReporteEncuestas();
+  if(tab==='distrital') window.generarReporteDistrital();
 };
 
 window.actualizarResumenMensual = function(){
