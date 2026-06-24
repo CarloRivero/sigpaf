@@ -6,9 +6,6 @@
 <title>SIGPAF · CRE R.L.</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -412,7 +409,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
     <div class="form-group" style="margin-bottom:8px;">
       <label class="form-label">Contraseña</label>
       <div style="position:relative;">
-        <input class="form-control" type="password" id="login-pass" placeholder="••••••••" style="padding-right:40px;">
+        <input class="form-control" type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••" style="padding-right:40px;">
         <i class="ti ti-eye" id="toggle-pass" onclick="togglePass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--tx3);font-size:17px;transition:color .15s;"></i>
       </div>
     </div>
@@ -1373,7 +1370,7 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
         <div class="card" style="margin-top:14px;">
           <div class="card-title" style="margin-bottom:14px;"><i class="ti ti-code" style="color:var(--in);"></i> Información del sistema</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Versión</div><div style="font-size:15px;font-weight:700;">1.0.0</div></div>
+            <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Versión</div><div style="font-size:15px;font-weight:700;" id="about-version">1.0.0</div></div>
             <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Última actualización</div><div style="font-size:15px;font-weight:700;">Junio 2026</div></div>
             <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Firebase</div><div style="font-size:15px;font-weight:700;">sigpaf-cre</div></div>
             <div style="background:var(--bg);padding:12px;border-radius:8px;"><div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Portales públicos</div><div style="font-size:15px;font-weight:700;">GitHub Pages</div></div>
@@ -1565,6 +1562,55 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
 
 <script>
+
+// ══════════════════════════════════════════════════════
+//  SISTEMA — VERSIÓN Y AMBIENTE
+// ══════════════════════════════════════════════════════
+window.SIGPAF_VERSION = '1.0.0';
+window.SIGPAF_BUILD = '2026-06-24';
+window.IS_PROD = window.location.protocol === 'https:' || window.location.protocol === 'file:';
+window.IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+
+
+// ══════════════════════════════════════════════════════
+//  UTILIDADES DE SEGURIDAD Y ERRORES
+// ══════════════════════════════════════════════════════
+
+// Sanitizar texto de Firestore para evitar XSS al usar innerHTML
+window.safeTxt = function(val){
+  if(val === null || val === undefined) return '';
+  return String(val).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+};
+
+// Manejo de errores Firebase estandarizado
+window.showFirebaseError = function(error, contexto){
+  var msg = error.message || String(error);
+  // Traducir errores comunes
+  var traducciones = {
+    'Missing or insufficient permissions': 'Sin permisos. Verifica tu sesion o las reglas de Firestore.',
+    'PERMISSION_DENIED': 'Acceso denegado. Inicia sesion nuevamente.',
+    'NOT_FOUND': 'Documento no encontrado.',
+    'ALREADY_EXISTS': 'Ya existe un registro con esos datos.',
+    'RESOURCE_EXHAUSTED': 'Limite de Firebase alcanzado. Intenta mas tarde.',
+    'UNAVAILABLE': 'Firebase no disponible. Verifica tu conexion a internet.',
+    'DEADLINE_EXCEEDED': 'La operacion tomo demasiado tiempo. Intenta de nuevo.',
+    'UNAUTHENTICATED': 'Sesion expirada. Vuelve a iniciar sesion.',
+    'EMAIL_EXISTS': 'Ya existe una cuenta con ese email.',
+    'INVALID_EMAIL': 'El formato del email no es valido.',
+    'WEAK_PASSWORD': 'La contrasena debe tener al menos 6 caracteres.',
+    'INVALID_LOGIN_CREDENTIALS': 'Email o contrasena incorrectos.',
+    'network-request-failed': 'Error de red. Verifica tu conexion a internet.',
+  };
+  // Buscar traduccion
+  for(var key in traducciones){
+    if(msg.indexOf(key) >= 0){ msg = traducciones[key]; break; }
+  }
+  showToast((contexto?contexto+': ':'')+msg, 'error');
+  console.error('[SIGPAF] '+(contexto||'Error')+':', error);
+};
+
+
 
 // ── VER FOTOS DE EVIDENCIA DE UN CURSO ──
 window.verFotosCurso = async function(cursoId, nombreCurso){
@@ -6432,6 +6478,8 @@ function impProcesarAoa(aoa){
       compania:        I.cia>=0?String(row[I.cia]||'').trim():'',
       mes:             I.mes>=0?String(row[I.mes]||'').trim():'',
       cupo_maximo:     I.cupo>=0?parseInt(row[I.cupo])||30:30,
+      creado_por: G.user?G.user.email:'admin',
+      creado_en: new Date().toISOString(),
       profesora:       I.prof>=0?String(row[I.prof]||'').trim():'',
       delegado:        I.deleg>=0?String(row[I.deleg]||'').trim():'',
       institucion:     I.inst>=0?String(row[I.inst]||'').trim():'',

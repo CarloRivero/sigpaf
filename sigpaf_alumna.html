@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<!-- App Check: activar en produccion con site key -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script> -->
 <style>
 :root{--g:#00703C;--gd:#005A2E;--gl:#E8F5EE;--gm:#B7DFC8;
   --in:#6366F1;--inl:#EDE9FE;--am:#F59E0B;--aml:#FEF3C7;--re:#EF4444;--rel:#FEE2E2;--te:#0D9488;--tel:#CCFBF1;
@@ -198,6 +200,7 @@ firebase.initializeApp({
   appId:"1:783555160890:web:79bae67c10986f11a8fe03"
 });
 var DB = firebase.firestore();
+function safeTxt(v){ return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 } // cierre del else de verificación Firebase
 
 var ALUMNA_CI = '';

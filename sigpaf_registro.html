@@ -18,6 +18,8 @@
 <!-- Firebase Compat -->
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<!-- App Check: activar en produccion con site key -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script> -->
 
 <style>
 :root {
@@ -707,7 +709,16 @@ async function mostrarAlumnaEncontrada(alumna, ci){
 }
 
 // ── CONFIRMAR INSCRIPCIÓN (alumna encontrada) ──
+async // Rate limiting: 1 inscripción cada 10 segundos
+var lastSubmitTime = 0;
+
 async function confirmarInscripcion(){
+  var now = Date.now();
+  if(now - lastSubmitTime < 10000){
+    toast('Espera unos segundos antes de intentar de nuevo','warn');
+    return;
+  }
+  lastSubmitTime = now;
   // Verificar curso activo
   if(CURSO && (CURSO.estado==='finalizado'||CURSO.estado==='aprobado'||CURSO.estado==='cancelado')){
     toast('Este curso ya finalizó y no acepta inscripciones','error');
@@ -1018,6 +1029,8 @@ function toast(msg,tipo){
 </script>
 
 <script>
+function safeTxt(v){return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 // Registrar Service Worker para PWA
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
