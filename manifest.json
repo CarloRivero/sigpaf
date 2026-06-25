@@ -1,41 +1,22 @@
 {
-  "name": "SIGPAF – CRE R.L.",
+  "name": "SIGPAF - Programa Apoyo a la Familia",
   "short_name": "SIGPAF",
-  "description": "Sistema Integral de Gestión del Programa Apoyo a la Familia – CRE R.L.",
-  "start_url": "/sigpaf/sigpaf_registro.html",
-  "scope": "/sigpaf/",
+  "description": "Sistema de Gesti\u00f3n del Programa Apoyo a la Familia - CRE R.L.",
+  "start_url": "/sigpaf/index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#003D22",
+  "background_color": "#F3F5F4",
   "theme_color": "#00703C",
-  "lang": "es",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2300703C' width='100' height='100' rx='20'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='40' font-family='sans-serif' font-weight='bold'>PAF</text></svg>",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     },
     {
-      "src": "icon-512.png",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2300703C' width='100' height='100' rx='20'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='40' font-family='sans-serif' font-weight='bold'>PAF</text></svg>",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["education", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Registrarme a un curso",
-      "short_name": "Registro",
-      "url": "/sigpaf/sigpaf_registro.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Portal Profesora",
-      "short_name": "Profesora",
-      "url": "/sigpaf/sigpaf_profesoranuevo.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "type": "image/svg+xml"
     }
   ]
 }

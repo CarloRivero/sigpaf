@@ -1,0 +1,52 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "catalogo_cursos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "mes", "order": "ASCENDING"},
+        {"fieldPath": "distrito_num", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "catalogo_cursos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "profesora", "order": "ASCENDING"},
+        {"fieldPath": "mes", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "registros",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "curso_id", "order": "ASCENDING"},
+        {"fieldPath": "ci_alumna", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "asistencia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "curso_id", "order": "ASCENDING"},
+        {"fieldPath": "fecha", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "encuestas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "curso_id", "order": "ASCENDING"},
+        {"fieldPath": "ci_alumna", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "audit_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "timestamp", "order": "DESCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
