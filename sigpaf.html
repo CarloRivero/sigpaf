@@ -1562,6 +1562,112 @@ tbody tr:hover{background:#F7FAF8;cursor:pointer;}
 
 
 <script>
+// ── VERIFICAR SESIÓN ACTIVA ──
+window.verificarSesion = function(){
+  if(!G.user || !G.user.uid){
+    showToast('Tu sesion ha expirado. Recarga la pagina e inicia sesion.','error');
+    return false;
+  }
+  return true;
+};
+
+
+// ══════════════════════════════════════════════════════
+//  MONITOREO DE ERRORES GLOBAL
+// ══════════════════════════════════════════════════════
+
+// Captura errores no manejados y los registra
+window.onerror = function(msg, url, line, col, error){
+  console.error('[SIGPAF] Error global:', msg, 'en linea', line);
+  try{
+    if(typeof registrarAuditoria === 'function' && G && G.user){
+      registrarAuditoria('error_js', msg + ' (L' + line + ')', 'sistema');
+    }
+  }catch(e){}
+  return false;
+};
+
+// Captura promesas rechazadas sin catch
+window.onunhandledrejection = function(event){
+  console.error('[SIGPAF] Promise rechazada:', event.reason);
+  try{
+    if(typeof registrarAuditoria === 'function' && G && G.user){
+      registrarAuditoria('error_promise', String(event.reason).substring(0,200), 'sistema');
+    }
+  }catch(e){}
+};
+
+// ══════════════════════════════════════════════════════
+//  CACHE DE DATOS PARA REDUCIR LECTURAS FIRESTORE
+// ══════════════════════════════════════════════════════
+window.CACHE = {
+  data: {},
+  ttl: {},
+  set: function(key, value, ttlMs){
+    this.data[key] = value;
+    this.ttl[key] = Date.now() + (ttlMs || 300000); // 5 min default
+  },
+  get: function(key){
+    if(this.data[key] && Date.now() < this.ttl[key]) return this.data[key];
+    delete this.data[key];
+    return null;
+  },
+  clear: function(){ this.data = {}; this.ttl = {}; }
+};
+
+
+
+// ── CONSTANTES DE CONFIGURACIÓN ──
+var CONFIG = {
+  MAX_SESIONES: 10,
+  PCT_MINIMO_APROBACION: 70,
+  CUPO_DEFAULT: 30,
+  TIMEOUT_ADMIN_MS: 30 * 60 * 1000,
+  AUDIT_LOG_LIMIT: 500,
+  REGISTROS_LIMIT: 5000,
+  MAX_FOTO_KB: 500,
+  RATE_LIMIT_MS: 10000,
+};
+
+
+
+// ╔═══════════════════════════════════════════════════════════╗
+// ║  SIGPAF v1.0 — MAPA DEL CÓDIGO                          ║
+// ╠═══════════════════════════════════════════════════════════╣
+// ║                                                           ║
+// ║  SECCIONES:                                               ║
+// ║  1. CONFIGURACIÓN — Variables globales, constantes        ║
+// ║  2. UTILIDADES — safeTxt, showFirebaseError, showToast    ║
+// ║  3. AUTENTICACIÓN — Login, logout, roles, sesión          ║
+// ║  4. CARGA DE DATOS — initApp, recargarDatos               ║
+// ║  5. DASHBOARD — renderDashboard, KPIs, gráficos          ║
+// ║  6. PROGRAMACIÓN — Grid cursos, detalle, modal, acciones  ║
+// ║  7. IMPORTADOR SIGECOOP — Wizard 4 pasos                 ║
+// ║  8. REGISTRO ALUMNAS — Búsqueda CI, historial             ║
+// ║  9. ASISTENCIA — Verificación, filtros, tabla             ║
+// ║  10. PROFESORAS — CRUD, editar, desactivar, nueva         ║
+// ║  11. ASIGNACIÓN — Asignar profesora, WhatsApp             ║
+// ║  12. SUPERVISIÓN — Stats, comentarios, encuestas          ║
+// ║  13. REPORTES — General, mensual, encuestas, distrito     ║
+// ║  14. NOTIFICACIONES — Alertas avanzadas                   ║
+// ║  15. CONFIGURACIÓN — Guardar, backup                      ║
+// ║  16. USUARIOS Y ROLES — CRUD cuentas Firebase Auth        ║
+// ║  17. AUDITORÍA — Log de actividad, exportar               ║
+// ║  18. CERTIFICADOS — PDF individual y lote                 ║
+// ║  19. CIERRE CURSO — Acta PDF, cambio estado               ║
+// ║  20. NAVEGACIÓN — Sidebar, tabs, modales                  ║
+// ║                                                           ║
+// ║  COLECCIONES FIRESTORE:                                   ║
+// ║  catalogo_cursos, alumnas, profesoras, registros,         ║
+// ║  asistencia, encuestas, comentarios_supervision,          ║
+// ║  configuracion, distritos, usuarios_roles, audit_log,     ║
+// ║  evidencias_curso, estructura_social                      ║
+// ║                                                           ║
+// ║  ROLES: super_admin, admin_gu, jefatura                   ║
+// ║  PERFILES: Admin, Jefa Fundación, Profesora, Alumna       ║
+// ╚═══════════════════════════════════════════════════════════╝
+
+
 
 // ══════════════════════════════════════════════════════
 //  SISTEMA — VERSIÓN Y AMBIENTE
@@ -1578,12 +1684,14 @@ window.IS_DEV = window.location.hostname === 'localhost' || window.location.host
 // ══════════════════════════════════════════════════════
 
 // Sanitizar texto de Firestore para evitar XSS al usar innerHTML
+// Sanitiza texto contra XSS para uso en innerHTML
 window.safeTxt = function(val){
   if(val === null || val === undefined) return '';
   return String(val).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 };
 
 // Manejo de errores Firebase estandarizado
+// Traduce errores Firebase al español y muestra toast
 window.showFirebaseError = function(error, contexto){
   var msg = error.message || String(error);
   // Traducir errores comunes
@@ -1613,6 +1721,7 @@ window.showFirebaseError = function(error, contexto){
 
 
 // ── VER FOTOS DE EVIDENCIA DE UN CURSO ──
+// Galería de fotos de evidencia del curso
 window.verFotosCurso = async function(cursoId, nombreCurso){
   var cont = document.getElementById('modal-detalle-content');
   var tit = document.getElementById('modal-detalle-titulo');
@@ -1650,6 +1759,7 @@ window.verFotosCurso = async function(cursoId, nombreCurso){
 // ══════════════════════════════════════════════════════
 //  GESTIÓN DE USUARIOS Y ROLES
 // ══════════════════════════════════════════════════════
+// Lista usuarios con roles desde colección usuarios_roles
 window.cargarUsuarios = async function(){
   var el = document.getElementById('usuarios-lista');
   el.innerHTML = '<div style="text-align:center;padding:16px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
@@ -1695,6 +1805,8 @@ window.abrirModalNuevoUsuario = function(){
   openModal('modal-nuevo-usuario');
 };
 
+// Crea cuenta Firebase Auth + rol en usuarios_roles
+// Crea cuenta Firebase Auth via REST + rol en usuarios_roles
 window.crearNuevoUsuario = async function(){
   var nombre = (document.getElementById('nu-nombre').value||'').trim();
   var email = (document.getElementById('nu-email').value||'').trim().toLowerCase();
@@ -1752,13 +1864,14 @@ window.crearNuevoUsuario = async function(){
   }
 };
 
+// Cambia rol de usuario en Firestore
 window.cambiarRolUsuario = async function(uid, nuevoRol, nombre){
   if(!confirm('Cambiar rol de '+nombre+' a '+nuevoRol+'?')) return;
   try{
     await DB.collection('usuarios_roles').doc(uid).update({rol:nuevoRol, actualizado_en:new Date().toISOString()});
     showToast('Rol actualizado: '+nombre+' -> '+nuevoRol,'success');
     registrarAuditoria('cambiar_rol', nombre+' -> '+nuevoRol, 'usuarios');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  }catch(e){ showFirebaseError(e, 'Operacion');}
 };
 
 
@@ -1766,6 +1879,7 @@ window.cambiarRolUsuario = async function(uid, nuevoRol, nombre){
 // ══════════════════════════════════════════════════════
 //  ETAPA 6: GESTIÓN DE PROFESORAS MEJORADA
 // ══════════════════════════════════════════════════════
+// Tabla de profesoras: KPIs, filtros, editar/desactivar
 window.renderProfesoras = function(){
   var filtro = (document.getElementById('prof-filtro-estado')||{}).value||'';
   var buscar = (document.getElementById('prof-buscar')||{}).value.toLowerCase().trim();
@@ -1826,6 +1940,7 @@ window.renderProfesoras = function(){
     + '</tbody></table></div>';
 };
 
+// Modal editar: nombre, CI, especialidad, teléfono
 window.editarProf = async function(profId){
   var p = (G.profesoras||[]).find(function(x){return x.id===profId;});
   if(!p){showToast('Profesora no encontrada','error');return;}
@@ -1842,6 +1957,7 @@ window.editarProf = async function(profId){
   openModal('modal-edit-prof');
 };
 
+// Guarda cambios de profesora con validación CI duplicado
 window.guardarEditProf = async function(profId){
   var nombre = (document.getElementById('ep-nombre').value||'').trim();
   var ci = (document.getElementById('ep-ci').value||'').trim().replace(/[^0-9]/g,'');
@@ -1860,9 +1976,10 @@ window.guardarEditProf = async function(profId){
     renderProfesoras();
     showToast('Profesora actualizada','success');
     registrarAuditoria('editar_profesora','Editada: '+nombre+' (CI: '+ci+')','profesoras');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  }catch(e){ showFirebaseError(e, 'Operacion');}
 };
 
+// Activa/desactiva profesora (soft toggle)
 window.toggleEstadoProf = async function(profId, estadoActual){
   var nuevoEstado = estadoActual==='activa'?'inactiva':'activa';
   var p = (G.profesoras||[]).find(function(x){return x.id===profId;});
@@ -1874,9 +1991,10 @@ window.toggleEstadoProf = async function(profId, estadoActual){
     renderProfesoras();
     showToast(nombre+' '+(nuevoEstado==='activa'?'reactivada':'desactivada'),'success');
     registrarAuditoria('estado_profesora',nombre+' -> '+nuevoEstado,'profesoras');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  }catch(e){ showFirebaseError(e, 'Operacion');}
 };
 
+// Abre modal para registrar nueva profesora
 window.abrirModalNuevaProf = function(){
   var body = document.getElementById('modal-edit-prof-body');
   var titulo = document.getElementById('modal-edit-prof-titulo');
@@ -1891,6 +2009,7 @@ window.abrirModalNuevaProf = function(){
   openModal('modal-edit-prof');
 };
 
+// Registra nueva profesora con validación CI único
 window.crearNuevaProf = async function(){
   var nombre = (document.getElementById('ep-nombre').value||'').trim();
   var ci = (document.getElementById('ep-ci').value||'').trim().replace(/[^0-9]/g,'');
@@ -1907,19 +2026,21 @@ window.crearNuevaProf = async function(){
     renderProfesoras();
     showToast('Profesora registrada','success');
     registrarAuditoria('crear_profesora','Nueva: '+nombre+' (CI: '+ci+')','profesoras');
-  }catch(e){showToast('Error: '+e.message,'error');}
+  }catch(e){ showFirebaseError(e, 'Operacion');}
 };
 
 // ══════════════════════════════════════════════════════
 //  ETAPA 7: REPORTES TERRITORIALES POR DISTRITO
 // ══════════════════════════════════════════════════════
+// Genera reporte territorial por distrito con barras
+// Reporte territorial: cursos/inscritas/profesoras por distrito
 window.generarReporteDistrital = async function(){
   var el = document.getElementById('rep-distrital');
   if(!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
 
   try{
-    var snapReg = await DB.collection('registros').get();
+    var snapReg = await DB.collection('registros').limit(5000).get();
     var inscPorCurso = {};
     snapReg.docs.forEach(function(d){var cid = d.data().curso_id; inscPorCurso[cid] = (inscPorCurso[cid]||0)+1;});
 
@@ -1964,6 +2085,7 @@ window.generarReporteDistrital = async function(){
   }
 };
 
+// Exporta reporte distrital a Excel
 window.exportarReporteDistrital = function(){
   if(!window.__REP_DISTRITAL || typeof XLSX==='undefined'){showToast('Sin datos','warn');return;}
   var rows = window.__REP_DISTRITAL.map(function(d){
@@ -1980,6 +2102,8 @@ window.exportarReporteDistrital = function(){
 // ══════════════════════════════════════════════════════
 //  LOG DE AUDITORÍA — VISUALIZACIÓN
 // ══════════════════════════════════════════════════════
+// Carga y filtra el log de auditoría desde Firestore
+// Log de auditoría: filtra por fecha/tipo/texto, muestra tabla
 window.cargarAuditLog = async function(){
   var desde = document.getElementById('audit-desde');
   var hasta = document.getElementById('audit-hasta');
@@ -1991,7 +2115,7 @@ window.cargarAuditLog = async function(){
   if(!hasta.value) hasta.value=new Date().toISOString().split('T')[0];
   tabla.innerHTML='<div style="text-align:center;padding:20px;"><div class="loader-spin" style="margin:0 auto;"></div></div>';
   try{
-    var snap=await DB.collection('audit_log').get();
+    var snap=await DB.collection('audit_log').orderBy('timestamp','desc').limit(500).get();
     var logs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     var desdeStr=desde.value, hastaStr=hasta.value+'T23:59:59';
     logs=logs.filter(function(l){
@@ -2024,14 +2148,23 @@ window.exportarAuditLog=function(){
 // ══════════════════════════════════════════════════════
 //  ALERTAS OPERATIVAS AVANZADAS
 // ══════════════════════════════════════════════════════
+// Genera alertas: sin profesora, riesgo alumna, bajo cupo, por finalizar
+// Alertas: sin profesora, riesgo alumna, bajo cupo, por finalizar
 window.generarAlertasAvanzadas = async function(){
+  // Cache de 2 min para no recargar alertas en cada navegación
+  var cached = CACHE.get('alertas_html');
+  if(cached){
+    var el=document.getElementById('notifs-list');
+    if(el) el.innerHTML = cached;
+    return;
+  }
   var notifs=[];
   var sinProf=(G.cursos||[]).filter(function(c){return !c.profesora&&!c.profesora_nombre&&c.estado!=='finalizado';});
   if(sinProf.length>0) notifs.push({icon:'ti-user-off',color:'var(--re)',title:sinProf.length+' cursos sin profesora',sub:'Asignacion pendiente',time:'Ahora',unread:true});
   var sinCodigo=(G.cursos||[]).filter(function(c){return !c.codigo_registro&&c.estado!=='finalizado';});
   if(sinCodigo.length>0) notifs.push({icon:'ti-qrcode-off',color:'var(--am)',title:sinCodigo.length+' sin codigo SIGECOOP',sub:'No generan QR',time:'Ahora',unread:true});
   try{
-    var snapA=await DB.collection('asistencia').get();
+    var snapA=await DB.collection('asistencia').limit(3000).get();
     var sesPorCurso={};
     snapA.docs.forEach(function(d){var data=d.data();var cid=data.curso_id;if(!sesPorCurso[cid])sesPorCurso[cid]={count:0,alumnas:{}};sesPorCurso[cid].count++;(data.registros||[]).forEach(function(r){if(!sesPorCurso[cid].alumnas[r.ci])sesPorCurso[cid].alumnas[r.ci]={p:0,a:0};if(r.estado==='presente'||r.estado==='justificada')sesPorCurso[cid].alumnas[r.ci].p++;else sesPorCurso[cid].alumnas[r.ci].a++;});});
     var enRiesgo=0;
@@ -2039,7 +2172,7 @@ window.generarAlertasAvanzadas = async function(){
     if(enRiesgo>0) notifs.push({icon:'ti-alert-circle',color:'var(--re)',title:enRiesgo+' alumnas en riesgo (3+ faltas)',sub:'Necesitan seguimiento',time:'Atencion',unread:true});
     var porTerminar=(G.cursos||[]).filter(function(c){var s=sesPorCurso[c.id];return s&&s.count>=8&&s.count<10&&c.estado!=='finalizado';});
     if(porTerminar.length>0) notifs.push({icon:'ti-flag',color:'var(--in)',title:porTerminar.length+' cursos por finalizar (8+ sesiones)',sub:'Preparar cierre',time:'Pronto',unread:true});
-    var snapR=await DB.collection('registros').get();
+    var snapR=await DB.collection('registros').limit(5000).get();
     var inscPorCurso={};snapR.docs.forEach(function(d){var cid=d.data().curso_id;inscPorCurso[cid]=(inscPorCurso[cid]||0)+1;});
     var bajoCupo=(G.cursos||[]).filter(function(c){return c.estado!=='finalizado'&&(inscPorCurso[c.id]||0)<5;});
     if(bajoCupo.length>0) notifs.push({icon:'ti-users-minus',color:'var(--am)',title:bajoCupo.length+' cursos con bajo cupo (<5)',sub:'Revisar o reubicar',time:'Revisar',unread:false});
@@ -2051,10 +2184,13 @@ window.generarAlertasAvanzadas = async function(){
   var unread=notifs.filter(function(n){return n.unread;}).length;
   var badge=document.getElementById('badge-notif');
   if(badge){badge.style.display=unread>0?'':'none';badge.textContent=unread;}
+  // Guardar en cache
+  if(el) CACHE.set('alertas_html', el.innerHTML, 120000);
 };
 
 
 // ── MESES DINÁMICOS ──
+// Genera opciones de mes dinámicamente con conteo de cursos
 window.poblarSelectoresMes = function(){
   var MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
   var MESES_LABEL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2092,6 +2228,7 @@ function contarCursosMes(mesBase){
 
 
 // LOG DE AUDITORÍA (solo usuarios autenticados)
+// Registra acción en audit_log (solo autenticados)
 window.registrarAuditoria = function(accion, detalle, modulo){
   if(!G || !G.user || !G.user.uid) return;
   try{
@@ -2442,11 +2579,7 @@ function snapToArray(snap){
   return snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
 }
 
-window.recargarDatos = function(){
-  showLoading(true);
-  initApp();
-  showToast('Recargando desde Firebase...','success');
-};
+// recargarDatos v1 eliminado
 
 // ══════════════════════════════════════════════════════
 //  DASHBOARD
@@ -2942,7 +3075,7 @@ window.cambiarEstadoCurso = function(id){
   var labelActual = ESTADO_MAP[actual] ? ESTADO_MAP[actual].label : actual;
   var labelSig = ESTADO_MAP[siguiente] ? ESTADO_MAP[siguiente].label : siguiente;
 
-  if(!confirm('Cambiar estado del curso:\n\n"'+(c.nombre_curso||c.nombre)+'"\n\nDe: '+labelActual+'\nA: '+labelSig+'\n\nEsta accion no se puede deshacer.')) return;
+  if(!confirm('Cambiar estado del curso:\n\n"'+safeTxt(c.nombre_curso||c.nombre)+'"\n\nDe: '+labelActual+'\nA: '+labelSig+'\n\nEsta accion no se puede deshacer.')) return;
 
   DB.collection(COL.cursos).doc(id).update({
     estado: siguiente,
@@ -2955,7 +3088,7 @@ window.cambiarEstadoCurso = function(id){
     renderDashboard();
     closeModal('modal-detalle-curso');
     showToast('Estado actualizado: '+labelSig,'success');
-    registrarAuditoria('cambio_estado', 'Curso: '+(c.nombre_curso||c.nombre)+' de '+labelActual+' a '+labelSig);
+    registrarAuditoria('cambio_estado', 'Curso: '+safeTxt(c.nombre_curso||c.nombre)+' de '+labelActual+' a '+labelSig);
   }).catch(function(e){ showToast('Error: '+e.message,'error'); });
 };
 
@@ -3610,29 +3743,8 @@ function renderAlumnasRecientes(){
 // ══════════════════════════════════════════════════════
 //  PROFESORAS
 // ══════════════════════════════════════════════════════
-function renderProfesoras(){
-  var tb = document.getElementById('profesoras-table');
-  if(!tb) return;
-  var colors = ['#00703C','#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6'];
-  if(!G.profesoras.length){
-    tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--tx3);">Sin profesoras registradas</td></tr>';
-    return;
-  }
-  tb.innerHTML = G.profesoras.map(function(p,i){
-    var nombre = p.nombre||p.nombre_completo||'Sin nombre';
-    var ini = nombre.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
-    var esps = (p.especialidades||[]).slice(0,2).join(', ')||(p.especialidad||'—');
-    return '<tr>'
-      +'<td><div style="display:flex;align-items:center;gap:10px;">'
-      +'<div class="av av-sm" style="background:'+colors[i%colors.length]+';">'+ini+'</div>'
-      +'<div class="td-name">'+nombre+'</div></div></td>'
-      +'<td><span style="font-size:12px;color:var(--tx2);">'+esps+'</span></td>'
-      +'<td><span style="font-weight:700;color:var(--g);">'+(p.cursos_activos||0)+'</span></td>'
-      +'<td><span style="font-size:12px;">'+(p.total_cursos||p.historial_cursos||0)+' cursos</span></td>'
-      +'<td>'+(p.activa!==false?'<span class="badge badge-g">Activa</span>':'<span class="badge badge-gray">Inactiva</span>')+'</td>'
-      +'<td><button class="btn btn-sm" style="padding:5px 10px;" onclick="verEspecialidades(\''+i+'\')"><i class="ti ti-eye"></i></button></td></tr>';
-  }).join('');
-}
+// renderProfesoras viejo eliminado (duplicado)
+
 
 window.verEspecialidades = function(i){
   var p = G.profesoras[i];
@@ -4523,7 +4635,7 @@ window.renderAsignacion = function(){
       + '<div style="font-size:14px;font-weight:700;">'+nombre+'</div>'
       + '<div style="font-size:12px;color:var(--tx3);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
       + '<span><i class="ti ti-map-pin"></i> '+dist+'</span>'
-      + '<span><i class="ti ti-clock"></i> '+(c.horario||'—')+'</span>'
+      + '<span><i class="ti ti-clock"></i> '+safeTxt(c.horario||'—')+'</span>'
       + '<span class="cc-code">'+codigo+'</span>'
       + '</div></div>'
       + (tieneProf
@@ -4593,8 +4705,7 @@ window.guardarAsignacion = async function(cursoId, nombreCurso){
     showToast(profNombre+' asignada a '+nombreCurso+' \u2713','success');
     window.renderAsignacion(); // Re-render
 
-  }catch(e){
-    showToast('Error: '+e.message,'error');
+  }catch(e){ showFirebaseError(e, 'Operacion');
   }
 };
 
@@ -4926,8 +5037,7 @@ window.guardarComentarioSupervision = async function(profKey, profNombre){
       await DB.collection('comentarios_supervision').doc(snap.docs[0].id).update(data);
     }
     showToast('Comentario guardado ✓','success');
-  }catch(e){
-    showToast('Error: '+e.message,'error');
+  }catch(e){ showFirebaseError(e, 'Operacion');
   }
 };
 
@@ -5106,8 +5216,7 @@ window.cargarVerificacionAsistencia = async function(){
     }
 
     window.__ATT_VERIF = {curso:curso, alumnas:alumnas, sesiones:sesiones, stats:stats, sesionesTotales:sesionesTotales, minimo:minimo};
-  }catch(e){
-    showToast('Error: '+e.message,'error');
+  }catch(e){ showFirebaseError(e, 'Operacion');
     console.error(e);
   }finally{ showLoading(false); }
 };
@@ -5295,7 +5404,11 @@ window.aplicarFiltrosAsistencia = function(){
 
 
 // ── CONFIGURACIÓN REAL (guarda en Firestore) ──
+// Guarda parámetros de configuración en Firestore
+// Guarda parámetros de configuración en Firestore
 window.guardarConfiguracion = async function(){
+  if(!verificarSesion()) return;
+
   try{
     var selects = document.querySelectorAll('#screen-configuracion select');
     var inputs = document.querySelectorAll('#screen-configuracion input[type="number"]');
@@ -5309,7 +5422,7 @@ window.guardarConfiguracion = async function(){
     await DB.collection('configuracion').doc('parametros').set(data, {merge:true});
     showToast('Configuracion guardada en Firebase', 'success');
     registrarAuditoria('configuracion', 'Parametros actualizados', 'configuracion');
-  }catch(e){ showToast('Error: '+e.message, 'error'); }
+  }catch(e){ showFirebaseError(e, 'Operacion'); }
 };
 
 window.cargarConfiguracion = async function(){
@@ -6293,8 +6406,7 @@ window.desmatricularAlumna = async function(registroId, nombre, cursoNombre){
     registrarAuditoria('desmatricular', nombre+' desmatriculada de '+cursoNombre);
     // Recargar la vista
     window.verInscripcionesCurso(window.__LAST_INSCRIPCIONES_CURSO_ID, cursoNombre);
-  }catch(e){
-    showToast('Error: '+e.message,'error');
+  }catch(e){ showFirebaseError(e, 'Operacion');
   }
 };
 
@@ -6303,7 +6415,11 @@ window.desmatricularAlumna = async function(registroId, nombre, cursoNombre){
 // ══════════════════════════════════════════════════════
 //  EXPORTAR BACKUP COMPLETO DE FIRESTORE
 // ══════════════════════════════════════════════════════
+// Exporta TODAS las colecciones a un archivo Excel
+// Exporta TODAS las colecciones Firestore a Excel (10 hojas)
 window.exportarBackupCompleto = async function(){
+  if(!verificarSesion()) return;
+
   if(!confirm('Exportar backup completo de todas las colecciones de Firestore?\n\nEsto puede tardar unos segundos.')) return;
 
   showLoading(true);
@@ -6566,6 +6682,7 @@ async function impIniciarImportacion(){
   try{
     // Borrar si corresponde
     if(modo==='borrar'){
+      if(!confirm('⚠️ ADVERTENCIA IMPORTANTE\n\nVas a ELIMINAR todos los cursos existentes del mes antes de importar los nuevos.\n\nLas inscripciones y asistencias vinculadas a esos cursos podrían quedar huérfanas.\n\n¿Estás seguro de continuar?')){ showLoading(false); return; }
       document.getElementById('imp-prog-label').textContent='Eliminando cursos existentes...';
       addLog('⚠ Borrando todos los cursos existentes...','warn');
       var snapAll = await DB.collection(COL.cursos).get();
