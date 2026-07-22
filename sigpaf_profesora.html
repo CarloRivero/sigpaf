@@ -271,6 +271,7 @@ button:active{transform:scale(.98);}
           <span class="hbadge" id="hero-estado">—</span>
           <span class="hbadge" id="hero-codigo" style="font-family:monospace;">—</span>
           <span class="hbadge" id="progreso-sesiones-curso" style="background:rgba(255,255,255,.25);"><i class="ti ti-progress" style="font-size:13px;"></i> Sesión 0 de 10</span>
+          <span class="hbadge" id="hero-confirm"></span>
         </div>
       </div>
 
@@ -714,6 +715,7 @@ function seleccionarCurso(c){
   document.getElementById('hero-fechas').textContent = (c.fecha_inicio||'—')+' al '+(c.fecha_fin||'—')+(c.horario?' · '+c.horario:'');
   document.getElementById('hero-estado').textContent = ESTADO_LABEL[estado]||estado;
   document.getElementById('hero-codigo').textContent = 'Reg: '+codigo+(c.nro_solicitud?' · Sol: '+c.nro_solicitud:'');
+  actualizarConfirmacion();
 
   // QR
   document.getElementById('qr-codigo').textContent = codigo;
@@ -1115,6 +1117,43 @@ function guardarAsistencia(){
   };
 
   guardarSesionAsistencia(sesion, docId);
+}
+
+// ── Confirmación de asignación por la profesora ──
+var CONFIRMADO = false;
+function actualizarConfirmacion(){
+  var box = document.getElementById('hero-confirm');
+  if(!box || !CURSO_SEL || !PROF) return;
+  box.innerHTML = '';
+  DB.collection('confirmaciones').where('curso_id','==',CURSO_SEL.id).get()
+    .then(function(snap){
+      CONFIRMADO = snap.docs.some(function(d){ return (d.data().profesora_ci||'') === (PROF.id||''); });
+      if(CONFIRMADO){
+        box.innerHTML = '<span style="color:#D1FAE5;"><i class="ti ti-checks"></i> Confirmado</span>';
+      } else {
+        box.innerHTML = '<button onclick="confirmarAsignacion()" style="background:#fff;color:#00703C;border:none;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);"><i class="ti ti-check"></i> Confirmar recepción</button>';
+      }
+    })
+    .catch(function(){ box.innerHTML=''; });
+}
+function confirmarAsignacion(){
+  if(!CURSO_SEL || !PROF) return;
+  var box = document.getElementById('hero-confirm');
+  if(box) box.innerHTML = '<span style="opacity:.8;">Confirmando…</span>';
+  DB.collection('confirmaciones').add({
+    curso_id: CURSO_SEL.id,
+    nombre_curso: CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'',
+    profesora: PROF.nombre||'',
+    profesora_ci: PROF.id||'',
+    fecha: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toISOString()
+  }).then(function(){
+    showToast('Recepción del curso confirmada','ok');
+    actualizarConfirmacion();
+  }).catch(function(e){
+    showToast('No se pudo confirmar, reintenta','warn');
+    actualizarConfirmacion();
+  });
 }
 
 // ── Ubicación (sello de veracidad): se captura al abrir el curso ──

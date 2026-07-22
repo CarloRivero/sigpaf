@@ -63,6 +63,17 @@ button:active{transform:scale(.98);}
 .kpi.alert .k-val{color:var(--danger);}
 .kpi.warn .k-val{color:var(--warn-ink);}
 
+.alertas{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:22px;}
+.acard{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:var(--radius);padding:14px 16px;}
+.acard.bad{border-left-color:var(--danger);}
+.acard .a-top{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--ink);}
+.acard .a-count{margin-left:auto;font-weight:800;font-size:20px;color:var(--warn-ink);}
+.acard.bad .a-count{color:var(--danger);}
+.acard ul{margin:8px 0 0;padding:0;list-style:none;}
+.acard li{font-size:11.5px;color:var(--ink-3);padding:3px 0;border-top:1px solid var(--border);}
+.acard li:first-child{border-top:none;}
+.acard .a-none{font-size:11.5px;color:var(--brand);font-weight:600;margin-top:6px;display:flex;align-items:center;gap:5px;}
+
 .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .panel-head h2{font-size:15px;font-weight:700;}
@@ -127,6 +138,7 @@ tr:hover td{background:#FAFBFA;}
 
   <div class="wrap">
     <div class="kpis" id="kpis"></div>
+    <div class="alertas" id="alertas"></div>
     <div class="panel">
       <div class="panel-head">
         <h2>Profesoras</h2>
@@ -153,6 +165,7 @@ firebase.initializeApp({
 var DB = firebase.firestore();
 var DATOS = [];   // filas calculadas por profesora
 var SORT = {key:'estadoOrden', dir:1};
+var REGISTROS=[], CONFIRM=[], ALERTAS={sinProfesora:[],sinAsistSemana:[],bajoCupo:[],sinConfirmar:[]}, CONFIRM_TOT={conf:0,asignados:0};
 
 function safeTxt(v){ return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function el(id){ return document.getElementById(id); }
@@ -192,12 +205,16 @@ async function cargarTodo(){
   el('table-scroll').innerHTML='<div class="loading"><div class="spin"></div>Cargando datos…</div>';
   el('kpis').innerHTML='';
   try{
-    var [snapC, snapA] = await Promise.all([
+    var [snapC, snapA, snapR, snapF] = await Promise.all([
       DB.collection('catalogo_cursos').limit(5000).get(),
-      DB.collection('asistencia').limit(8000).get()
+      DB.collection('asistencia').limit(8000).get(),
+      DB.collection('registros').limit(20000).get(),
+      DB.collection('confirmaciones').limit(5000).get()
     ]);
     CURSOS = snapC.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
     ASIST  = snapA.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    REGISTROS = snapR.docs.map(function(d){ return d.data(); });
+    CONFIRM   = snapF.docs.map(function(d){ return d.data(); });
     poblarMeses();
     calcular(); render();
   }catch(e){
@@ -254,6 +271,26 @@ function calcular(){
     });
   });
 
+  // ── Alertas del programa (a nivel curso) ──
+  var inscritasPorCurso={}; REGISTROS.forEach(function(r){ if(r.curso_id) inscritasPorCurso[r.curso_id]=(inscritasPorCurso[r.curso_id]||0)+1; });
+  var confirmadoCurso={}; CONFIRM.forEach(function(c){ if(c.curso_id) confirmadoCurso[c.curso_id]=true; });
+  var ultAsisCurso={}; asis.forEach(function(a){ var ts=a.timestamp||a.fecha||''; if(ts && (!ultAsisCurso[a.curso_id]||ts>ultAsisCurso[a.curso_id])) ultAsisCurso[a.curso_id]=ts; });
+  ALERTAS={sinProfesora:[],sinAsistSemana:[],bajoCupo:[],sinConfirmar:[]};
+  cursos.forEach(function(c){
+    var profN=(c.profesora||'').trim();
+    var estado=(c.estado||'').toString();
+    var activo=/ejecuc/i.test(estado);
+    if(!profN) ALERTAS.sinProfesora.push(c);
+    if(activo){ var d=diasDesde(ultAsisCurso[c.id]); if(d===null || d>7) ALERTAS.sinAsistSemana.push(c); }
+    var cupo=parseInt(c.cupo_maximo||c.cupo||0)||0; var insc=inscritasPorCurso[c.id]||0;
+    if(cupo>0 && insc < Math.ceil(cupo*0.5)) ALERTAS.bajoCupo.push(Object.assign({_insc:insc,_cupo:cupo},c));
+    if(profN && !confirmadoCurso[c.id]) ALERTAS.sinConfirmar.push(c);
+  });
+  CONFIRM_TOT={
+    asignados: cursos.filter(function(c){ return (c.profesora||'').trim(); }).length,
+    conf:      cursos.filter(function(c){ return (c.profesora||'').trim() && confirmadoCurso[c.id]; }).length
+  };
+
   DATOS = Object.keys(prof).map(function(n){
     var p=prof[n];
     p.sinRegistro = p.cursos.filter(function(c){ return !regPorCurso[c.id]; }).length;
@@ -302,7 +339,7 @@ function estadoPill(e,dias){
 
 function render(){
   var cont=el('table-scroll');
-  if(!DATOS.length){ cont.innerHTML='<div class="empty"><i class="ti ti-users-off"></i>No hay datos para el filtro seleccionado.</div>'; el('kpis').innerHTML=''; return; }
+  if(!DATOS.length){ cont.innerHTML='<div class="empty"><i class="ti ti-users-off"></i>No hay datos para el filtro seleccionado.</div>'; el('kpis').innerHTML=''; el('alertas').innerHTML=''; return; }
 
   // KPIs
   var totProf=DATOS.filter(function(d){ return d.nombre!=='Sin asignar'; }).length;
@@ -314,11 +351,13 @@ function render(){
   el('kpis').innerHTML=[
     kpi('ti-user-star','Profesoras', totProf, ''),
     kpi('ti-book','Cursos', totCursos, ''),
+    kpi('ti-checks','Cursos confirmados', CONFIRM_TOT.conf+'<small>/'+CONFIRM_TOT.asignados+'</small>', (CONFIRM_TOT.asignados-CONFIRM_TOT.conf)>0?'warn':''),
     kpi('ti-percentage','Asistencia registrada', pctProm+'<small>%</small>', pctProm<50?'warn':''),
     kpi('ti-clock-exclamation','Atrasadas', atrasadas, atrasadas?'warn':''),
     kpi('ti-zzz','Inactivas (>7d)', inactivas, inactivas?'alert':''),
     kpi('ti-alert-triangle','Alumnas en riesgo', riesgoTot, riesgoTot?'alert':'')
   ].join('');
+  renderAlertas();
 
   // Tabla
   var cols=[
@@ -356,6 +395,23 @@ function render(){
 
 function kpi(icon,lbl,val,cls){
   return '<div class="kpi '+(cls||'')+'"><div class="k-lbl"><i class="ti '+icon+'"></i> '+lbl+'</div><div class="k-val">'+val+'</div></div>';
+}
+
+function renderAlertas(){
+  var cont=el('alertas'); if(!cont) return;
+  function nom(c){ var d=c.distrito_nombre||(c.distrito_num?('Distrito '+c.distrito_num):''); return '<li>'+safeTxt(c.nombre_curso||c.nombre||'Curso')+(d?' · '+safeTxt(d):'')+'</li>'; }
+  function card(icon,titulo,lista,fmt,bad){
+    var n=lista.length;
+    var items = n
+      ? '<ul>'+lista.slice(0,4).map(fmt).join('')+(n>4?'<li>y '+(n-4)+' más…</li>':'')+'</ul>'
+      : '<div class="a-none"><i class="ti ti-circle-check"></i> Sin pendientes</div>';
+    return '<div class="acard'+((bad&&n)?' bad':'')+'"><div class="a-top"><i class="ti '+icon+'"></i> '+titulo+'<span class="a-count">'+n+'</span></div>'+items+'</div>';
+  }
+  cont.innerHTML =
+    card('ti-user-off','Cursos sin profesora', ALERTAS.sinProfesora, nom, true)
+   +card('ti-calendar-off','Sin asistencia esta semana', ALERTAS.sinAsistSemana, nom, true)
+   +card('ti-users-minus','Bajo cupo', ALERTAS.bajoCupo, function(c){ var d=c.distrito_nombre||(c.distrito_num?('Distrito '+c.distrito_num):''); return '<li>'+safeTxt(c.nombre_curso||c.nombre||'Curso')+' · '+c._insc+'/'+c._cupo+(d?' · '+safeTxt(d):'')+'</li>'; }, false)
+   +card('ti-clipboard-off','Asignaciones sin confirmar', ALERTAS.sinConfirmar, nom, false);
 }
 
 // ── EXPORTAR ──

@@ -127,6 +127,19 @@ service cloud.firestore {
       allow update, delete: if isStaff();
     }
 
+    // ── CONFIRMACIONES DE ASIGNACIÓN (la profesora confirma recepción) ──
+    // Creación con sesión (portal profesora) validada; inmutable; borrado solo staff.
+    match /confirmaciones/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && isNonEmpty(request.resource.data.curso_id)
+        && isNonEmpty(request.resource.data.profesora_ci)
+        && isValidCI(request.resource.data.profesora_ci)
+        && request.resource.data.keys().size() <= 10;
+      allow update: if false;
+      allow delete: if isStaff();
+    }
+
     // ── COMENTARIOS DE SUPERVISIÓN ── (solo staff)
     match /comentarios_supervision/{comId} {
       allow read: if isAuth();
