@@ -19,7 +19,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 <!-- App Check: activar en produccion con site key -->
-<!-- <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script> -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
 
 <style>
 :root {
@@ -393,7 +394,8 @@ window.addEventListener('load', function(){
       appId:"1:783555160890:web:79bae67c10986f11a8fe03"
     });
     DB = firebase.firestore();
-    
+    // ── App Check (activar tras registrar reCAPTCHA v3 en la consola) ──
+    // firebase.appCheck().activate('TU_RECAPTCHA_V3_SITE_KEY', true);
   }catch(e){ console.error('Firebase error:', e); }
   initApp();
 });
@@ -429,6 +431,9 @@ function getCodigoCurso(){
 
 async function initApp(){
   DB = firebase.firestore();
+  // Asegurar sesión anónima antes de consultar (lectura restringida en reglas).
+  // Requiere habilitar el proveedor "Anónimo" en Authentication.
+  try { await firebase.auth().signInAnonymously(); } catch(e){ console.warn('Sesion anonima pendiente:', e && e.code); }
   CODIGO_CURSO = getCodigoCurso();
 
   // Cargar distritos

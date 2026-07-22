@@ -2485,9 +2485,18 @@ window.doLogin = function(){
     }
     // Login exitoso - guardar token y continuar
     G.user = { email: data.email, uid: data.localId, token: data.idToken };
+    // Autenticar TAMBIÉN el SDK para que Firestore reciba la sesión (necesario
+    // para las reglas isAuth()/isStaff()). En https (GitHub Pages) funciona; en
+    // file:// puede fallar y se continúa con la validación REST ya realizada.
+    // Al completar, se reaplica el rol leyéndolo ya autenticado desde Firestore.
+    try {
+      firebase.auth().signInWithEmailAndPassword(email, pass)
+        .then(function(){ try{ window.dispatchEvent(new CustomEvent('sigpaf:login',{detail:{email:data.email, uid:data.localId}})); }catch(e){} })
+        .catch(function(err){ console.warn('SDK auth pendiente:', err && err.code); });
+    } catch(e){ console.warn('Auth SDK no disponible', e); }
       try{ registrarAuditoria('login', 'Inicio de sesion: '+data.email, 'autenticacion'); }catch(e){}
     // Disparar evento de login para sistema de roles
-    try { window.dispatchEvent(new CustomEvent('sigpaf:login',{detail:{email:data.email}})); } catch(e){}
+    try { window.dispatchEvent(new CustomEvent('sigpaf:login',{detail:{email:data.email, uid:data.localId}})); } catch(e){}
     // Configurar Firestore con el token
     DB = firebase.firestore();
     // Mostrar app
@@ -4557,11 +4566,31 @@ function aplicarRol(){
   }
 }
 
-// Aplicar rol después del login exitoso
+// Aplicar rol después del login exitoso.
+// FUENTE DE VERDAD: el rol guardado en Firestore (/usuarios_roles/{uid}).
+// Se mapea el rol almacenado al rol de runtime. Si la cuenta aún no tiene
+// documento de rol, se usa el criterio por email como respaldo temporal.
+function mapRolAlmacenado(rolBD){
+  if(rolBD === 'jefatura') return 'jefa';
+  if(rolBD === 'admin_gu' || rolBD === 'super_admin') return 'admin';
+  return null;
+}
 window.addEventListener('sigpaf:login', function(e){
-  if(e.detail && e.detail.email){
-    ROLE = determinarRol(e.detail.email);
-    setTimeout(aplicarRol, 200);
+  if(!(e.detail && e.detail.email)) return;
+  var email = e.detail.email;
+  var uid   = e.detail.uid;
+  function aplicarPorEmail(){ ROLE = determinarRol(email); setTimeout(aplicarRol, 200); }
+  if(uid && typeof DB !== 'undefined' && DB){
+    DB.collection('usuarios_roles').doc(uid).get()
+      .then(function(doc){
+        var rolBD  = doc.exists ? (doc.data().rol || '') : '';
+        var mapeado = mapRolAlmacenado(rolBD);
+        if(mapeado){ ROLE = mapeado; setTimeout(aplicarRol, 200); }
+        else { aplicarPorEmail(); }   // sin doc de rol: respaldo por email
+      })
+      .catch(function(){ aplicarPorEmail(); });
+  } else {
+    aplicarPorEmail();
   }
 });
 

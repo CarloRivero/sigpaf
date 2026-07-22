@@ -2,160 +2,165 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ════════════════════════════════════════════════
-    //  SIGPAF — Reglas para piloto controlado
-    //  Estrategia: isAuth() separa público de admin
-    //  Roles (admin/jefa) se controlan desde frontend
-    //  Post-piloto: migrar a Custom Claims
-    // ════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════
+    //  SIGPAF — Reglas endurecidas (v1.1)
+    //  CAMBIOS CLAVE frente a v1.0:
+    //   1. Los DATOS PERSONALES ya NO son de lectura pública.
+    //      Requieren sesión (isAuth). Los portales usan sesión
+    //      anónima automática, así que siguen funcionando.
+    //   2. El control admin/jefatura ahora es REAL en el servidor:
+    //      se lee el rol desde /usuarios_roles/{uid} (isStaff()),
+    //      no desde el frontend.
+    //
+    //  ⚠️ ORDEN DE DESPLIEGUE (ver runbook):
+    //   a) Habilitar el proveedor "Anónimo" en Authentication.
+    //   b) Asegurar que tu cuenta admin tenga un documento
+    //      /usuarios_roles/{TU_UID} con { rol: "admin_gu" }.
+    //   c) Recién entonces publicar estas reglas.
+    //  Si publicas sin (a) y (b), los portales y el panel se
+    //  bloquean hasta cumplir esos pasos.
+    // ════════════════════════════════════════════════════════════
 
     // ── FUNCIONES AUXILIARES ──
-
     function isAuth() {
       return request.auth != null;
+    }
+
+    // Personal de CRE/Fundación con rol asignado en Firestore.
+    function isStaff() {
+      return isAuth()
+        && exists(/databases/$(database)/documents/usuarios_roles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios_roles/$(request.auth.uid)).data.rol
+             in ['admin_gu', 'super_admin', 'jefatura'];
     }
 
     function isValidCI(ci) {
       return ci is string && ci.size() >= 4 && ci.size() <= 12 && ci.matches('^[0-9]+$');
     }
-
-    function isNonEmpty(val) {
-      return val is string && val.size() > 0;
-    }
-
-    function maxLen(val, max) {
-      return val is string && val.size() <= max;
-    }
+    function isNonEmpty(val) { return val is string && val.size() > 0; }
+    function maxLen(val, max) { return val is string && val.size() <= max; }
 
     // ── CATÁLOGO DE CURSOS ──
-    // Lectura pública (QR, portales). Escritura solo autenticados.
+    // Lectura: cualquier sesión (portales + QR usan sesión anónima).
+    // Escritura: solo personal con rol.
     match /catalogo_cursos/{cursoId} {
-      allow read: if true;
-      allow create, update: if isAuth();
-      allow delete: if isAuth();
+      allow read: if isAuth();
+      allow create, update, delete: if isStaff();
     }
 
-    // ── ALUMNAS (datos SIGECOOP) ──
-    // Lectura pública (registro verifica si existe).
-    // Escritura solo autenticados. Eliminación prohibida.
+    // ── ALUMNAS (datos SIGECOOP: CI, nombre, teléfono, dirección) ──
+    // Lectura: SOLO con sesión (ya no pública). Escritura: solo staff.
     match /alumnas/{alumnaId} {
-      allow read: if true;
-      allow create, update: if isAuth();
+      allow read: if isAuth();
+      // Auto-registro público (con sesión anónima) para alumnas NUEVAS, validado.
+      // Modificar una alumna que YA existe queda reservado a staff.
+      allow create: if isStaff() || (isAuth()
+        && isNonEmpty(request.resource.data.ci)
+        && isValidCI(request.resource.data.ci)
+        && isNonEmpty(request.resource.data.nombre)
+        && maxLen(request.resource.data.nombre, 200)
+        && request.resource.data.keys().size() <= 20);
+      allow update: if isStaff();
       allow delete: if false;
     }
 
-    // ── PROFESORAS ──
-    // Lectura pública (portal profesora busca por CI).
-    // Escritura solo autenticados. Eliminación prohibida.
+    // ── PROFESORAS (datos personales) ──
     match /profesoras/{profId} {
-      allow read: if true;
-      allow create, update: if isAuth();
+      allow read: if isAuth();
+      allow create, update: if isStaff();
       allow delete: if false;
     }
 
     // ── REGISTROS (inscripciones QR) ──
-    // Lectura pública (portal alumna busca por CI).
-    // Creación pública CON VALIDACIÓN ESTRICTA.
-    // Modificación/eliminación solo autenticados.
+    // Lectura: con sesión. Creación: con sesión + validación estricta.
+    // Modificación/eliminación: solo staff.
     match /registros/{regId} {
-      allow read: if true;
-
-      allow create: if
-        isNonEmpty(request.resource.data.ci_alumna)
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && isNonEmpty(request.resource.data.ci_alumna)
         && isValidCI(request.resource.data.ci_alumna)
         && isNonEmpty(request.resource.data.nombre_alumna)
         && maxLen(request.resource.data.nombre_alumna, 200)
         && isNonEmpty(request.resource.data.curso_id)
         && request.resource.data.keys().size() <= 20;
-
-      allow update: if isAuth();
-      allow delete: if isAuth();
+      allow update, delete: if isStaff();
     }
 
     // ── ASISTENCIA ──
-    // Lectura pública (portal alumna ve progreso).
-    // Creación con validación (profesora no tiene Firebase Auth).
-    // Modificación/eliminación solo autenticados.
     match /asistencia/{sesionId} {
-      allow read: if true;
-
-      allow create: if
-        isNonEmpty(request.resource.data.curso_id)
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && isNonEmpty(request.resource.data.curso_id)
         && isNonEmpty(request.resource.data.profesora_ci)
         && isValidCI(request.resource.data.profesora_ci)
         && isNonEmpty(request.resource.data.fecha)
         && request.resource.data.registros is list
         && request.resource.data.keys().size() <= 15;
-
-      allow update: if isAuth();
-      allow delete: if isAuth();
+      allow update, delete: if isStaff();
     }
 
-    // ── ENCUESTAS ──
-    // Lectura pública (alumna verifica si ya respondió).
-    // Creación pública con validación.
-    // Respuestas INMUTABLES (no se pueden editar ni borrar).
+    // ── ENCUESTAS (respuestas inmutables) ──
     match /encuestas/{encId} {
-      allow read: if true;
-
-      allow create: if
-        isNonEmpty(request.resource.data.curso_id)
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && isNonEmpty(request.resource.data.curso_id)
         && isNonEmpty(request.resource.data.ci_alumna)
         && isValidCI(request.resource.data.ci_alumna)
         && request.resource.data.keys().size() <= 15;
-
-      allow update: if false;
-      allow delete: if false;
+      allow update, delete: if false;
     }
 
-    // ── COMENTARIOS DE SUPERVISIÓN ──
-    // Solo autenticados.
+    // ── EVIDENCIAS DE CURSO (foto de la profesora) ──
+    match /evidencias_curso/{evId} {
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && isNonEmpty(request.resource.data.curso_id)
+        && request.resource.data.keys().size() <= 15;
+      allow update, delete: if isStaff();
+    }
+
+    // ── COMENTARIOS DE SUPERVISIÓN ── (solo staff)
     match /comentarios_supervision/{comId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isStaff();
     }
 
-    // ── CONFIGURACIÓN ──
-    // Solo autenticados.
+    // ── CONFIGURACIÓN ── (solo staff)
     match /configuracion/{docId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isStaff();
     }
 
-    // ── DISTRITOS ──
-    // Lectura pública. Escritura solo autenticados.
+    // ── DISTRITOS / ESTRUCTURA SOCIAL ──
     match /distritos/{distId} {
-      allow read: if true;
-      allow write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isStaff();
     }
-
-    // ── ESTRUCTURA SOCIAL ──
     match /estructura_social/{docId} {
-      allow read: if true;
-      allow write: if isAuth();
+      allow read: if isAuth();
+      allow write: if isStaff();
     }
 
-    // ── USUARIOS Y ROLES (preparación futura) ──
-    // Solo autenticados. Cada usuario lee solo su propio documento.
+    // ── USUARIOS Y ROLES ──
+    // Lectura: con sesión (el frontend consulta el propio rol).
+    // Escritura: solo staff (gestión de cuentas).
+    // BOOTSTRAP: el primer documento admin se crea manualmente en
+    // la consola (Firestore → usuarios_roles → {tu_uid} → rol:"admin_gu").
     match /usuarios_roles/{userId} {
       allow read: if isAuth();
-      allow write: if isAuth();
+      allow write: if isStaff();
     }
 
-    // ── LOG DE AUDITORÍA ──
-    // Lectura: solo autenticados.
-    // Creación: solo autenticados (portales públicos no escriben aquí).
-    // INMUTABLE: no se puede editar ni borrar.
+    // ── LOG DE AUDITORÍA ── (crear con sesión; inmutable)
     match /audit_log/{logId} {
-      allow read: if isAuth();
-
+      allow read: if isStaff();
       allow create: if isAuth()
         && isNonEmpty(request.resource.data.accion)
         && isNonEmpty(request.resource.data.timestamp)
         && request.resource.data.keys().size() <= 15;
-
       allow update, delete: if false;
     }
 
-    // NOTA: Firestore bloquea por defecto cualquier colección
-    // no listada en estas reglas. No se necesita catch-all.
+    // Firestore bloquea por defecto lo no listado. No hace falta catch-all.
   }
 }

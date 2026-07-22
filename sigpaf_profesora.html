@@ -15,7 +15,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 <!-- App Check: activar en produccion con site key -->
-<!-- <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script> -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -358,6 +359,7 @@ button{font-family:var(--font);cursor:pointer;}
         <div id="lista-asistencia"><div class="empty"><i class="ti ti-users"></i>Sin alumnas cargadas</div></div>
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="btn-action btn-action-green" onclick="guardarAsistencia()"><i class="ti ti-device-floppy" style="font-size:20px;"></i> GUARDAR ASISTENCIA DE HOY</button>
+          <button class="btn-action btn-action-teal" onclick="tomarFotoEvidencia()"><i class="ti ti-camera" style="font-size:20px;"></i> TOMAR FOTO DEL CURSO</button>
           <button class="btn-action btn-action-amber" style="font-size:13px;padding:10px;" onclick="marcarTodas('presente')"><i class="ti ti-checks"></i> Marcar todas como PRESENTES</button>
         </div>
       </div>
@@ -408,6 +410,11 @@ firebase.initializeApp({
   appId:"1:783555160890:web:79bae67c10986f11a8fe03"
 });
 var DB = firebase.firestore();
+// ── App Check (activar tras registrar reCAPTCHA v3 en la consola) ──
+// firebase.appCheck().activate('TU_RECAPTCHA_V3_SITE_KEY', true);
+// ── Sesión anónima: permite cerrar la lectura pública en las reglas. ──
+// Requiere habilitar el proveedor "Anónimo" en Authentication.
+try { firebase.auth().signInAnonymously().catch(function(err){ console.warn('Sesion anonima pendiente:', err && err.code); }); } catch(e){ console.warn('Auth SDK no disponible', e); }
 function safeTxt(v){ return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── ESTADO ──
