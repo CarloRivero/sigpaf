@@ -1676,8 +1676,8 @@ var CONFIG = {
 // ══════════════════════════════════════════════════════
 //  SISTEMA — VERSIÓN Y AMBIENTE
 // ══════════════════════════════════════════════════════
-window.SIGPAF_VERSION = '1.3.0';
-window.SIGPAF_BUILD = '2026-07-22b';
+window.SIGPAF_VERSION = '1.4.0';
+window.SIGPAF_BUILD = '2026-07-22c';
 window.IS_PROD = window.location.protocol === 'https:' || window.location.protocol === 'file:';
 window.IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -1686,6 +1686,13 @@ var SIGPAF_MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AG
 function mesActualSIGPAF(){
   var d = new Date();
   return SIGPAF_MESES[d.getMonth()] + ' ' + d.getFullYear();
+}
+// ── Carga horaria por tipo de curso: Electricidad Básica = 40 h; los demás = 30 h ──
+// (si el curso trae un campo 'horas' explícito, se respeta ese valor)
+function horasCurso(curso){
+  if(curso && curso.horas && !isNaN(parseInt(curso.horas))) return parseInt(curso.horas);
+  var n = ((curso && (curso.nombre_curso||curso.nombre))||'').toLowerCase();
+  return n.indexOf('electricidad') >= 0 ? 40 : 30;
 }
 // Agrega (sin borrar) los meses del año actual y el siguiente a los selectores.
 function poblarMesesFuturos(){
@@ -5854,7 +5861,7 @@ window.generarCertificado = function(alumna, curso){
 
   // Asistencia
   var asistencia = alumna.asistencia_pct || 0;
-  doc.text('Asistencia: '+asistencia+'%  -  Resultado: APROBADA', W/2, 150, {align:'center'});
+  doc.text('Carga horaria: '+horasCurso(curso)+' horas academicas (10 clases)  -  Asistencia: '+asistencia+'%  -  APROBADA', W/2, 150, {align:'center'});
 
   // Fecha
   var hoy = new Date().toLocaleDateString('es-BO',{day:'numeric',month:'long',year:'numeric'});
@@ -6042,6 +6049,7 @@ function generarActaPDF(curso, alumnas, sesiones, stats, sesionesTotales, minimo
   doc.setTextColor(30);
   var datos = [
     ['Curso:', (curso.nombre_curso||curso.nombre||'').toUpperCase()],
+    ['Carga horaria:', horasCurso(curso)+' horas (10 clases)'],
     ['Codigo SIGECOOP:', curso.codigo_registro||'—'],
     ['Profesora:', curso.profesora||'—'],
     ['Distrito:', curso.distrito_nombre||('Distrito '+(curso.distrito_num||'—'))],

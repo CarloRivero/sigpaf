@@ -580,6 +580,7 @@ async function guardarFotoEvidencia(base64, sizeKB){
       imagen: base64,
       tamano_kb: sizeKB,
       sesion_num: SESIONES_REGISTRADAS.length,
+      ubicacion: PROF_GEO,
     });
     var overlay = document.getElementById('foto-preview-overlay');
     if(overlay) overlay.remove();
@@ -699,6 +700,7 @@ function renderSelectorCursos(){
 function seleccionarCurso(c){
   CURSO_SEL = c;
   ATT = {};
+  capturarUbicacion();   // pide ubicación al abrir el curso (sello de veracidad)
 
   var nombre = c.nombre_curso||c.nombre||'Sin nombre';
   var dist   = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:'—');
@@ -1108,10 +1110,23 @@ function guardarAsistencia(){
     total:      ALUMNAS.length,
     presentes:  ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='presente'; }).length,
     ausentes:   ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='ausente'; }).length,
-    timestamp:  new Date().toISOString()
+    timestamp:  new Date().toISOString(),
+    ubicacion:  PROF_GEO
   };
 
   guardarSesionAsistencia(sesion, docId);
+}
+
+// ── Ubicación (sello de veracidad): se captura al abrir el curso ──
+var PROF_GEO = null;
+function capturarUbicacion(){
+  if(!navigator.geolocation) return;
+  try{
+    navigator.geolocation.getCurrentPosition(function(pos){
+      PROF_GEO = { lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6), acc:Math.round(pos.coords.accuracy||0), ts:new Date().toISOString() };
+    }, function(){ /* sin permiso o no disponible: se guarda sin ubicación */ },
+    { enableHighAccuracy:false, timeout:8000, maximumAge:300000 });
+  }catch(e){}
 }
 
 // ── Envío con soporte OFFLINE: si falla la red, se guarda en el dispositivo ──
