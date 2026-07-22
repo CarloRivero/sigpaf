@@ -96,7 +96,15 @@ service cloud.firestore {
         && isNonEmpty(request.resource.data.fecha)
         && request.resource.data.registros is list
         && request.resource.data.keys().size() <= 15;
-      allow update, delete: if isStaff();
+      // Corrección de la sesión (profesora): permitida con validación; borrado solo staff.
+      allow update: if isStaff() || (isAuth()
+        && isNonEmpty(request.resource.data.curso_id)
+        && isNonEmpty(request.resource.data.profesora_ci)
+        && isValidCI(request.resource.data.profesora_ci)
+        && isNonEmpty(request.resource.data.fecha)
+        && request.resource.data.registros is list
+        && request.resource.data.keys().size() <= 15);
+      allow delete: if isStaff();
     }
 
     // ── ENCUESTAS (respuestas inmutables) ──

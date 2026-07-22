@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGPAF v1.2 · Mejoras del Punto 4</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;max-width:940px;margin:0 auto;padding:44px 26px;color:#111;line-height:1.7;font-size:14px;background:#fff;}
+h1{font-size:23px;color:#00703C;border-bottom:3px solid #00703C;padding-bottom:9px;margin:34px 0 14px;}
+h2{font-size:17px;color:#005A2E;margin:28px 0 10px;}
+p{margin:8px 0;} strong{color:#005A2E;}
+ul{margin:6px 0 12px 22px;} li{margin:5px 0;}
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:12.7px;}
+th{background:#00703C;color:#fff;padding:8px 10px;text-align:left;font-weight:600;vertical-align:top;}
+td{padding:7px 10px;border-bottom:1px solid #E5E7EB;vertical-align:top;}
+tr:nth-child(even){background:#F9FAFB;}
+hr{border:none;border-top:2px solid #E5E7EB;margin:30px 0;}
+code{background:#F3F4F6;padding:1px 6px;border-radius:5px;font-size:12.3px;color:#005A2E;font-family:ui-monospace,Menlo,monospace;}
+.tag{display:inline-block;padding:2px 9px;border-radius:6px;font-size:10.5px;font-weight:700;}
+.done{background:#D1FAE5;color:#00703C;} .defer{background:#FEF3C7;color:#92400E;} .skip{background:#E5E7EB;color:#374151;}
+.callout{border-left:4px solid #00703C;background:#F0FDF4;padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;}
+.callout.amber{border-color:#F59E0B;background:#FFFBEB;}
+.sub{font-size:12px;color:#6B7280;}
+@media print{body{font-size:11px;padding:20px;} h1{font-size:16px;}}
+</style>
+</head>
+<body>
+
+<p class="sub">CRE R.L. · Gerencia de Asistencia y Comunicación al Consumidor</p>
+<h1 style="margin-top:8px;">SIGPAF v1.2 — Mejoras del "Punto 4"</h1>
+<p class="sub">Este paquete es <strong>acumulativo</strong>: incluye toda la seguridad de la v1.1 más las mejoras de experiencia y operación del punto 4. Versión del panel: <code>1.2.0</code>. &nbsp;|&nbsp; Julio 2026</p>
+
+<div class="callout amber">
+El <strong>orden de despliegue de la v1.1 sigue vigente</strong> (habilitar sesión anónima → crear el documento de rol admin → subir archivos a GitHub → publicar reglas). Este paquete reemplaza los archivos anteriores; despliégalo igual que la v1.1. Se agregó un permiso a la regla de <code>asistencia</code> para permitir la corrección del día.
+</div>
+
+<hr>
+
+<h1>1 · Lo que quedó implementado <span class="tag done">HECHO</span></h1>
+<table>
+<tr><th style="width:210px;">Mejora</th><th>Qué hace ahora</th></tr>
+<tr><td>Profesora: corregir la asistencia de hoy</td><td>Al guardar, si ya hay una sesión de hoy, pregunta si quieres <strong>corregirla</strong> (la actualiza) o registrar una sesión adicional. Ya no depende del administrador para arreglar un error del día. La regla de <code>asistencia</code> se ajustó para permitir esta corrección validada.</td></tr>
+<tr><td>Profesora: guardado sin conexión</td><td>Si falla la red al guardar, la asistencia se guarda en el dispositivo y se reenvía sola al reconectar (evento de reconexión + reintento al abrir). Clave para distritos con mala señal.</td></tr>
+<tr><td>Profesora: alerta de alumna en riesgo</td><td>Cada alumna con <strong>3 o más faltas</strong> muestra un distintivo rojo "En riesgo (N faltas)" en la lista, para intervención temprana.</td></tr>
+<tr><td>Alumna: sesión recordada</td><td>El portal recuerda el CI en el dispositivo y reingresa automáticamente al abrir; "Salir" borra ese dato.</td></tr>
+<tr><td>Alumna: "Próxima clase"</td><td>Cada tarjeta de curso muestra, resaltado, el horario y el lugar de la próxima clase.</td></tr>
+<tr><td>Admin: meses dinámicos</td><td>Los valores por defecto usan el <strong>mes actual</strong> calculado, y los selectores se completan automáticamente con el año en curso y el siguiente. Ya no se romperá al cambiar de año.</td></tr>
+<tr><td>Importador: más seguro</td><td>El modo <em>"Actualizar cursos existentes"</em> ya sincroniza sin borrar (era lo que se pedía; ya existía). Además se corrigió la advertencia engañosa del modo destructivo: antes decía "del mes" cuando en realidad borra <strong>todos</strong> los cursos; ahora lo dice con claridad y sugiere el modo seguro.</td></tr>
+</table>
+
+<hr>
+
+<h1>2 · Lo que dejé fuera a propósito <span class="tag defer">PENDIENTE</span> / <span class="tag skip">NO APLICA</span></h1>
+<p>No las implementé porque hacerlas mal es peor que no hacerlas. Estas son las razones honestas:</p>
+<table>
+<tr><th style="width:230px;">Punto</th><th>Por qué no se hizo ahora</th></tr>
+<tr><td>Verificación de identidad real de la profesora (PIN)</td><td><span class="tag defer">Necesita backend.</span> Un PIN guardado solo en el navegador sería <strong>seguridad aparente</strong>: como la sesión anónima puede leer el documento de la profesora, ese PIN sería visible y adivinable. Para hacerlo bien se necesita una <em>Cloud Function</em> que valide CI+PIN y emita un token, o registrar a las profesoras con Firebase Auth (correo o teléfono). Es un flujo aparte que conviene diseñar y probar; mientras tanto, App Check (ya preparado en la v1.1) cubre el piloto.</td></tr>
+<tr><td>Modularizar el panel (dividir el archivo grande)</td><td><span class="tag skip">Refactor arquitectónico.</span> No agrega ninguna función nueva y tiene alto riesgo de romper algo en un archivo de ~6.900 líneas. Es mantenimiento de fondo; se planifica como tarea propia, con pruebas, no dentro de este lote.</td></tr>
+</table>
+
+<div class="callout">
+<strong>Nota sobre "Próxima clase":</strong> se muestra con el horario y el lugar del curso (texto), no con una fecha calculada, porque calcular la fecha exacta a partir de un horario escrito en texto libre es frágil y podría mostrar datos equivocados. Cuando los cursos tengan día y hora en campos estructurados, se puede convertir en una cuenta regresiva exacta.
+</div>
+
+<hr>
+<p class="sub" style="text-align:center;margin-top:26px;">SIGPAF v1.2 · CRE R.L. · Gerencia de Asistencia y Comunicación al Consumidor · Julio 2026</p>
+
+</body>
+</html>

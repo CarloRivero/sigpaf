@@ -221,6 +221,7 @@ async function buscarAlumna(){
   if(!ci || ci.length < 4){ showToast('Ingresa un CI válido', 'warn'); return; }
 
   ALUMNA_CI = ci;
+  try{ localStorage.setItem('sigpaf_alumna_ci', ci); }catch(e){}   // recordar sesión en el dispositivo
 
   // Buscar inscripciones de esta alumna
   try{
@@ -321,6 +322,8 @@ async function renderMisCursos(){
       + '<div style="flex:1;"><div class="cc-name">'+nombre+'</div>'
       + '<div class="cc-prof"><i class="ti ti-user-star" style="color:var(--g);font-size:14px;"></i> '+prof+'</div></div>'
       + estadoBadge + '</div>'
+      // Próxima clase (horario + lugar), resaltada
+      + (horario ? '<div style="margin:2px 0 8px;padding:8px 10px;background:var(--gl,#E8F5EE);border-radius:8px;font-size:12px;color:var(--g);font-weight:600;display:flex;align-items:center;gap:6px;"><i class="ti ti-calendar-clock"></i> Próxima clase: '+horario+(lugar?' · '+lugar:'')+'</div>' : '')
       // Detalles
       + (dist?'<div class="kv"><i class="ti ti-map-pin"></i><div><div class="kv-lbl">Distrito</div>'+dist+'</div></div>':'')
       + (mes?'<div class="kv"><i class="ti ti-calendar-month"></i><div><div class="kv-lbl">Mes</div>'+mes+'</div></div>':'')
@@ -543,10 +546,22 @@ async function enviarEncuesta(cursoId){
 function cerrarSesion(){
   ALUMNA_CI = '';
   MIS_INSCRIPCIONES = [];
+  try{ localStorage.removeItem('sigpaf_alumna_ci'); }catch(e){}
   document.getElementById('page-app').style.display = 'none';
   document.getElementById('page-login').style.display = 'flex';
   document.getElementById('ci-login').value = '';
 }
+
+// ── Auto-login: si el dispositivo recordó un CI, reingresar automáticamente ──
+window.addEventListener('load', function(){
+  try{
+    var ci = localStorage.getItem('sigpaf_alumna_ci');
+    if(ci){
+      var inp = document.getElementById('ci-login');
+      if(inp){ inp.value = ci; setTimeout(buscarAlumna, 800); }  // deja asentar la sesión anónima
+    }
+  }catch(e){}
+});
 
 // Timeout de sesion (20 min inactividad)
 (function(){

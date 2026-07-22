@@ -1672,10 +1672,34 @@ var CONFIG = {
 // ══════════════════════════════════════════════════════
 //  SISTEMA — VERSIÓN Y AMBIENTE
 // ══════════════════════════════════════════════════════
-window.SIGPAF_VERSION = '1.0.0';
-window.SIGPAF_BUILD = '2026-06-24';
+window.SIGPAF_VERSION = '1.2.0';
+window.SIGPAF_BUILD = '2026-07-22';
 window.IS_PROD = window.location.protocol === 'https:' || window.location.protocol === 'file:';
 window.IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+// ── MESES DINÁMICOS (evita textos fijos que se rompen al cambiar de año) ──
+var SIGPAF_MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+function mesActualSIGPAF(){
+  var d = new Date();
+  return SIGPAF_MESES[d.getMonth()] + ' ' + d.getFullYear();
+}
+// Agrega (sin borrar) los meses del año actual y el siguiente a los selectores.
+function poblarMesesFuturos(){
+  var y = new Date().getFullYear();
+  ['nc-mes','ef-mes'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if(!sel) return;
+    var existentes = {};
+    Array.prototype.forEach.call(sel.options, function(o){ existentes[(o.value||o.textContent)] = true; });
+    [y, y+1].forEach(function(yy){
+      SIGPAF_MESES.forEach(function(m){
+        var v = m + ' ' + yy;
+        if(!existentes[v]){ var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); }
+      });
+    });
+  });
+}
+window.addEventListener('load', function(){ setTimeout(poblarMesesFuturos, 500); });
 
 
 
@@ -4600,7 +4624,7 @@ window.addEventListener('sigpaf:login', function(e){
 //  ASIGNACIÓN DE PROFESORAS A CURSOS
 // ══════════════════════════════════════════════════════
 window.renderAsignacion = function(){
-  var mes = (document.getElementById('asig-mes-sel')||{value:'MAYO 2026'}).value;
+  var mes = (document.getElementById('asig-mes-sel')||{value:mesActualSIGPAF()}).value;
   var filtro = (document.getElementById('asig-filtro')||{value:''}).value;
 
   function norm(s){ return (s||'').toUpperCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
@@ -4766,7 +4790,7 @@ window.enviarWhatsAppProf = function(cursoId, nombreCurso){
 //  SUPERVISIÓN — Pantalla para la Jefa de Fundación
 // ══════════════════════════════════════════════════════
 window.renderSupervision = async function(){
-  var mes = (document.getElementById('sup-mes-sel')||{value:'MAYO 2026'}).value;
+  var mes = (document.getElementById('sup-mes-sel')||{value:mesActualSIGPAF()}).value;
   var cont = document.getElementById('sup-content');
   if(!cont) return;
 
@@ -5481,7 +5505,7 @@ window.cambiarTabReporte = function(tab){
 };
 
 window.actualizarResumenMensual = function(){
-  var mes = (document.getElementById('rm-mes-sel')||{value:'MAYO 2026'}).value;
+  var mes = (document.getElementById('rm-mes-sel')||{value:mesActualSIGPAF()}).value;
   document.getElementById('rm-header-mes').textContent = 'Mes evaluado: '+mes;
 
   var hoy = new Date();
@@ -6711,7 +6735,7 @@ async function impIniciarImportacion(){
   try{
     // Borrar si corresponde
     if(modo==='borrar'){
-      if(!confirm('⚠️ ADVERTENCIA IMPORTANTE\n\nVas a ELIMINAR todos los cursos existentes del mes antes de importar los nuevos.\n\nLas inscripciones y asistencias vinculadas a esos cursos podrían quedar huérfanas.\n\n¿Estás seguro de continuar?')){ showLoading(false); return; }
+      if(!confirm('⚠️ ADVERTENCIA IMPORTANTE\n\nEste modo ELIMINA TODOS los cursos del sistema (no solo los del mes) antes de reimportar.\n\nLas inscripciones y asistencias vinculadas quedarán huérfanas.\n\nSi solo quieres actualizar, usa el modo "Actualizar cursos existentes": no borra nada.\n\n¿Seguro que deseas BORRAR TODO y continuar?')){ showLoading(false); return; }
       document.getElementById('imp-prog-label').textContent='Eliminando cursos existentes...';
       addLog('⚠ Borrando todos los cursos existentes...','warn');
       var snapAll = await DB.collection(COL.cursos).get();

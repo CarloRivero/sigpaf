@@ -753,6 +753,10 @@ function renderAlumnas(){
 
     // Calcular asistencia historica de la alumna en este curso
     var stats = ASISTENCIAS_HIST[ci] || {presentes:0, ausentes:0, justificadas:0, total:0};
+    // Alerta automática: 3+ faltas = alumna en riesgo
+    var riesgoChip = (stats.ausentes||0) >= 3
+      ? '<span class="badge badge-re" style="margin-left:4px;"><i class="ti ti-alert-triangle"></i> En riesgo ('+stats.ausentes+' faltas)</span>'
+      : '';
     var sesionesTotales = (CURSO_SEL&&CURSO_SEL.sesiones_total)||10;
     var presentes = stats.presentes + (stats.justificadas||0); // justificadas cuentan
     var pct = sesionesTotales>0 ? Math.round(presentes/sesionesTotales*100) : 0;
@@ -784,7 +788,7 @@ function renderAlumnas(){
       +'<div style="flex:1;min-width:0;">'
       +'<div class="alumna-nombre">'+nombre+'</div>'
       +'<div class="alumna-ci">CI '+ci+(fecha?' · Inscrita '+fecha:'')+'</div></div>'
-      +estadoBadge
+      +estadoBadge+riesgoChip
       +'<div style="width:100%;margin-top:8px;">'
       +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;color:var(--text-3);">'
       +'<span><i class="ti ti-checkbox" style="font-size:12px;"></i> '+presentes+' / '+sesionesTotales+' clases ('+pct+'%)</span>'
@@ -1067,21 +1071,23 @@ function guardarAsistencia(){
 
   var hoyStr = new Date().toISOString().split('T')[0];
 
-  // Validar sesión duplicada: verificar si ya se registró asistencia HOY para este curso
-  var duplicada = SESIONES_REGISTRADAS.find(function(s){
-    return (s.fecha||'').split('T')[0] === hoyStr;
+  // ── Detectar sesión de HOY para permitir CORREGIRLA (no solo agregar) ──
+  var existenteHoy = SESIONES_REGISTRADAS.find(function(s){
+    return (s.fecha||'').split('T')[0] === hoyStr && s.id;
   });
-  if(duplicada){
-    if(!confirm('Ya registraste asistencia hoy ('+hoyStr+') para este curso.\n\n¿Deseas registrar otra sesión de todos modos?\n\n(Esto puede ocurrir si el curso tiene doble horario)')){
-      return;
-    }
+  var docId = null;
+  if(existenteHoy){
+    var corregir = confirm('Ya hay asistencia registrada hoy ('+hoyStr+').\n\nAceptar = CORREGIR la asistencia de hoy.\nCancelar = registrar una sesión ADICIONAL (doble horario).');
+    if(corregir){ docId = existenteHoy.id; }
   }
 
-  // Validar máximo de sesiones
-  var sesionesTotales = parseInt(CURSO_SEL.sesiones_total)||10;
-  if(SESIONES_REGISTRADAS.length >= sesionesTotales){
-    if(!confirm('Este curso ya tiene '+SESIONES_REGISTRADAS.length+' de '+sesionesTotales+' sesiones registradas.\n\n¿Registrar una sesión adicional?')){
-      return;
+  if(!docId){
+    // Validar máximo de sesiones solo al agregar una nueva
+    var sesionesTotales = parseInt(CURSO_SEL.sesiones_total)||10;
+    if(SESIONES_REGISTRADAS.length >= sesionesTotales){
+      if(!confirm('Este curso ya tiene '+SESIONES_REGISTRADAS.length+' de '+sesionesTotales+' sesiones registradas.\n\n¿Registrar una sesión adicional?')){
+        return;
+      }
     }
   }
 
@@ -1090,7 +1096,7 @@ function guardarAsistencia(){
     nombre_curso: CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—',
     profesora:  PROF.nombre||'—',
     profesora_ci: PROF.id||'—',
-    fecha:      new Date().toISOString().split('T')[0],
+    fecha:      hoyStr,
     hora:       new Date().toLocaleTimeString('es-BO'),
     registros:  ALUMNAS.map(function(a){
       return {ci:a.ci_alumna, nombre:a.nombre_alumna, estado:ATT[a.ci_alumna]||'presente'};
@@ -1101,13 +1107,43 @@ function guardarAsistencia(){
     timestamp:  new Date().toISOString()
   };
 
-  DB.collection('asistencia').add(sesion)
-    .then(function(){
-      showToast('Asistencia guardada correctamente','ok');
-      cargarHistorialSesiones();
-    })
-    .catch(function(e){ showToast('Error: '+e.message,'warn'); });
+  guardarSesionAsistencia(sesion, docId);
 }
+
+// ── Envío con soporte OFFLINE: si falla la red, se guarda en el dispositivo ──
+var OFFLINE_ASIST_KEY = 'sigpaf_prof_asistencia_pend';
+function guardarSesionAsistencia(sesion, docId){
+  var op = docId
+    ? DB.collection('asistencia').doc(docId).set(sesion)
+    : DB.collection('asistencia').add(sesion);
+  op.then(function(){
+    showToast(docId ? 'Asistencia de hoy corregida' : 'Asistencia guardada correctamente','ok');
+    cargarHistorialSesiones();
+  }).catch(function(e){
+    encolarAsistenciaOffline(sesion, docId);
+    showToast('Sin conexión: guardada en el dispositivo, se enviará al reconectar','warn');
+  });
+}
+function encolarAsistenciaOffline(sesion, docId){
+  try{
+    var q = JSON.parse(localStorage.getItem(OFFLINE_ASIST_KEY)||'[]');
+    q.push({sesion:sesion, docId:docId||null, ts:Date.now()});
+    localStorage.setItem(OFFLINE_ASIST_KEY, JSON.stringify(q));
+  }catch(e){}
+}
+function sincronizarAsistenciaPendiente(){
+  var q;
+  try{ q = JSON.parse(localStorage.getItem(OFFLINE_ASIST_KEY)||'[]'); }catch(e){ q=[]; }
+  if(!q.length || typeof DB==='undefined' || !DB) return;
+  var restantes=[], pend=q.length;
+  q.forEach(function(item){
+    var op = item.docId ? DB.collection('asistencia').doc(item.docId).set(item.sesion) : DB.collection('asistencia').add(item.sesion);
+    op.then(function(){ pend--; if(!pend){ localStorage.setItem(OFFLINE_ASIST_KEY, JSON.stringify(restantes)); if(typeof showToast==='function') showToast('Asistencia pendiente sincronizada','ok'); if(CURSO_SEL) cargarHistorialSesiones(); } })
+      .catch(function(){ restantes.push(item); pend--; if(!pend){ localStorage.setItem(OFFLINE_ASIST_KEY, JSON.stringify(restantes)); } });
+  });
+}
+window.addEventListener('online', sincronizarAsistenciaPendiente);
+window.addEventListener('load', function(){ setTimeout(sincronizarAsistenciaPendiente, 4000); });
 
 // ── HISTORIAL SESIONES ──
 function cargarHistorialSesiones(){
