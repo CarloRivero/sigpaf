@@ -15,6 +15,10 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,#0F1C14,#
 .sub{font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:28px;}
 .btn{display:inline-flex;align-items:center;gap:8px;background:#00703C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;transition:background .15s;}
 .btn:hover{background:#005A2E;}
+
+/* --- Accesibilidad: foco visible de teclado + respuesta al toque (v1.3) --- */
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid #00703C;outline-offset:2px;border-radius:6px;}
+button:active{transform:scale(.98);}
 </style>
 </head>
 <body>

@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-:root{--g:#00703C;--gm:#00894A;--gl:#D1FAE5;--bg:#F3F5F4;--tx:#111827;--tx2:#4B5563;--tx3:#9CA3AF;--re:#EF4444;--rel:#FEE2E2;--am:#F59E0B;--aml:#FEF3C7;--in:#6366F1;--inl:#EEF2FF;--te:#0D9488;--tel:#CCFBF1;--border:rgba(0,0,0,.06);--font:'Outfit',sans-serif;}
+:root{--g:#00703C;--gm:#00894A;--gl:#E8F5EE;--bg:#F3F5F4;--tx:#111827;--tx2:#4B5563;--tx3:#6B7280;--re:#EF4444;--rel:#FEE2E2;--am:#F59E0B;--aml:#FEF3C7;--in:#6366F1;--inl:#EEF2FF;--te:#0D9488;--tel:#CCFBF1;--border:rgba(0,0,0,.06);--font:'Outfit',sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:var(--font);background:var(--bg);color:var(--tx);min-height:100dvh;}
 button{font-family:var(--font);cursor:pointer;}
@@ -89,6 +89,10 @@ button{font-family:var(--font);cursor:pointer;}
 .loader-spin{width:28px;height:28px;border:3px solid #E5E7EB;border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(min-width:500px){.content{max-width:480px;margin:0 auto;}}
+
+/* --- Accesibilidad: foco visible de teclado + respuesta al toque (v1.3) --- */
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid #00703C;outline-offset:2px;border-radius:6px;}
+button:active{transform:scale(.98);}
 </style>
 </head>
 <body>
