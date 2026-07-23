@@ -619,7 +619,7 @@ async function buscarCI(){
     if(byId.exists) alumna = Object.assign({id:byId.id}, byId.data());
     // Si no, buscar por campo ci
     if(!alumna){
-      var qr = await DB.collection('alumnas').where('ci','==',ci).limit(1).get();
+      var qr = await DB.collection('alumnas').where('ci','==',ci).limit(1).get().catch(function(){ return {empty:true, docs:[]}; });
       if(!qr.empty) alumna = Object.assign({id:qr.docs[0].id}, qr.docs[0].data());
     }
     ocultarLoader();

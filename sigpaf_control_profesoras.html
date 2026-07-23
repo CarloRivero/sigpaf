@@ -102,6 +102,16 @@ tr:hover td{background:#FAFBFA;}
 .spin{width:26px;height:26px;border:3px solid #E5E7EB;border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 .foot{text-align:center;font-size:11.5px;color:var(--ink-3);padding:22px;}
+.cuenta-form{background:#FCFDFC;border:1px solid var(--border);border-radius:10px;padding:16px;}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.cf label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-2);margin-bottom:4px;}
+.cf input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:var(--font);font-size:13px;outline:none;}
+.cf input:focus{border-color:var(--brand);}
+.chip-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--brand-tint);color:var(--brand);}
+.chip.pend{background:var(--warn-tint);color:var(--warn-ink);}
+.sec-t{font-size:12.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;}
+@media(max-width:640px){.cf-row{grid-template-columns:1fr;}}
 @media(max-width:640px){ .topbar h1{font-size:14px;} .kpi .k-val{font-size:23px;} }
 </style>
 </head>
@@ -149,20 +159,56 @@ tr:hover td{background:#FAFBFA;}
         <div class="loading"><div class="spin"></div>Cargando datos…</div>
       </div>
     </div>
+    <div class="panel" style="margin-top:22px;">
+      <div class="panel-head">
+        <h2>Cuentas de acceso de las profesoras</h2>
+        <span class="hint">Paso 3 · identidad verificada</span>
+      </div>
+      <div style="padding:18px;">
+        <p style="font-size:12.7px;color:var(--ink-3);margin-bottom:16px;line-height:1.6;">
+          Con una cuenta, la asistencia que registra la profesora queda <strong style="color:var(--brand);">a su nombre y verificada</strong>. Sin cuenta, sigue entrando con su CI, pero el registro no puede atribuírsele con certeza.
+        </p>
+
+        <div class="cuenta-form">
+          <div class="cf-row">
+            <div class="cf"><label>Nombre de la profesora</label><input id="c-nombre" type="text" placeholder="Nombre completo"></div>
+            <div class="cf"><label>CI (como figura en el sistema)</label><input id="c-ci" type="text" inputmode="numeric" placeholder="Ej: 5123456"></div>
+          </div>
+          <div class="cf-row">
+            <div class="cf"><label>Correo</label><input id="c-email" type="email" placeholder="correo@ejemplo.com"></div>
+            <div class="cf"><label>Contraseña temporal</label>
+              <div style="display:flex;gap:6px;">
+                <input id="c-pass" type="text" placeholder="mínimo 6 caracteres">
+                <button class="btn btn-ghost" type="button" id="btn-gen" style="padding:9px 12px;white-space:nowrap;">Generar</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+            <button class="btn btn-primary" id="btn-crear"><i class="ti ti-user-plus"></i> Crear cuenta</button>
+            <span id="c-msg" style="font-size:12.5px;"></span>
+          </div>
+        </div>
+
+        <div id="cuentas-lista" style="margin-top:20px;"></div>
+        <div id="cuentas-faltan" style="margin-top:18px;"></div>
+      </div>
+    </div>
+
     <div class="foot">Los datos se calculan de la asistencia registrada por las profesoras. "Al día", "Atrasada" e "Inactiva" son estimaciones para orientar la supervisión.</div>
   </div>
 </div>
 
 <script>
 // ── Firebase ──
-firebase.initializeApp({
+var FBCONF = {
   apiKey:"AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
   authDomain:"sigpaf-cre.firebaseapp.com",
   projectId:"sigpaf-cre",
   storageBucket:"sigpaf-cre.firebasestorage.app",
   messagingSenderId:"783555160890",
   appId:"1:783555160890:web:79bae67c10986f11a8fe03"
-});
+};
+firebase.initializeApp(FBCONF);
 /* ═══ App Check · PASO 2 ══════════════════════════════════════════
    Pega entre las comillas la clave de sitio de reCAPTCHA v3 y App Check
    se activa solo. Si la dejas vacía, el sistema funciona igual (sin
@@ -229,6 +275,7 @@ async function cargarTodo(){
     CONFIRM   = snapF.docs.map(function(d){ return d.data(); });
     poblarMeses();
     calcular(); render();
+    cargarCuentas();
   }catch(e){
     el('table-scroll').innerHTML='<div class="empty"><i class="ti ti-alert-triangle"></i>No se pudieron cargar los datos.<br><span style="font-size:12px;">'+safeTxt(e.message||'')+'</span></div>';
   }
@@ -255,10 +302,18 @@ function calcular(){
 
   // Agrupar cursos por profesora (por nombre; es el campo más consistente)
   var prof={};
+  // Clave estable: el CI si existe; si no, el nombre normalizado (evita que
+  // "María Pérez", "MARIA PEREZ" y "Maria Perez " cuenten como tres personas).
+  function claveProf(c){
+    var ci=(c.profesora_ci||'').toString().trim();
+    if(ci) return 'ci:'+ci;
+    var n=normNombre(c.profesora);
+    return n ? 'nom:'+n : 'sin';
+  }
   function nombreProf(c){ return (c.profesora||'').trim() || 'Sin asignar'; }
   cursos.forEach(function(c){
-    var n=nombreProf(c);
-    if(!prof[n]) prof[n]={nombre:n, cursos:[], distritos:{}, sesionesEsp:0, sesionesReg:0, ultima:null, sinRegistro:0, ausenciasPorCI:{}, ciRiesgo:{}, cursoIds:{}};
+    var n=claveProf(c);
+    if(!prof[n]) prof[n]={nombre:nombreProf(c), ci:(c.profesora_ci||'').toString().trim(), cursos:[], distritos:{}, sesionesEsp:0, sesionesReg:0, ultima:null, sinRegistro:0, ausenciasPorCI:{}, ciRiesgo:{}, cursoIds:{}};
     var p=prof[n];
     p.cursos.push(c); p.cursoIds[c.id]=true;
     var dist=c.distrito_nombre||(c.distrito_num?('Distrito '+c.distrito_num):''); if(dist) p.distritos[dist]=true;
@@ -270,7 +325,7 @@ function calcular(){
   var regPorCurso={};
   asis.forEach(function(a){
     var c=cursosById[a.curso_id]; if(!c) return;
-    var n=(c.profesora||'').trim()||'Sin asignar'; var p=prof[n]; if(!p) return;
+    var n=claveProf(c); var p=prof[n]; if(!p) return;
     p.sesionesReg++;
     regPorCurso[a.curso_id]=(regPorCurso[a.curso_id]||0)+1;
     var ts=a.timestamp||a.fecha||''; if(ts && (!p.ultima || ts>p.ultima)) p.ultima=ts;
@@ -311,13 +366,13 @@ function calcular(){
     var riesgo = Object.keys(p.ciRiesgo).length;
     // Estado
     var estado, orden;
-    if(p.nombre==='Sin asignar'){ estado='sin-prof'; orden=4; }
+    if(n==='sin' || p.nombre==='Sin asignar'){ estado='sin-prof'; orden=4; }
     else if(dias===null){ estado='inactiva'; orden=0; }        // nunca registró
     else if(dias>7){ estado='inactiva'; orden=0; }
     else if(p.sinRegistro>0 || pct<50){ estado='atrasada'; orden=1; }
     else{ estado='aldia'; orden=2; }
     return {
-      nombre:p.nombre,
+      nombre:p.nombre, ci:p.ci,
       distritos:Object.keys(p.distritos),
       cursos:p.cursos.length,
       sesionesReg:p.sesionesReg, sesionesEsp:p.sesionesEsp, pct:Math.min(100,pct),
@@ -370,6 +425,7 @@ function render(){
     kpi('ti-alert-triangle','Alumnas en riesgo', riesgoTot, riesgoTot?'alert':'')
   ].join('');
   renderAlertas();
+  try{ renderCuentas(); }catch(e){}
 
   // Tabla
   var cols=[
@@ -425,6 +481,98 @@ function renderAlertas(){
    +card('ti-users-minus','Bajo cupo', ALERTAS.bajoCupo, function(c){ var d=c.distrito_nombre||(c.distrito_num?('Distrito '+c.distrito_num):''); return '<li>'+safeTxt(c.nombre_curso||c.nombre||'Curso')+' · '+c._insc+'/'+c._cupo+(d?' · '+safeTxt(d):'')+'</li>'; }, false)
    +card('ti-clipboard-off','Asignaciones sin confirmar', ALERTAS.sinConfirmar, nom, false);
 }
+
+// ══ CUENTAS DE PROFESORAS (Paso 3) ══
+var CUENTAS = [];
+
+function cargarCuentas(){
+  DB.collection('usuarios_roles').get().then(function(snap){
+    CUENTAS = snap.docs.map(function(d){ return Object.assign({_uid:d.id}, d.data()); })
+                       .filter(function(u){ return (u.rol||'')==='profesora'; });
+    renderCuentas();
+  }).catch(function(){ /* sin permiso: se omite */ });
+}
+
+function normNombre(n){
+  return (n||'').toString().trim().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+}
+
+function renderCuentas(){
+  var cont=el('cuentas-lista');
+  if(!cont) return;
+  if(!CUENTAS.length){
+    cont.innerHTML='<div class="sec-t"><i class="ti ti-key-off"></i> Todavía no hay cuentas creadas</div>';
+  } else {
+    cont.innerHTML='<div class="sec-t"><i class="ti ti-key"></i> Con cuenta ('+CUENTAS.length+')</div><div class="chip-list">'
+      + CUENTAS.map(function(c){ return '<span class="chip"><i class="ti ti-check"></i>'+safeTxt(c.nombre||c.email||c.profesora_ci)+'</span>'; }).join('')
+      + '</div>';
+  }
+  // Profesoras que aparecen en cursos pero aún no tienen cuenta
+  var conCuenta={};
+  CUENTAS.forEach(function(c){ if(c.nombre) conCuenta[normNombre(c.nombre)]=true; });
+  var faltan=DATOS.filter(function(d){
+    return d.nombre!=='Sin asignar' && !conCuenta[normNombre(d.nombre)];
+  });
+  var f=el('cuentas-faltan');
+  if(!f) return;
+  f.innerHTML = faltan.length
+    ? '<div class="sec-t"><i class="ti ti-alert-triangle" style="color:var(--warn-ink);"></i> Sin cuenta todavía ('+faltan.length+')</div><div class="chip-list">'
+      + faltan.map(function(d){ return '<span class="chip pend">'+safeTxt(d.nombre)+'</span>'; }).join('') + '</div>'
+    : '<div class="sec-t" style="color:var(--brand);"><i class="ti ti-circle-check"></i> Todas las profesoras del periodo tienen cuenta</div>';
+}
+
+function genPass(){
+  var abc='abcdefghijkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ23456789', p='';
+  for(var i=0;i<10;i++) p+=abc.charAt(Math.floor(Math.random()*abc.length));
+  return p;
+}
+el('btn-gen').addEventListener('click', function(){ el('c-pass').value=genPass(); });
+
+el('btn-crear').addEventListener('click', function(){
+  var nombre=(el('c-nombre').value||'').trim();
+  var ci=(el('c-ci').value||'').trim().replace(/[^0-9]/g,'');
+  var email=(el('c-email').value||'').trim();
+  var pass=el('c-pass').value||'';
+  var msg=el('c-msg');
+  msg.style.color='var(--danger)';
+  if(!nombre){ msg.textContent='Escribe el nombre.'; return; }
+  if(ci.length<4){ msg.textContent='El CI debe tener al menos 4 dígitos.'; return; }
+  if(!email){ msg.textContent='Escribe el correo.'; return; }
+  if(pass.length<6){ msg.textContent='La contraseña necesita al menos 6 caracteres.'; return; }
+
+  var btn=this; btn.disabled=true;
+  msg.style.color='var(--ink-3)'; msg.textContent='Creando cuenta…';
+
+  // App secundaria: crea el usuario sin cerrar la sesión de quien administra
+  var sec;
+  try{ sec = firebase.app('altaCuentas'); }
+  catch(e){ sec = firebase.initializeApp(FBCONF, 'altaCuentas'); }
+
+  sec.auth().createUserWithEmailAndPassword(email, pass)
+    .then(function(cred){
+      return DB.collection('usuarios_roles').doc(cred.user.uid).set({
+        rol:'profesora', profesora_ci:ci, nombre:nombre, email:email,
+        creado: new Date().toISOString()
+      });
+    })
+    .then(function(){ return sec.auth().signOut(); })
+    .then(function(){
+      msg.style.color='var(--brand)';
+      msg.textContent='Cuenta creada. Entrega el correo y la contraseña a la profesora.';
+      el('c-nombre').value=''; el('c-ci').value=''; el('c-email').value=''; el('c-pass').value='';
+      cargarCuentas();
+    })
+    .catch(function(e){
+      var c=e && e.code;
+      msg.style.color='var(--danger)';
+      msg.textContent = c==='auth/email-already-in-use' ? 'Ese correo ya tiene una cuenta.'
+        : c==='auth/invalid-email' ? 'El correo no es válido.'
+        : c==='auth/weak-password' ? 'La contraseña es muy débil.'
+        : 'No se pudo crear la cuenta. Revisa los datos.';
+    })
+    .finally(function(){ btn.disabled=false; });
+});
 
 // ── EXPORTAR ──
 function exportarExcel(){

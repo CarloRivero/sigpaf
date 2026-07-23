@@ -26,6 +26,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Sesión con CUENTA REAL (correo/contraseña), no anónima.
+    // Las profesoras con cuenta cumplen esto; el ingreso temporal por CI no.
+    function esCuenta() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     // Personal de CRE/Fundación con rol asignado en Firestore.
     function isStaff() {
       return isAuth()
@@ -51,7 +58,11 @@ service cloud.firestore {
     // ── ALUMNAS (datos SIGECOOP: CI, nombre, teléfono, dirección) ──
     // Lectura: SOLO con sesión (ya no pública). Escritura: solo staff.
     match /alumnas/{alumnaId} {
-      allow read: if isAuth();
+      // get  = consultar UNA alumna por su CI (lo que necesita la inscripción QR).
+      // list = descargar la colección completa → SOLO personal. Esto es lo que
+      //        impide la extracción masiva de datos personales.
+      allow get:  if isAuth();
+      allow list: if isStaff();
       // Auto-registro público (con sesión anónima) para alumnas NUEVAS, validado.
       // Modificar una alumna que YA existe queda reservado a staff.
       allow create: if isStaff() || (isAuth()
@@ -66,7 +77,8 @@ service cloud.firestore {
 
     // ── PROFESORAS (datos personales) ──
     match /profesoras/{profId} {
-      allow read: if isAuth();
+      allow get:  if isAuth();
+      allow list: if isStaff();
       allow create, update: if isStaff();
       allow delete: if false;
     }
@@ -96,8 +108,8 @@ service cloud.firestore {
         && isNonEmpty(request.resource.data.fecha)
         && request.resource.data.registros is list
         && request.resource.data.keys().size() <= 15;
-      // Corrección de la sesión (profesora): permitida con validación; borrado solo staff.
-      allow update: if isStaff() || (isAuth()
+      // Corrección de la sesión: exige CUENTA REAL (no el ingreso temporal por CI).
+      allow update: if isStaff() || (esCuenta()
         && isNonEmpty(request.resource.data.curso_id)
         && isNonEmpty(request.resource.data.profesora_ci)
         && isValidCI(request.resource.data.profesora_ci)
@@ -131,7 +143,9 @@ service cloud.firestore {
     // Creación con sesión (portal profesora) validada; inmutable; borrado solo staff.
     match /confirmaciones/{id} {
       allow read: if isAuth();
-      allow create: if isAuth()
+      // Solo una cuenta real puede confirmar: de lo contrario la confirmación
+      // no probaría nada. Con ingreso por CI el botón queda sin efecto.
+      allow create: if esCuenta()
         && isNonEmpty(request.resource.data.curso_id)
         && isNonEmpty(request.resource.data.profesora_ci)
         && isValidCI(request.resource.data.profesora_ci)

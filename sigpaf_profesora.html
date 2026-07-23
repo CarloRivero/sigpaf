@@ -199,10 +199,27 @@ button:active{transform:scale(.98);}
     <div class="auth-title" style="font-size:14px;">Portal de la Profesora</div>
     <div class="auth-sub">CRE R.L. · Gerencia de Asistencia al Consumidor</div>
     <div class="fg">
-      <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:4px;">¡Hola, profesora! 👋</div>
-      <div style="font-size:12.5px;color:#6B7280;margin-bottom:14px;line-height:1.5;">Ingresa tu <strong style="color:#00703C;">cédula de identidad</strong> para ver tus cursos</div>
-      <label class="fl">Tu número de CI</label>
-      <input class="fi" id="ci-login" style="font-size:18px;padding:14px;text-align:center;letter-spacing:2px;border-radius:12px;" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 5123456" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:10px;">Hola, profesora</div>
+
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <button type="button" id="tab-cuenta" onclick="setModoLogin('cuenta')" style="flex:1;padding:9px 6px;border-radius:9px;border:1.5px solid #00703C;background:#00703C;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Con mi cuenta</button>
+        <button type="button" id="tab-ci" onclick="setModoLogin('ci')" style="flex:1;padding:9px 6px;border-radius:9px;border:1.5px solid rgba(0,0,0,.12);background:#fff;color:#4B5563;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Con mi CI</button>
+      </div>
+
+      <div id="modo-cuenta">
+        <div style="font-size:12.5px;color:#6B7280;margin-bottom:12px;line-height:1.5;">Ingresa con el <strong style="color:#00703C;">correo y la contraseña</strong> que te entregó la coordinación.</div>
+        <label class="fl">Correo</label>
+        <input class="fi" id="email-login" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" style="border-radius:12px;margin-bottom:10px;" onkeydown="if(event.key==='Enter')doLogin()">
+        <label class="fl">Contraseña</label>
+        <input class="fi" id="pass-login" type="password" autocomplete="current-password" placeholder="••••••••" style="border-radius:12px;" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+
+      <div id="modo-ci" style="display:none;">
+        <div style="font-size:12.5px;color:#6B7280;margin-bottom:12px;line-height:1.5;">Ingresa tu <strong style="color:#00703C;">cédula de identidad</strong> para ver tus cursos.</div>
+        <label class="fl">Tu número de CI</label>
+        <input class="fi" id="ci-login" style="font-size:18px;padding:14px;text-align:center;letter-spacing:2px;border-radius:12px;" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 5123456" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        <div style="font-size:11px;color:#B45309;background:#FEF3C7;border-radius:8px;padding:8px 10px;margin-top:10px;line-height:1.45;">Este acceso es temporal. Cuando recibas tu cuenta, usa "Con mi cuenta": tu asistencia queda registrada a tu nombre.</div>
+      </div>
     </div>
     <div class="auth-err" id="auth-err"></div>
     <button class="btn btn-g" id="btn-login" onclick="doLogin()">
@@ -441,8 +458,72 @@ var ASISTENCIAS_HIST = {}; // ci -> {presentes, ausentes, justificadas, total}
 var SESIONES_REGISTRADAS = []; // sesiones del curso actual         // estado asistencia { ci: 'presente'|'ausente'|'justificada' }
 var COLORS = ['#00703C','#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6','#0D9488','#EC4899'];
 
-// ── LOGIN por CI de profesora ──
+// ── LOGIN: dos modos (cuenta verificada / CI temporal) ──
+var MODO_LOGIN = 'cuenta';
+var PROF_VERIFICADA = false;   // true solo si entró con cuenta
+var PROF_UID = null;
+
+function setModoLogin(m){
+  MODO_LOGIN = m;
+  var act='flex:1;padding:9px 6px;border-radius:9px;border:1.5px solid #00703C;background:#00703C;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;';
+  var ina='flex:1;padding:9px 6px;border-radius:9px;border:1.5px solid rgba(0,0,0,.12);background:#fff;color:#4B5563;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;';
+  document.getElementById('tab-cuenta').style.cssText = (m==='cuenta'?act:ina);
+  document.getElementById('tab-ci').style.cssText     = (m==='ci'?act:ina);
+  document.getElementById('modo-cuenta').style.display = (m==='cuenta'?'block':'none');
+  document.getElementById('modo-ci').style.display     = (m==='ci'?'block':'none');
+  document.getElementById('auth-err').textContent = '';
+}
+
 function doLogin(){
+  if(MODO_LOGIN==='cuenta') loginPorCuenta();
+  else loginPorCI();
+}
+
+function msgAuth(code){
+  var m={'auth/invalid-email':'El correo no es válido.','auth/user-not-found':'Ese correo no tiene cuenta. Pide tu acceso a la coordinación.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-credential':'Correo o contraseña incorrectos.','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.','auth/user-disabled':'Tu cuenta está desactivada.'};
+  return m[code]||'No se pudo ingresar. Verifica tus datos.';
+}
+
+// Ingreso con cuenta: identidad verificada
+function loginPorCuenta(){
+  var email=(document.getElementById('email-login').value||'').trim();
+  var pass =document.getElementById('pass-login').value||'';
+  var err  =document.getElementById('auth-err'); err.textContent='';
+  if(!email || !pass){ err.textContent='Completa tu correo y contraseña.'; return; }
+  setBtnLogin(true);
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(function(cred){
+      PROF_UID = cred.user.uid;
+      return DB.collection('usuarios_roles').doc(PROF_UID).get();
+    })
+    .then(function(doc){
+      var ci = doc.exists ? (doc.data().profesora_ci||'') : '';
+      if(!ci){ throw {code:'sin-vinculo'}; }
+      return Promise.all([
+        DB.collection('profesoras').doc(ci).get(),
+        DB.collection('profesoras').where('ci','==',ci).limit(1).get().catch(function(){ return {empty:true, docs:[]}; })
+      ]).then(function(r){
+        var prof=null;
+        if(r[0].exists) prof=Object.assign({id:r[0].id}, r[0].data());
+        else if(!r[1].empty) prof=Object.assign({id:r[1].docs[0].id}, r[1].docs[0].data());
+        if(!prof) prof={id:ci, nombre:(doc.data().nombre||'Profesora')};
+        PROF = prof; PROF_VERIFICADA = true;
+        iniciarApp();
+      });
+    })
+    .catch(function(e){
+      if(e && e.code==='sin-vinculo'){
+        err.textContent='Tu cuenta aún no está vinculada a tu registro. Avisa a la coordinación.';
+        try{ firebase.auth().signOut(); }catch(x){}
+      } else {
+        err.textContent = msgAuth(e && e.code);
+      }
+      setBtnLogin(false);
+    });
+}
+
+// Ingreso temporal por CI (sin identidad verificada)
+function loginPorCI(){
   // Validar CI
   var ciRaw = document.getElementById('ci-login').value.trim().replace(/[^0-9]/g, '');
   document.getElementById('ci-login').value = ciRaw;
@@ -459,7 +540,8 @@ function doLogin(){
   // Buscar profesora por CI en Firestore
   Promise.all([
     DB.collection('profesoras').doc(ci).get(),
-    DB.collection('profesoras').where('ci','==',ci).limit(1).get()
+    // Consulta de respaldo: si el listado está restringido, se ignora sin fallar
+    DB.collection('profesoras').where('ci','==',ci).limit(1).get().catch(function(){ return {empty:true, docs:[]}; })
   ]).then(function(results){
     var prof = null;
     if(results[0].exists){
@@ -472,7 +554,7 @@ function doLogin(){
       setBtnLogin(false);
       return;
     }
-    PROF = prof;
+    PROF = prof; PROF_VERIFICADA = false; PROF_UID = null;
     iniciarApp();
   }).catch(function(e){
     err.textContent = 'Error de conexión: '+e.message;
@@ -1122,7 +1204,9 @@ function guardarAsistencia(){
     presentes:  ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='presente'; }).length,
     ausentes:   ALUMNAS.filter(function(a){ return ATT[a.ci_alumna]==='ausente'; }).length,
     timestamp:  new Date().toISOString(),
-    ubicacion:  PROF_GEO
+    ubicacion:  PROF_GEO,
+    verificado: PROF_VERIFICADA,
+    profesora_uid: PROF_UID
   };
 
   guardarSesionAsistencia(sesion, docId);
@@ -1139,6 +1223,9 @@ function actualizarConfirmacion(){
       CONFIRMADO = snap.docs.some(function(d){ return (d.data().profesora_ci||'') === (PROF.id||''); });
       if(CONFIRMADO){
         box.innerHTML = '<span style="color:#D1FAE5;"><i class="ti ti-checks"></i> Confirmado</span>';
+      } else if(!PROF_VERIFICADA){
+        // Sin cuenta la confirmación no probaría nada, así que no se ofrece.
+        box.innerHTML = '<span style="opacity:.8;font-size:10.5px;"><i class="ti ti-lock"></i> Confirma al entrar con tu cuenta</span>';
       } else {
         box.innerHTML = '<button onclick="confirmarAsignacion()" style="background:#fff;color:#00703C;border:none;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);"><i class="ti ti-check"></i> Confirmar recepción</button>';
       }
@@ -1155,7 +1242,9 @@ function confirmarAsignacion(){
     profesora: PROF.nombre||'',
     profesora_ci: PROF.id||'',
     fecha: new Date().toISOString().split('T')[0],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    verificado: PROF_VERIFICADA,
+    profesora_uid: PROF_UID
   }).then(function(){
     showToast('Recepción del curso confirmada','ok');
     actualizarConfirmacion();
