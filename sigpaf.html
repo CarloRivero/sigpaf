@@ -1677,12 +1677,25 @@ var CONFIG = {
 // ══════════════════════════════════════════════════════
 //  SISTEMA — VERSIÓN Y AMBIENTE
 // ══════════════════════════════════════════════════════
-window.SIGPAF_VERSION = '1.8.0';
+window.SIGPAF_VERSION = '1.9.0';
 window.SIGPAF_BUILD = '2026-07-23';
 window.IS_PROD = window.location.protocol === 'https:' || window.location.protocol === 'file:';
 window.IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 // ── MESES DINÁMICOS (evita textos fijos que se rompen al cambiar de año) ──
+/* ═══ Dirección pública del sistema ═══════════════════════════════
+   Se detecta sola según dónde esté publicado, así el sistema funciona
+   igual en GitHub Pages, Firebase Hosting o un servidor propio de CRE
+   sin tocar el código. Solo llena SIGPAF_BASE_URL si necesitas forzar
+   una dirección distinta (por ejemplo, durante una migración).        */
+var SIGPAF_BASE_URL = '';
+function sigpafBase(){
+  if (SIGPAF_BASE_URL) return SIGPAF_BASE_URL.replace(/\/?$/, '/');
+  if (location.protocol === 'file:') return 'https://carlorivero.github.io/sigpaf/';
+  return location.origin + location.pathname.replace(/[^/]*$/, '');
+}
+/* ════════════════════════════════════════════════════════════════ */
+
 var SIGPAF_MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 function mesActualSIGPAF(){
   var d = new Date();
@@ -2310,7 +2323,7 @@ window.copiarEnlaceProf = function(profCi){
 };
 
 window.compartirQRCursoWA = function(codigo, nombre, prof, dist){
-  var link = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
   var msg = '📚 *Inscripción al curso - CRE R.L.*\n\n'
     + '*'+nombre+'*\n'
     + '👩‍🏫 Profesora: '+prof+'\n'
@@ -2935,7 +2948,7 @@ window.verDetalleCurso = function(id){
   var cupo      = parseInt(c.cupo_maximo||c.cupo||30);
   var pct       = cupo>0?Math.round(inscritas/cupo*100):0;
   var codigo    = generarCodigo(c);
-  var link      = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link      = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
   var dist      = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:c.distrito||'—');
   var prof      = c.profesora||c.profesora_nombre||'—';
   var prof_ci   = c.profesora_ci||'';
@@ -2944,7 +2957,7 @@ window.verDetalleCurso = function(id){
   var cont = document.getElementById('modal-detalle-content');
   if(!cont) return;
 
-  var link_qr = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link_qr = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
   var link_prof = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
   document.getElementById('modal-detalle-titulo').textContent = nombre;
   cont.innerHTML =
@@ -3027,7 +3040,7 @@ window.verDetalleCurso = function(id){
     var btnCp = document.getElementById('btn-qr-cp');
     var btnProfWa = document.getElementById('btn-prof-wa');
     var btnProfCp = document.getElementById('btn-prof-cp');
-    var link_qr = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+    var link_qr = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
     var link_prof = 'https://carlorivero.github.io/sigpaf/sigpaf_profesora.html';
     if(btnWa) btnWa.onclick = function(){
       window.compartirQRCursoWA(codigo, nombre, prof, dist);

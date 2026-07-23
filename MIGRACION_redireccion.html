@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redirigiendo… · SIGPAF CRE R.L.</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  PARA QUÉ SIRVE ESTE ARCHIVO
+  ═══════════════════════════════════════════════════════════════════
+  Si mueves SIGPAF a otra dirección, los códigos QR ya impresos o ya
+  compartidos por WhatsApp seguirán apuntando a la dirección ANTIGUA.
+
+  Solución: deja este archivo en la dirección ANTIGUA con el nombre
+  "sigpaf_registro.html". Reenvía automáticamente a la nueva, sin
+  perder el código del curso, y las alumnas ni se enteran.
+
+  PASO ÚNICO: cambia la línea de abajo por tu nueva dirección.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<script>
+  var NUEVA_BASE = 'https://sigpaf.cre.com.bo/';   // ← CAMBIA ESTO
+
+  (function () {
+    var base = NUEVA_BASE.replace(/\/?$/, '/');
+    var query = window.location.search || '';      // conserva ?curso=XXXX
+    window.location.replace(base + 'sigpaf_registro.html' + query);
+  })();
+</script>
+<style>
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#0F1C14;color:#fff;
+       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;margin:0;text-align:center;}
+  .box{max-width:340px;}
+  .dot{width:44px;height:44px;border:3px solid rgba(255,255,255,.25);border-top-color:#B7DFC8;
+       border-radius:50%;margin:0 auto 18px;animation:s .8s linear infinite;}
+  @keyframes s{to{transform:rotate(360deg);}}
+  h1{font-size:17px;margin:0 0 8px;font-weight:700;}
+  p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.6;margin:0 0 18px;}
+  a{color:#B7DFC8;font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="dot"></div>
+    <h1>Te estamos llevando a la inscripción</h1>
+    <p>El sistema del Programa Apoyo a la Familia cambió de dirección. En un momento se abre sola.</p>
+    <p>Si no ocurre nada, toca aquí:</p>
+    <a id="manual" href="#">Ir a la inscripción</a>
+  </div>
+  <script>
+    document.getElementById('manual').href =
+      NUEVA_BASE.replace(/\/?$/, '/') + 'sigpaf_registro.html' + (window.location.search || '');
+  </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 {
   "name": "SIGPAF - Programa Apoyo a la Familia",
   "short_name": "SIGPAF",
-  "description": "Sistema de Gesti\u00f3n del Programa Apoyo a la Familia - CRE R.L.",
-  "start_url": "/sigpaf/index.html",
+  "description": "Sistema de Gestión del Programa Apoyo a la Familia - CRE R.L.",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F3F5F4",
   "theme_color": "#00703C",
@@ -18,5 +18,6 @@
       "sizes": "512x512",
       "type": "image/svg+xml"
     }
-  ]
+  ],
+  "scope": "./"
 }

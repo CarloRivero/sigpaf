@@ -449,6 +449,19 @@ try { firebase.auth().signInAnonymously().catch(function(err){ console.warn('Ses
 function safeTxt(v){ return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── ESTADO ──
+/* ═══ Dirección pública del sistema ═══════════════════════════════
+   Se detecta sola según dónde esté publicado, así el sistema funciona
+   igual en GitHub Pages, Firebase Hosting o un servidor propio de CRE
+   sin tocar el código. Solo llena SIGPAF_BASE_URL si necesitas forzar
+   una dirección distinta (por ejemplo, durante una migración).        */
+var SIGPAF_BASE_URL = '';
+function sigpafBase(){
+  if (SIGPAF_BASE_URL) return SIGPAF_BASE_URL.replace(/\/?$/, '/');
+  if (location.protocol === 'file:') return 'https://carlorivero.github.io/sigpaf/';
+  return location.origin + location.pathname.replace(/[^/]*$/, '');
+}
+/* ════════════════════════════════════════════════════════════════ */
+
 var PROF = null;      // datos de la profesora
 var CURSOS = [];      // cursos de la profesora
 var CURSO_SEL = null; // curso seleccionado
@@ -798,7 +811,7 @@ function seleccionarCurso(c){
   var dist   = c.distrito_nombre||(c.distrito_num?'Distrito '+c.distrito_num:'—');
   var estado = normEstado(c.estado);
   var codigo = generarCodigo(c);
-  var link   = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link   = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
 
   // Llenar hero
   document.getElementById('hero-nombre').textContent = nombre;
@@ -1353,7 +1366,7 @@ function exportarListado(){
 function compartirWA(){
   if(!CURSO_SEL) return;
   var codigo = generarCodigo(CURSO_SEL);
-  var link   = 'https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+codigo;
+  var link   = sigpafBase()+'sigpaf_registro.html?curso='+codigo;
   var dist   = CURSO_SEL.distrito_nombre||(CURSO_SEL.distrito_num?'Distrito '+CURSO_SEL.distrito_num:'—');
   var nombre = CURSO_SEL.nombre_curso||CURSO_SEL.nombre||'—';
   var msg    = 'Hola! Te invito a inscribirte al curso:\n\n*'+nombre+'*\nDistrito: '+dist+'\n\nEscanea el QR o ingresa aqui:\n'+link+'\n\n_Programa Apoyo a la Familia - CRE R.L._';
@@ -1391,7 +1404,7 @@ function descargarQR(){
 
 function copiarLink(){
   if(!CURSO_SEL) return;
-  var link='https://carlorivero.github.io/sigpaf/sigpaf_registro.html?curso='+generarCodigo(CURSO_SEL);
+  var link=sigpafBase()+'sigpaf_registro.html?curso='+generarCodigo(CURSO_SEL);
   navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado','ok'); });
 }
 
