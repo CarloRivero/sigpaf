@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGPAF · Plan de mejoras por pasos</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;max-width:940px;margin:0 auto;padding:44px 26px;color:#111;line-height:1.7;font-size:14px;background:#fff;}
+h1{font-size:23px;color:#00703C;border-bottom:3px solid #00703C;padding-bottom:9px;margin:36px 0 14px;}
+h2{font-size:16.5px;color:#005A2E;margin:26px 0 10px;}
+h3{font-size:14.5px;color:#111;margin:18px 0 7px;}
+p{margin:8px 0;} strong{color:#005A2E;}
+ul,ol{margin:6px 0 12px 22px;} li{margin:6px 0;}
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:12.7px;}
+th{background:#00703C;color:#fff;padding:8px 10px;text-align:left;font-weight:600;vertical-align:top;}
+td{padding:8px 10px;border-bottom:1px solid #E5E7EB;vertical-align:top;}
+tr:nth-child(even){background:#F9FAFB;}
+hr{border:none;border-top:2px solid #E5E7EB;margin:32px 0;}
+code{background:#F3F4F6;padding:1px 6px;border-radius:5px;font-size:12.2px;color:#005A2E;font-family:ui-monospace,Menlo,monospace;}
+.tag{display:inline-block;padding:2px 10px;border-radius:6px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.hecho{background:#D1FAE5;color:#00703C;} .tuyo{background:#FEF3C7;color:#92400E;} .prox{background:#E0E7FF;color:#3730A3;}
+.stepbox{border:1px solid #E5E7EB;border-left:5px solid #00703C;border-radius:0 12px 12px 0;padding:18px 22px;margin:18px 0;}
+.stepbox.pend{border-left-color:#F59E0B;}
+.stepbox.next{border-left-color:#6366F1;}
+.stephead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.stepnum{background:#00703C;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none;}
+.stepbox.pend .stepnum{background:#F59E0B;} .stepbox.next .stepnum{background:#6366F1;}
+.steptitle{font-size:15.5px;font-weight:700;color:#005A2E;}
+.callout{border-left:4px solid #00703C;background:#F0FDF4;padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;}
+.callout.amber{border-color:#F59E0B;background:#FFFBEB;}
+.callout.red{border-color:#EF4444;background:#FEF2F2;}
+.sub{font-size:12px;color:#6B7280;}
+.mini{font-size:12.3px;color:#4B5563;background:#F9FAFB;border-radius:7px;padding:9px 13px;margin-top:9px;}
+@media print{body{font-size:11px;padding:20px;} h1{font-size:16px;} .stepbox{break-inside:avoid;}}
+</style>
+</head>
+<body>
+
+<p class="sub">CRE R.L. · Gerencia de Asistencia y Comunicación al Consumidor</p>
+<h1 style="margin-top:8px;">SIGPAF — Plan de mejoras por pasos</h1>
+<p class="sub">Ejecución del orden recomendado en la evaluación experta. Versión entregada: <strong>1.7.0</strong> &nbsp;|&nbsp; Julio 2026</p>
+
+<div class="callout">
+<strong>Cómo leer este documento.</strong> Cada paso indica qué quedó <strong>hecho en el código</strong> y qué tienes que <strong>hacer tú en la consola</strong> (las cosas que requieren tu cuenta y contraseña las haces tú; yo no manejo credenciales). Los pasos 1 y 2 ya están entregados. El paso 3 requiere una decisión tuya antes de programarlo.
+</div>
+
+<hr>
+
+<h1>Resumen del avance</h1>
+<table>
+<tr><th style="width:50px;">Paso</th><th>Acción</th><th style="width:150px;">Estado</th></tr>
+<tr><td><strong>1</strong></td><td>Respaldos de la información</td><td><span class="tag hecho">Herramienta lista</span></td></tr>
+<tr><td><strong>2</strong></td><td>App Check (protección contra extracción de datos)</td><td><span class="tag hecho">Código listo</span> <span class="tag tuyo">falta tu clave</span></td></tr>
+<tr><td><strong>3</strong></td><td>Identidad real de las profesoras</td><td><span class="tag prox">requiere tu decisión</span></td></tr>
+<tr><td><strong>4</strong></td><td>Cerrar las reglas de seguridad</td><td><span class="tag prox">depende del paso 3</span></td></tr>
+<tr><td><strong>5</strong></td><td>Vincular profesora ↔ curso por CI</td><td><span class="tag prox">pendiente</span></td></tr>
+<tr><td><strong>6</strong></td><td>Documentación y flujo de publicación</td><td><span class="tag prox">pendiente</span></td></tr>
+</table>
+
+<hr>
+
+<h1>Paso 1 · Respaldos <span class="tag hecho">HECHO</span></h1>
+
+<div class="stepbox">
+<div class="stephead"><div class="stepnum">1</div><div class="steptitle">Herramienta de respaldo: <code>sigpaf_respaldo.html</code></div></div>
+<p>Era el riesgo con peor relación daño/esfuerzo: sin copias, un borrado accidental sería irreversible. Ahora tienes una página donde, con tu cuenta de administración, puedes descargar <strong>toda la información del sistema cuando quieras</strong>.</p>
+<h3>Qué hace</h3>
+<ul>
+<li>Muestra <strong>cuántos registros hay</strong> en cada parte del sistema (cursos, alumnas, inscripciones, asistencia, encuestas, fotos, etc. — 14 en total).</li>
+<li><strong>Respaldo completo en JSON:</strong> la copia fiel, la que sirve para restaurar si algo se pierde.</li>
+<li><strong>Respaldo en Excel:</strong> una hoja por cada tipo de información, para revisar o archivar de forma legible.</li>
+<li><strong>Opción de excluir las fotos</strong> (activada por defecto): las imágenes hacen el archivo enorme, así que solo se incluyen si tú lo pides.</li>
+<li>Avisa que el archivo contiene datos personales y cómo debe guardarse.</li>
+</ul>
+<div class="mini"><strong>Qué haces tú:</strong> subir el archivo a GitHub con los demás y entrar a <code>…/sigpaf/sigpaf_respaldo.html</code>. <strong>Descarga un respaldo al menos una vez por semana</strong> y siempre al cerrar el mes. Guárdalo en una carpeta institucional, no en el escritorio personal.</div>
+</div>
+
+<div class="callout amber">
+<strong>Esto es la solución inmediata, no la definitiva.</strong> Lo ideal es que el respaldo se haga solo, sin que nadie se acuerde. Eso se programa en la consola de Google Cloud (requiere activar la facturación del proyecto; para este volumen el costo es mínimo). Los pasos están dentro de la misma página, en la sección "Respaldo automático". Mientras no esté programado, <strong>el respaldo manual semanal es obligatorio</strong>, no opcional.
+</div>
+
+<hr>
+
+<h1>Paso 2 · App Check <span class="tag hecho">CÓDIGO LISTO</span></h1>
+
+<div class="stepbox pend">
+<div class="stephead"><div class="stepnum">2</div><div class="steptitle">Activación en un solo lugar por archivo</div></div>
+<p>App Check hace que Firebase <strong>solo acepte peticiones que vengan de tu app real</strong>, y rechace las de programas externos. Es la defensa más efectiva contra la descarga masiva de datos mientras no exista identidad real (el problema crítico n.º 2 de la evaluación).</p>
+<p>Antes había que descomentar código, lo que es fácil de hacer mal. Ahora <strong>solo tienes que pegar tu clave entre las comillas</strong>, en un bloque marcado y visible al inicio de cada archivo:</p>
+<div class="mini" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;">
+/* ═══ App Check · PASO 2 ═══ */<br>
+var SIGPAF_APPCHECK_KEY = <strong>''</strong>;   ← aquí va tu clave
+</div>
+<p style="margin-top:10px;">Si la dejas vacía, el sistema funciona exactamente igual que ahora. En cuanto pegas la clave, App Check se activa solo. El bloque está en los <strong>6 archivos</strong> del sistema (panel, profesora, alumna, registro, tablero y respaldo).</p>
+<h3>Qué haces tú, en orden</h3>
+<ol>
+<li>Consola de Firebase → <strong>App Check</strong> → registrar la app web con <strong>reCAPTCHA v3</strong>.</li>
+<li>Copiar la <strong>clave de sitio</strong> que te entrega.</li>
+<li>Pegarla en <code>SIGPAF_APPCHECK_KEY</code> en los 6 archivos (es la misma clave en todos) y volver a subirlos.</li>
+<li>Probar que todo sigue funcionando: panel, portal de profesora, portal de alumna e inscripción por QR.</li>
+<li>Recién cuando confirmes que todo anda, poner App Check en modo <strong>obligatorio (enforce)</strong> para Firestore en la consola.</li>
+</ol>
+<div class="callout red" style="margin-top:12px;">
+<strong>No actives el modo obligatorio antes de probar.</strong> Si lo haces y algo quedó mal configurado, el sistema deja de funcionar para todas las usuarias hasta que lo desactives.
+</div>
+</div>
+
+<hr>
+
+<h1>Paso 3 · Identidad real de las profesoras <span class="tag prox">REQUIERE TU DECISIÓN</span></h1>
+
+<div class="stepbox next">
+<div class="stephead"><div class="stepnum">3</div><div class="steptitle">El paso que cambia la naturaleza del sistema</div></div>
+<p>Es el más importante de todos y el único que convierte a SIGPAF en un sistema de <strong>control verificable</strong>. Pero no puedo ejecutarlo por mi cuenta, porque <strong>no es solo programar: es una decisión operativa</strong> sobre cómo van a entrar las profesoras y quién les entrega sus datos de acceso.</p>
+
+<h3>Las dos opciones</h3>
+<table>
+<tr><th style="width:180px;">Opción</th><th>Cómo funciona</th><th style="width:230px;">A favor / En contra</th></tr>
+<tr><td><strong>A. Correo y contraseña</strong></td><td>La GU crea una cuenta por profesora en Firebase. La profesora entra con su correo y una contraseña que puede cambiar.</td><td><strong>+</strong> Es el estándar, seguro y gratuito.<br><strong>−</strong> Requiere que cada profesora tenga correo y lo use.</td></tr>
+<tr><td><strong>B. Teléfono con código SMS</strong></td><td>La profesora pone su número y recibe un código para entrar.</td><td><strong>+</strong> Muy natural para ellas, no hay contraseña que olvidar.<br><strong>−</strong> Los SMS tienen costo por mensaje.</td></tr>
+</table>
+
+<h3>Qué necesito de ti para avanzar</h3>
+<ol>
+<li><strong>Cuál de las dos opciones</strong> se ajusta mejor a las profesoras del programa.</li>
+<li><strong>Cuántas profesoras activas</strong> hay aproximadamente (define si las cuentas se crean a mano o conviene una carga masiva).</li>
+<li><strong>Quién les entrega el acceso</strong> y por qué medio (la jefa de la Fundación, la GU…).</li>
+<li>Si prefieres una <strong>transición gradual</strong> —que durante unas semanas convivan el ingreso por CI y el nuevo— o un cambio directo.</li>
+</ol>
+
+<div class="mini"><strong>Cuando me confirmes eso, entrego:</strong> el portal de la profesora con el nuevo ingreso, una pantalla en el panel para que la GU cree y administre las cuentas, y las reglas de seguridad cerradas (paso 4) para que cada profesora solo pueda ver y escribir lo suyo. Todo lo construido hasta ahora se conserva y se aprovecha.</div>
+</div>
+
+<div class="callout">
+<strong>Mientras tanto, una recomendación de gestión.</strong> El sistema hoy sirve para <em>gestionar</em> el programa, y muy bien. Pero hasta completar el paso 3, conviene <strong>no usar sus registros como sustento formal</strong> de una observación o sanción a una profesora, porque no puede probarse quién los cargó.
+</div>
+
+<hr>
+
+<h1>Al desplegar la versión 1.7</h1>
+<ol>
+<li>Sube los archivos del paquete a GitHub (incluye dos nuevos: <code>sigpaf_respaldo.html</code> y el tablero).</li>
+<li><strong>No hace falta volver a publicar las reglas</strong> en esta versión: no cambiaron desde la 1.6.</li>
+<li>Entra a <code>…/sigpaf/sigpaf_respaldo.html</code> y <strong>descarga tu primer respaldo hoy mismo</strong>. Es el paso que más riesgo elimina.</li>
+</ol>
+<p class="sub">Nota: las herramientas de administración (panel, tablero y respaldo) no están enlazadas desde la portada pública, a propósito. Se entra escribiendo la dirección; conviene guardarlas como favoritos en lugar de enlazarlas.</p>
+
+<hr>
+<p class="sub" style="text-align:center;margin-top:26px;">SIGPAF v1.7 · CRE R.L. · Gerencia de Asistencia y Comunicación al Consumidor · Julio 2026</p>
+
+</body>
+</html>

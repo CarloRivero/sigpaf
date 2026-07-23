@@ -368,6 +368,7 @@ button:active{transform:scale(.98);}
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -1676,8 +1677,8 @@ var CONFIG = {
 // ══════════════════════════════════════════════════════
 //  SISTEMA — VERSIÓN Y AMBIENTE
 // ══════════════════════════════════════════════════════
-window.SIGPAF_VERSION = '1.6.0';
-window.SIGPAF_BUILD = '2026-07-22c';
+window.SIGPAF_VERSION = '1.7.0';
+window.SIGPAF_BUILD = '2026-07-23';
 window.IS_PROD = window.location.protocol === 'https:' || window.location.protocol === 'file:';
 window.IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -2333,6 +2334,17 @@ firebase.initializeApp({
   messagingSenderId: "783555160890",
   appId:             "1:783555160890:web:79bae67c10986f11a8fe03"
 });
+
+/* ═══ App Check · PASO 2 ══════════════════════════════════════════
+   Pega entre las comillas la clave de sitio de reCAPTCHA v3 y App Check
+   se activa solo. Si la dejas vacía, el sistema funciona igual (sin
+   App Check). Usa la MISMA clave en todos los archivos SIGPAF.        */
+var SIGPAF_APPCHECK_KEY = '';
+if (SIGPAF_APPCHECK_KEY) {
+  try { firebase.appCheck().activate(SIGPAF_APPCHECK_KEY, true); }
+  catch (e) { console.warn('App Check no disponible:', e); }
+}
+/* ════════════════════════════════════════════════════════════════ */
 
 var DB   = firebase.firestore();
 var AUTH = firebase.auth();

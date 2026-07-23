@@ -415,8 +415,17 @@ firebase.initializeApp({
   appId:"1:783555160890:web:79bae67c10986f11a8fe03"
 });
 var DB = firebase.firestore();
-// ── App Check (activar tras registrar reCAPTCHA v3 en la consola) ──
-// firebase.appCheck().activate('TU_RECAPTCHA_V3_SITE_KEY', true);
+/* ═══ App Check · PASO 2 ══════════════════════════════════════════
+   Pega entre las comillas la clave de sitio de reCAPTCHA v3 y App Check
+   se activa solo. Si la dejas vacía, el sistema funciona igual (sin
+   App Check). Usa la MISMA clave en todos los archivos SIGPAF.        */
+var SIGPAF_APPCHECK_KEY = '';
+if (SIGPAF_APPCHECK_KEY) {
+  try { firebase.appCheck().activate(SIGPAF_APPCHECK_KEY, true); }
+  catch (e) { console.warn('App Check no disponible:', e); }
+}
+/* ════════════════════════════════════════════════════════════════ */
+
 // ── Sesión anónima: permite cerrar la lectura pública en las reglas. ──
 // Requiere habilitar el proveedor "Anónimo" en Authentication.
 try { firebase.auth().signInAnonymously().catch(function(err){ console.warn('Sesion anonima pendiente:', err && err.code); }); } catch(e){ console.warn('Auth SDK no disponible', e); }

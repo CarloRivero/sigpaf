@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -162,6 +163,17 @@ firebase.initializeApp({
   messagingSenderId:"783555160890",
   appId:"1:783555160890:web:79bae67c10986f11a8fe03"
 });
+/* ═══ App Check · PASO 2 ══════════════════════════════════════════
+   Pega entre las comillas la clave de sitio de reCAPTCHA v3 y App Check
+   se activa solo. Si la dejas vacía, el sistema funciona igual (sin
+   App Check). Usa la MISMA clave en todos los archivos SIGPAF.        */
+var SIGPAF_APPCHECK_KEY = '';
+if (SIGPAF_APPCHECK_KEY) {
+  try { firebase.appCheck().activate(SIGPAF_APPCHECK_KEY, true); }
+  catch (e) { console.warn('App Check no disponible:', e); }
+}
+/* ════════════════════════════════════════════════════════════════ */
+
 var DB = firebase.firestore();
 var DATOS = [];   // filas calculadas por profesora
 var SORT = {key:'estadoOrden', dir:1};

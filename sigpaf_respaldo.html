@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Respaldo de datos · SIGPAF · CRE R.L.</title>
+<link rel="icon" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-check-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --brand:#00703C; --brand-dark:#005A2E; --brand-tint:#E8F5EE; --brand-mint:#B7DFC8;
+  --ink:#0F1C14; --ink-2:#4B5563; --ink-3:#6B7280;
+  --bg:#F3F5F4; --card:#FFFFFF; --border:rgba(0,0,0,.08);
+  --warn:#F59E0B; --warn-ink:#B45309; --warn-tint:#FEF3C7;
+  --danger:#DC2626; --danger-tint:#FEE2E2;
+  --radius:12px; --font:'Outfit',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;}
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px;}
+button:active{transform:scale(.98);}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(145deg,#0F1C14,#1A3020);}
+.login-card{background:#fff;border-radius:20px;padding:34px 28px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+.login-logo{width:52px;height:52px;border-radius:13px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 16px;}
+.login-title{text-align:center;font-weight:700;font-size:18px;margin-bottom:4px;}
+.login-sub{text-align:center;font-size:12.5px;color:var(--ink-3);margin-bottom:22px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px;}
+.field input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:14px;outline:none;}
+.field input:focus{border-color:var(--brand);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background .15s;}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+.btn-primary{background:var(--brand);color:#fff;}
+.btn-primary:hover:not(:disabled){background:var(--brand-dark);}
+.btn-block{width:100%;}
+.btn-ghost{background:#fff;border:1.5px solid var(--border);color:var(--ink-2);}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand);}
+.login-err{color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px;text-align:center;}
+
+.app{display:none;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.topbar .logo{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
+.topbar h1{font-size:16px;font-weight:700;line-height:1.1;}
+.topbar .sub{font-size:11.5px;color:var(--ink-3);}
+.topbar .spacer{flex:1;}
+.wrap{max-width:900px;margin:0 auto;padding:22px;}
+
+.note{border-left:4px solid var(--warn);background:var(--warn-tint);padding:13px 16px;border-radius:0 10px 10px 0;margin-bottom:20px;font-size:13px;color:#7C4A03;}
+.note strong{color:#7C2D12;}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;}
+.panel h2{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.panel .desc{font-size:12.5px;color:var(--ink-3);margin-bottom:16px;}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:18px;}
+.col{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:#FCFDFC;}
+.col .c-n{font-size:12px;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:6px;}
+.col .c-v{font-size:20px;font-weight:800;margin-top:3px;}
+.col.err .c-v{color:var(--danger);font-size:12px;font-weight:600;}
+.col .c-v small{font-size:11.5px;color:var(--ink-3);font-weight:600;}
+
+.opt{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;margin-bottom:14px;background:#FCFDFC;}
+.opt input{margin-top:3px;width:16px;height:16px;accent-color:var(--brand);flex:none;}
+.opt label{font-size:12.5px;color:var(--ink-2);cursor:pointer;}
+.opt label b{color:var(--ink);}
+
+.acts{display:flex;gap:10px;flex-wrap:wrap;}
+.prog{margin-top:14px;font-size:12.5px;color:var(--ink-3);min-height:18px;}
+.prog .bar{height:7px;background:#EDEFEE;border-radius:20px;overflow:hidden;margin-top:7px;}
+.prog .bar span{display:block;height:7px;background:var(--brand);border-radius:20px;width:0;transition:width .25s;}
+.ok-msg{color:var(--brand);font-weight:600;}
+.err-msg{color:var(--danger);font-weight:600;}
+.foot{text-align:center;font-size:11.5px;color:var(--ink-3);padding:20px;}
+ol.steps{margin:8px 0 0 20px;font-size:12.7px;color:var(--ink-2);}
+ol.steps li{margin:5px 0;}
+code{background:#F3F4F6;padding:1px 6px;border-radius:5px;font-size:12px;color:var(--brand);font-family:ui-monospace,Menlo,monospace;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login">
+  <div class="login-card">
+    <div class="login-logo"><i class="ti ti-database-export"></i></div>
+    <div class="login-title">Respaldo de datos</div>
+    <div class="login-sub">SIGPAF · Solo para administración</div>
+    <div class="field"><label for="email">Correo</label><input id="email" type="email" autocomplete="username" placeholder="tu-correo@cre.com.bo"></div>
+    <div class="field"><label for="pass">Contraseña</label><input id="pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <button class="btn btn-primary btn-block" id="btn-login"><i class="ti ti-login"></i> Ingresar</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="logo"><i class="ti ti-database-export"></i></div>
+    <div>
+      <h1>Respaldo de datos</h1>
+      <div class="sub">SIGPAF · Programa Apoyo a la Familia</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" id="btn-logout"><i class="ti ti-logout"></i> Salir</button>
+  </div>
+
+  <div class="wrap">
+    <div class="note">
+      <strong>El archivo que descargues contiene datos personales</strong> de alumnas y profesoras (documento, teléfono, dirección). Guárdalo en un lugar seguro de la institución, no lo compartas por WhatsApp ni correo, y bórralo de la carpeta de descargas cuando lo hayas archivado.
+    </div>
+
+    <div class="panel">
+      <h2><i class="ti ti-list-check"></i> Contenido actual</h2>
+      <div class="desc">Cantidad de registros que se incluirán en el respaldo.</div>
+      <div class="cols" id="cols"></div>
+      <button class="btn btn-ghost" id="btn-contar"><i class="ti ti-refresh"></i> Volver a contar</button>
+    </div>
+
+    <div class="panel">
+      <h2><i class="ti ti-download"></i> Descargar respaldo</h2>
+      <div class="desc">Genera una copia completa de la información del sistema en este momento.</div>
+
+      <div class="opt">
+        <input type="checkbox" id="sin-fotos" checked>
+        <label for="sin-fotos"><b>Excluir las fotos de evidencia</b> — las fotos ocupan mucho espacio y hacen el archivo muy pesado. Desmarca solo si necesitas respaldar también las imágenes.</label>
+      </div>
+
+      <div class="acts">
+        <button class="btn btn-primary" id="btn-json"><i class="ti ti-file-code"></i> Respaldo completo (JSON)</button>
+        <button class="btn btn-ghost" id="btn-xlsx"><i class="ti ti-file-spreadsheet"></i> Respaldo en Excel</button>
+      </div>
+      <div class="prog" id="prog"></div>
+      <div class="desc" style="margin:14px 0 0;">
+        El <b>JSON</b> es la copia fiel para restaurar el sistema si algo se pierde. El <b>Excel</b> es para revisar o archivar la información de forma legible.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><i class="ti ti-calendar-repeat"></i> Respaldo automático (recomendado)</h2>
+      <div class="desc">Esta página sirve para respaldar cuando quieras, pero lo ideal es que se haga solo. Para dejarlo programado:</div>
+      <ol class="steps">
+        <li>Entra a la consola de Google Cloud del proyecto <code>sigpaf-cre</code>.</li>
+        <li>Activa la facturación del proyecto (la exportación programada la requiere; el costo para este volumen es mínimo).</li>
+        <li>Crea un bucket de Cloud Storage, por ejemplo <code>sigpaf-respaldos</code>.</li>
+        <li>En Firestore → Importar/Exportar, programa una <b>exportación diaria o semanal</b> hacia ese bucket.</li>
+        <li>Define cuánto tiempo se conservan las copias (por ejemplo, 90 días).</li>
+      </ol>
+      <div class="desc" style="margin-top:12px;">Mientras eso no esté configurado, <b>descarga un respaldo manual al menos una vez por semana</b> y al cerrar cada mes.</div>
+    </div>
+
+    <div class="foot">El respaldo refleja los datos al momento de descargarlo. No incluye las cuentas de acceso (esas las administra Firebase).</div>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCh2-UU4vV21szZLry6envnSlatexT7VcM",
+  authDomain:"sigpaf-cre.firebaseapp.com",
+  projectId:"sigpaf-cre",
+  storageBucket:"sigpaf-cre.firebasestorage.app",
+  messagingSenderId:"783555160890",
+  appId:"1:783555160890:web:79bae67c10986f11a8fe03"
+});
+
+/* ═══ App Check · PASO 2 ══════════════════════════════════════════
+   Pega entre las comillas la clave de sitio de reCAPTCHA v3 y App Check
+   se activa solo. Si la dejas vacía, el sistema funciona igual (sin
+   App Check). Usa la MISMA clave en todos los archivos SIGPAF.        */
+var SIGPAF_APPCHECK_KEY = '';
+if (SIGPAF_APPCHECK_KEY) {
+  try { firebase.appCheck().activate(SIGPAF_APPCHECK_KEY, true); }
+  catch (e) { console.warn('App Check no disponible:', e); }
+}
+/* ════════════════════════════════════════════════════════════════ */
+
+var DB = firebase.firestore();
+
+// Colecciones del sistema
+var COLECCIONES = [
+  {id:'catalogo_cursos',        n:'Cursos',                 i:'ti-book'},
+  {id:'alumnas',                n:'Alumnas',                i:'ti-users'},
+  {id:'profesoras',             n:'Profesoras',             i:'ti-user-star'},
+  {id:'registros',              n:'Inscripciones',          i:'ti-clipboard-list'},
+  {id:'asistencia',             n:'Asistencia',             i:'ti-checkbox'},
+  {id:'encuestas',              n:'Encuestas',              i:'ti-star'},
+  {id:'evidencias_curso',       n:'Fotos de evidencia',     i:'ti-camera'},
+  {id:'confirmaciones',         n:'Confirmaciones',         i:'ti-checks'},
+  {id:'comentarios_supervision',n:'Comentarios',            i:'ti-message'},
+  {id:'usuarios_roles',         n:'Usuarios y roles',       i:'ti-shield-lock'},
+  {id:'configuracion',          n:'Configuración',          i:'ti-settings'},
+  {id:'distritos',              n:'Distritos',              i:'ti-map-pin'},
+  {id:'estructura_social',      n:'Estructura social',      i:'ti-sitemap'},
+  {id:'audit_log',              n:'Registro de actividad',  i:'ti-history'}
+];
+
+function el(id){ return document.getElementById(id); }
+function safeTxt(v){ return v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── LOGIN ──
+function traducirError(code){
+  var m={'auth/invalid-email':'Correo inválido.','auth/user-not-found':'Correo no registrado.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-credential':'Correo o contraseña incorrectos.','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.','auth/user-disabled':'Usuario desactivado.'};
+  return m[code]||'No se pudo ingresar. Verifica tus datos.';
+}
+function doLogin(){
+  var email=el('email').value.trim(), pass=el('pass').value, err=el('login-err');
+  err.textContent='';
+  if(!email||!pass){ err.textContent='Completa correo y contraseña.'; return; }
+  var b=el('btn-login'); b.disabled=true; b.innerHTML='<i class="ti ti-loader-2"></i> Ingresando…';
+  firebase.auth().signInWithEmailAndPassword(email,pass)
+    .then(abrirApp)
+    .catch(function(e){ err.textContent=traducirError(e && e.code); })
+    .finally(function(){ b.disabled=false; b.innerHTML='<i class="ti ti-login"></i> Ingresar'; });
+}
+function abrirApp(){ el('login').style.display='none'; el('app').style.display='block'; contar(); }
+el('btn-login').addEventListener('click', doLogin);
+el('pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+el('btn-logout').addEventListener('click', function(){ firebase.auth().signOut().then(function(){ location.reload(); }); });
+el('btn-contar').addEventListener('click', contar);
+firebase.auth().onAuthStateChanged(function(u){ if(u && el('app').style.display!=='block') abrirApp(); });
+
+// ── CONTEO ──
+var CONTEOS={};
+function contar(){
+  var cont=el('cols');
+  cont.innerHTML=COLECCIONES.map(function(c){
+    return '<div class="col" id="col-'+c.id+'"><div class="c-n"><i class="ti '+c.i+'"></i> '+c.n+'</div><div class="c-v"><small>contando…</small></div></div>';
+  }).join('');
+  COLECCIONES.forEach(function(c){
+    DB.collection(c.id).get()
+      .then(function(s){ CONTEOS[c.id]=s.size; var d=el('col-'+c.id); if(d) d.querySelector('.c-v').textContent=s.size; })
+      .catch(function(){ var d=el('col-'+c.id); if(d){ d.classList.add('err'); d.querySelector('.c-v').textContent='sin acceso'; } });
+  });
+}
+
+// ── DESCARGA ──
+function setProg(txt, pct, cls){
+  el('prog').innerHTML='<span class="'+(cls||'')+'">'+safeTxt(txt)+'</span>'+(pct!=null?'<div class="bar"><span style="width:'+pct+'%"></span></div>':'');
+}
+function limpiarFotos(obj){
+  // Quita cualquier texto muy largo (imágenes en base64)
+  var o={};
+  Object.keys(obj).forEach(function(k){
+    var v=obj[k];
+    if(typeof v==='string' && v.length>2000) o[k]='[imagen omitida del respaldo]';
+    else o[k]=v;
+  });
+  return o;
+}
+async function leerTodo(sinFotos){
+  var datos={}, total=COLECCIONES.length;
+  for(var i=0;i<total;i++){
+    var c=COLECCIONES[i];
+    setProg('Leyendo '+c.n+'…', Math.round(i/total*100));
+    try{
+      var snap=await DB.collection(c.id).get();
+      datos[c.id]=snap.docs.map(function(d){
+        var o=Object.assign({_id:d.id}, d.data());
+        return sinFotos ? limpiarFotos(o) : o;
+      });
+    }catch(e){ datos[c.id]=[]; }
+  }
+  return datos;
+}
+function hoyStr(){ return new Date().toISOString().split('T')[0]; }
+function bajar(blob, nombre){
+  var a=document.createElement('a'), url=URL.createObjectURL(blob);
+  a.href=url; a.download=nombre; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+el('btn-json').addEventListener('click', async function(){
+  var b=this; b.disabled=true;
+  try{
+    var datos=await leerTodo(el('sin-fotos').checked);
+    setProg('Preparando archivo…', 96);
+    var paquete={ sistema:'SIGPAF · CRE R.L.', generado:new Date().toISOString(), incluye_fotos:!el('sin-fotos').checked, datos:datos };
+    bajar(new Blob([JSON.stringify(paquete,null,2)],{type:'application/json'}), 'SIGPAF_respaldo_'+hoyStr()+'.json');
+    setProg('Respaldo descargado. Guárdalo en un lugar seguro.', 100, 'ok-msg');
+  }catch(e){ setProg('No se pudo generar el respaldo: '+(e.message||''), null, 'err-msg'); }
+  b.disabled=false;
+});
+
+el('btn-xlsx').addEventListener('click', async function(){
+  var b=this; b.disabled=true;
+  try{
+    var datos=await leerTodo(el('sin-fotos').checked);
+    setProg('Armando el Excel…', 96);
+    var wb=XLSX.utils.book_new(), hojas=0;
+    COLECCIONES.forEach(function(c){
+      var filas=(datos[c.id]||[]).map(function(o){
+        var p={};
+        Object.keys(o).forEach(function(k){
+          var v=o[k];
+          p[k]=(v && typeof v==='object') ? JSON.stringify(v) : v;
+        });
+        return p;
+      });
+      if(!filas.length) filas=[{aviso:'sin datos'}];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filas), c.n.substring(0,31));
+      hojas++;
+    });
+    if(!hojas) throw new Error('No hay datos para exportar');
+    XLSX.writeFile(wb, 'SIGPAF_respaldo_'+hoyStr()+'.xlsx');
+    setProg('Excel descargado. Guárdalo en un lugar seguro.', 100, 'ok-msg');
+  }catch(e){ setProg('No se pudo generar el Excel: '+(e.message||''), null, 'err-msg'); }
+  b.disabled=false;
+});
+</script>
+</body>
+</html>
